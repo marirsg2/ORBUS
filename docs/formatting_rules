@@ -1,0 +1,6 @@
+The plan dataset contains all the backlog plans in the following format:
+        [[state-sequence], [list of features]]
+
+The annotated plan dataset contains all the annotated plans(plans rated and annotated
+by the user) and they are in the following format:
+        [[state-sequence], [list of features], [liked features], [disliked features], rating]

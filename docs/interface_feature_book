@@ -1,0 +1,15 @@
+1. Server to client connection, for conducting multiple rounds. Each user is a different
+session. Must be run in parallel and be assigned cores according to the availability.
+
+2. All the boxes including
+(a) Feature Value box
+(b) Current Feature box
+(c) Annotated feature box
+
+3. Conduct Rounds
+
+4. Give an estimation of time with a loading screen.
+
+5. Possibility of going back to previously annotated plans while waiting for the next rounds
+
+6. Both methods of annotating plans, avaiable with a switch
