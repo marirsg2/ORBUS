@@ -201,7 +201,7 @@ class Manager:
                  test_set_size=1000,
                  plans_per_round = 30,
                  use_features_seen_in_plan_dataset = True,
-                 prob_per_level = (0.25), #there is ONLY ONE LEVEL, p(like/dislike)
+                 prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  relevant_features_prior_weights = (0.1, -0.1),
                  preference_distribution_string="power_law",
@@ -272,8 +272,8 @@ class Manager:
         if with_simulated_human:
             gaussian_noise_sd = 0.0 #start with this and then set it later as needed
             #todo change this sim human to only use s1 features, those are all the features.
-            print("SIMULATED HUMAN has probabilities", prob_per_level, " AND gaussian noise sd = ",gaussian_noise_sd)
-            self.sim_human = oracle(self.all_s1_features, l_n_max=len(prob_per_level), probability_per_level=prob_per_level,
+            print("SIMULATED HUMAN has probabilities", prob_feature_selection, " AND gaussian noise sd = ", gaussian_noise_sd)
+            self.sim_human = oracle(self.all_s1_features, probability_of_feat_selec=prob_feature_selection,
                                     gaussian_noise_sd=gaussian_noise_sd, seed=random_seed, freq_dict=self.freq_dict,
                                     preference_distribution_string=preference_distribution_string)
 
@@ -435,18 +435,6 @@ class Manager:
         self.indices_used.update(chosen_indices)
         return indices_list
 
-    # ================================================================================================
-    def compute_RBUS_score(self,input_features):
-        """
-        :return:
-        """
-        #either use BLM parameter samples, or prior distribution's parameter samples
-        input_seen_features = self.relevant_features.intersection(input_features)
-        input_unseen_features = input_features.difference(input_seen_features)
-        self.learning_model_bayes
-
-
-        pass
 
     # ================================================================================================
     def store_annot_test_set(self,annot_test_set):
@@ -552,180 +540,44 @@ class Manager:
         :return:
         """
         random.seed(self.random_seed)
-        test_set_indices = random.sample(range(len(self.formatted_plan_dataset)),num_test_plans)
+        test_set_indices = random.sample(range(len(self.plan_dataset)),num_test_plans)
         #remove indices from available indices
         self.indices_used.update(test_set_indices)
-        return [self.formatted_plan_dataset[x] for x in test_set_indices]
+        return [self.plan_dataset[x] for x in test_set_indices]
+
+
 
 
     # ================================================================================================
-
-    def sample_by_DBS(self, num_samples=10):
-        """
-        :summary: Does the frequency analysis and finds all features greater than cutoff frequency.
-        NO SIZE LIMIT ! or can update code to specify if time constraints are pressing
-        :param num_samples:
-        :return:
-        """
-
-        if self.switch_to_diversity_sampling:
-            print("-------SWITCHING TO DIVERISTY SAMPLING IN DBS")
-            return self.sample_randomly(num_samples) #diversity sampling needs work
-        num_plans_needed = num_samples
-        chosen_plans = []
-        while len(chosen_plans) < num_plans_needed:  # iterate through the list
-            while True:
-                if self.sorted_plans[0][1] in self.indices_used:
-                    self.sorted_plans = self.sorted_plans[1:]
-                    continue #next iteration of the loop, DO NOT CONTINUE in the same iteration. The next one could be used too
-                #end if
-                plan = self.sorted_plans[0][0]  # FIRST rescore (may have changed features in first plan)
-                curr_score = 0.0
-                plan_feature_list = plan[1]
-                features_in_curr_plan = []
-                for single_feature in self.feature_score_dict.keys():
-                    if single_feature in self.seen_features:
-                        continue
-                    if single_feature in plan_feature_list :
-                        features_in_curr_plan.append(single_feature)
-                        curr_score += self.feature_score_dict[single_feature]
-                # end for loop through features
-                self.sorted_plans[0][-1] = curr_score
-                if self.sorted_plans[0][-1] >= self.sorted_plans[1][-1]:
-                    self.seen_features.update(features_in_curr_plan)
-                    break#no need to sort further (for now)
-                # else insert it back into the list
-                # Todo apparently good code requires one to create a user defined object with a comparison function
-                # before using python's bisenct.insort() in order to insert into a list. No extra lambda option is there.
-                # the argument is that the calling of extra lambda functions multiple times is poor code and speed.
-                # for now, I handcoded it
-                upper_idx = 0
-                lower_idx = len(self.sorted_plans) - 1
-                # curr score is already in memory
-                prev_mid_idx = 0
-                while True:
-                    mid_idx = int((upper_idx + lower_idx) / 2)
-                    if curr_score >= self.sorted_plans[mid_idx][-1]:
-                        lower_idx = mid_idx
-                    else:
-                        upper_idx = mid_idx
-                    if mid_idx == prev_mid_idx:
-                        if curr_score > self.sorted_plans[lower_idx][-1]:
-                            self.sorted_plans.insert(lower_idx, self.sorted_plans[0])
-                        else:
-                            self.sorted_plans.insert(lower_idx + 1, self.sorted_plans[0])
-                        del self.sorted_plans[0]  # remove the top copy
-                        break
-                    else:
-                        prev_mid_idx = mid_idx
-                # end while true for inserting into sorted list
-            # end while true for selecting the next top plan
-
-            # THUS FAR we have only removed the features from the score dict,
-            #WE ALSO need to reduce the score of subsumed (smaller) features FROM the bigger features that subsume them
-            single_chosen_plan = self.sorted_plans[0][0]
-            chosen_plan_features_list = single_chosen_plan[1]
-            seen_and_subsumed = []
-            for single_subsumed_feature_tupleSeq in self.subsumed_smaller_bigger_dict.keys():
-                if single_subsumed_feature_tupleSeq in chosen_plan_features_list:
-                    seen_and_subsumed.append(single_subsumed_feature_tupleSeq)
-                    bigger_features = self.subsumed_smaller_bigger_dict[single_subsumed_feature_tupleSeq]
-                    for single_bigger_feature in bigger_features:
-                        try:
-                            #this will only be done once as the subsumed feature will be removed from the dict after that.
-                            #so the score of the bigger feature will go only as low as it's true frequency.
-                            self.feature_score_dict[single_bigger_feature] -= self.subsumed_score_dict[single_subsumed_feature_tupleSeq]
-                        except KeyError: #this can happen when the bigger feature itself is subsumed. eg <a,ab,abc>
-                            pass
-            #end for loop through subsumed features
-            for single_feature in seen_and_subsumed: #remove these from the subsumed dict, so we dont repeat looking at it.
-                del self.subsumed_smaller_bigger_dict[single_feature]
-                del self.subsumed_score_dict[single_feature]
-            #end for loop
-            chosen_plans.append(copy.deepcopy(single_chosen_plan))
-            self.indices_used.add(self.sorted_plans[0][1])
-            # print("plan selected score = ", self.sorted_plans[0][-1])
-            self.sorted_plans = self.sorted_plans[1:]
-            if self.sorted_plans[0][-1] == 0.0:
-                print("SWITCHING to random sampling with diversity ")
-                self.switch_to_diversity_sampling = True
-                break;
-        # end while loop when not enough plans are in the chosen plan list
-        if self.switch_to_diversity_sampling:
-            return chosen_plans + self.sample_randomly(num_samples-len(chosen_plans)) #todo diversity sampling needs fixing
-        else:
-            return chosen_plans
-
-    # ================================================================================================
-    def compute_plan_feature_distance(self,plan_a_features,plan_b_features):
-        """
-            #includes dropping subsumed features, and CHECKING for seen features
-        :return:
-        """
-        # If the different features are subsumed, then ignore.
-        different_features = set(plan_a_features).difference(set(plan_b_features))
-        drop_features = set()
-        for single_feat in different_features:
-            if single_feat in self.seen_features:
-                drop_features.add(single_feat)
-                continue
-            try:
-                subsuming_feats_list = self.subsumed_smaller_bigger_dict[single_feat]
-                if any(x in plan_b_features for x in subsuming_feats_list):
-                    drop_features.add(single_feat)
-            except KeyError:
-                pass
-        #end for loop
-        return len(different_features.difference(drop_features))
-
-
-    # ================================================================================================
-    #DO NOT USE TAKES VERY VERY LONG
-    # def compute_average_feature_distance(self):
+    #todo redo this by simply making a function for "compute_plan_feature_distance"
+    # def sample_randomly_wDiversity(self, num_samples):
     #     """
-    #     :summary: compute the average distance (in number of features) between plans.
+    #     Take plan if greater than avg feature distance over all other seen plans.
+    #     :param num_samples:
     #     :return:
     #     """
-    #     total_distance = 0.0
-    #     for plan_a in self.formatted_plan_dataset:
-    #         for plan_b in self.formatted_plan_dataset:
-    #             if plan_a == plan_b:
-    #                 continue
-    #             total_distance += self.compute_plan_feature_distance(plan_a[1],plan_b[1])
-    #     #end inner for loop
-    #     n_val = len(self.formatted_plan_dataset)-1
-    #     self.average_feat_distance = total_distance/(n_val*(n_val+1)/2)
-
-
-    # ================================================================================================
-    def sample_randomly_wDiversity(self, num_samples):
-        """
-        Take plan if greater than avg feature distance over all other seen plans.
-        :param num_samples:
-        :return:
-        """
-        chosen_plans = []
-        available_indices = set(range(len(self.formatted_plan_dataset)))
-        available_indices.difference_update(self.indices_used)
-        available_indices.difference(self.tried_indices)
-        while len(chosen_plans) < num_samples:
-            curr_index = random.sample(available_indices,1)[0]
-            curr_plan = self.formatted_plan_dataset[curr_index]
-            avg_feat_distance = self.average_feat_distance #this is to handle the case when no seen indices are there
-            for single_seen_index in self.indices_used:
-                avg_feat_distance += \
-                    self.compute_plan_feature_distance(curr_plan[1],self.formatted_plan_dataset[single_seen_index][1])
-            #end for loop
-            avg_feat_distance /= len(self.indices_used)+1 #+1 is for the starting point of "avg_feat_distance"
-            if avg_feat_distance >= self.average_feat_distance:
-                chosen_plans.append(curr_plan)
-                self.indices_used.add(curr_index)
-            else:
-                self.tried_indices.add(curr_index)
-            #dont repeat this index
-            available_indices.remove(curr_index)
-        #end while loop
-        return chosen_plans
+    #     chosen_plans = []
+    #     available_indices = set(range(len(self.plan_dataset)))
+    #     available_indices.difference_update(self.indices_used)
+    #     available_indices.difference(self.tried_indices)
+    #     while len(chosen_plans) < num_samples:
+    #         curr_index = random.sample(available_indices,1)[0]
+    #         curr_plan = self.plan_dataset[curr_index]
+    #         avg_feat_distance = self.average_feat_distance #this is to handle the case when no seen indices are there
+    #         for single_seen_index in self.indices_used:
+    #             avg_feat_distance += \
+    #                 self.compute_plan_feature_distance(curr_plan,self.plan_dataset[single_seen_index])
+    #         #end for loop
+    #         avg_feat_distance /= len(self.indices_used)+1 #+1 is for the starting point of "avg_feat_distance"
+    #         if avg_feat_distance >= self.average_feat_distance:
+    #             chosen_plans.append(curr_plan)
+    #             self.indices_used.add(curr_index)
+    #         else:
+    #             self.tried_indices.add(curr_index)
+    #         #dont repeat this index
+    #         available_indices.remove(curr_index)
+    #     #end while loop
+    #     return chosen_plans
 
 
 
@@ -739,11 +591,12 @@ class Manager:
         :return:
         """
 
-        available_indices = set(range(len(self.formatted_plan_dataset)))
+        available_indices = set(range(len(self.plan_dataset)))
         available_indices.difference_update(self.indices_used)
+        available_indices.difference(self.tried_indices)
         new_indices_sampled = random.choices(list(available_indices), k=num_samples)
         self.indices_used.update(new_indices_sampled)
-        return [self.formatted_plan_dataset[x] for x in new_indices_sampled]
+        return [self.plan_dataset[x] for x in new_indices_sampled]
 
     # ================================================================================================
 
@@ -902,28 +755,6 @@ class Manager:
         # this composite_func_integral is the Expected gain from taking this sample
         return composite_func_integral, preference_variance
 
-    # ================================================================================================
-    def sample_for_SAME_features(self, num_samples=10):
-        """
-        :summary :
-        Sample such that we get the plan with the most number of the same features
-        :return:
-        """
-        available_indices = set(range(len(self.formatted_plan_dataset)))
-        available_indices.difference_update(self.indices_used)
-        sorted_plans = []  # should contain the PLAN, FEATURES, SCORE
-        for plan_idx in available_indices:
-            plan = self.formatted_plan_dataset[plan_idx]
-            curr_score = 0.0
-            plan_features = plan[1]
-            for single_plan_feature in plan_features:
-                if single_plan_feature in self.seen_features:
-                    curr_score += 1
-            # end for through features
-            sorted_plans.append([plan, plan_idx, curr_score])  # the plan and features are the same in this problem
-        # end for loop through plans
-        sorted_plans = sorted(sorted_plans, key=lambda x: x[-1], reverse=True)
-        return [self.formatted_plan_dataset[x] for x in  [x[1] for x in sorted_plans[0:num_samples]] ]
 
     # ================================================================================================
     def set_num_cores_RBUS(self,num_cores):
@@ -931,163 +762,6 @@ class Manager:
         """
         self.num_cores_RBUS = num_cores
 
-    # ================================================================================================
-    def sample_by_RBUS(self, num_samples = 30, include_gain = True, include_feature_distinguishing = True):
-        """
-        :summary :
-        For each of the remaining annotated data:  Use the model learned thus far, and get output distribution.
-        Multiply by the output by the information value (gain) function.  for each data point
-        Then return the highest "n" samples based on this computed value
-        :return:
-        """
-        print("RBUS RUNNING")
-        # if len(self.annotated_plans) == 0:
-        #     print("ERROR: no plans were annotated properly, just sending diversity sampling, cannot raise exception, show must go on")
-        #     return self.sample_randomly(num_samples) #todo add diverse sampling after fixing it
-        # if len(self.annotated_plans) < self.relevant_features_dimension:
-        #     #todo CRITICAL CHANGE THIS TO sample to find plans that have the most number of seen features
-        #     print("IMPORTANT: CHOOSING TO DO RANDOM SAMPLING over RBUS as the number of annotated plans < number of features")
-        #     return self.sample_randomly(num_samples)
-
-        try:
-            if self.relevant_features_dimension != self.learning_model_bayes.beta_params.shape[1]:
-                self.relearn_model(learn_LSfit=True, num_chains=2)
-        except: #will happen if the learning model has never been trained yet
-            self.relearn_model(learn_LSfit=True, num_chains=2)
-
-
-
-        num_subProcess_to_use = self.num_cores_RBUS
-        # gain_function = RBUS_selection.get_gain_function(min_value=self.min_rating,max_value=self.max_rating)
-        #TODO remove all the print statements and integral checks, will speed things up considerably
-        available_indices = set(range(len(self.formatted_plan_dataset)))
-        available_indices.difference_update(self.indices_used)
-        # print("num available points = ",len(available_indices))
-        index_value_list = [] # a list of tuples of type (index,value)
-        with CodeTimer():
-            p = Pool(num_subProcess_to_use)
-            all_parallel_params = []
-            for single_plan_idx in available_indices:
-                current_plan = self.formatted_plan_dataset[single_plan_idx][1]
-                encoded_plan = np.zeros(self.relevant_features_dimension)
-                for single_feature in current_plan:
-                    if single_feature in self.relevant_features:
-                        encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
-
-                all_parallel_params.append([self.learning_model_bayes,encoded_plan,self.min_rating,self.max_rating,include_gain])
-            #end for loop through the available indices
-            # Note the last parameter below is a LIST, each entry is for a new process
-            results = p.map(self.parallel_variance_computation,all_parallel_params)#Note the last parameter is a LIST, each entry is for a new process
-            # results = [self.parallel_variance_computation(x) for x in all_parallel_params]
-            print("size of results =",len(results))
-            for single_idx_result in zip(available_indices,results):
-                single_idx = single_idx_result[0]
-                single_result = single_idx_result[1]
-                predictions, composite_func_integral, preference_variance = single_result
-                # preference_prob_density = kernel(preference_possible_values)
-                # preference_variance = np.var(preference_prob_density)
-                # composite_func_integral = 0.0
-                # if include_gain: #saves time when we do not use gain function
-                #     gain_outputs = np.array([gain_function(x) for x in preference_possible_values])
-                #     composite_func_outputs = preference_prob_density*gain_outputs
-                #     composite_func_outputs = composite_func_outputs.reshape(composite_func_outputs.shape[0])
-                #     composite_func_integral = integrate.trapz(composite_func_outputs, preference_possible_values)
-                # # print("TEMP PRINT: The composite_func_integral of the prob*gain over the outputs is =", composite_func_integral)
-                # #this composite_func_integral is the Expected gain from taking this sample
-                index_value_list.append((single_idx,composite_func_integral,preference_variance))
-        #end codetimer profiling section
-        #---NOW we have to select top n plans such that every successive plan selected also considers diversity w.r.t to the previous plans selected
-        #the best plan is determined by normalized gain * normalized variance
-
-        if include_gain:
-            gain_array = np.array([x[1] for x in index_value_list])
-        else:
-            gain_array = np.array([1.0 for x in index_value_list])
-        gain_normalizing_denom = np.max(gain_array)
-        if gain_normalizing_denom == 0.0:
-            gain_normalizing_denom = 1.0 #avoids "nan" problem
-        norm_gain_array = gain_array/gain_normalizing_denom #normalize it
-        variance_array = np.array([x[2] for x in index_value_list])
-        var_normalizing_denom = np.max(variance_array)
-        if var_normalizing_denom == 0.0:
-            var_normalizing_denom = 1.0 #avoids "nan" problem
-        norm_variance_array = variance_array/var_normalizing_denom   # normalize it
-        norm_gain_variance_array = [norm_gain_array[x]*norm_variance_array[x] for x in range(len(norm_gain_array))]
-        #now store (idx,norm_gain*norm_variance)
-        if include_feature_distinguishing:
-            # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral for a function to always above zero
-            index_value_list = [(index_value_list[x][0],
-                                norm_gain_variance_array[x]+norm_gain_variance_array[x]/len(self.formatted_plan_dataset[x][1]))
-                                for x in range(len(index_value_list))]
-        else: #just the score and NOT sc + sc/|Feat|
-            index_value_list = [(index_value_list[x][0],norm_gain_variance_array[x]) for x in range(len(index_value_list))]
-        #NOTE the order of ENTRIES in index value list will now be fixed
-        indices_list = tuple([x[0] for x in index_value_list]) #to map plan_index (entry) to the physical index(position)
-        #see the use of indices list a little further down in code.
-        encoded_previous_plans = []
-        chosen_indices = []
-        index_value_list = sorted(index_value_list, key=lambda x: x[1],reverse=True)
-        curr_index_in_sorted_list = 0
-        while len(chosen_indices) < num_samples and len(index_value_list) > curr_index_in_sorted_list:
-            curr_max = index_value_list[curr_index_in_sorted_list]
-            curr_index_in_sorted_list += 1
-            current_plan_index = curr_max[0]
-            current_plan_encoding = self.encode_by_relevant_features(current_plan_index)
-            #check if this has the same relevant feature encoding as prev plans
-            duplicate_by_relevant_encoding = False
-            for single_prev_plan_enc  in encoded_previous_plans:
-                if np.array_equal(current_plan_encoding,single_prev_plan_enc):
-                    # todo NOTE: ?? <UNSURE> hard dropping all plans with same relevant features seems to have us choosing less important plans with high likelihood ??
-                    duplicate_by_relevant_encoding = True
-                    break
-                #end if
-            #end for
-            if not duplicate_by_relevant_encoding:
-                chosen_indices.append(current_plan_index)
-                encoded_previous_plans.append(current_plan_encoding)
-            #end if
-        #end while
-        chosen_normGainVar_values = [norm_gain_variance_array[indices_list.index(x)] for x in chosen_indices]
-        print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_normGainVar_values)
-        print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_normGainVar_values))
-        print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(norm_gain_variance_array))
-        self.indices_used.update(chosen_indices)
-        addendum = []
-        # we may NOT have enough samples from rbus if there are no more plans without duplicate encoding
-        if len(chosen_indices) < num_samples:
-            print("RBUS had too few plans w/o duplicate known feature encoding, so adding random samples w diversity of size ",num_samples-len(chosen_indices))
-            addendum = self.sample_randomly_wDiversity(num_samples-len(chosen_indices))
-
-        print("SAMPLES CHOSEN IN RBUS ",chosen_indices)
-        return addendum + [self.formatted_plan_dataset[x] for x in chosen_indices]
-
-        # todo KEEP THIS CODE
-        # LATER do soft dropping where we reweight for diversity and choose based on E(gain) AND diversity
-        # ---------------------
-        # index_value_list = tuple(index_value_list)
-        # num_remaining_plans = len(index_value_list)
-        # indices_list = tuple([x[0] for x in index_value_list])
-        # norm_gain_array = norm_gain_array/np.max(norm_gain_array) #normalize it
-        # distances_array = np.zeros(num_remaining_plans)
-        # plans_array = np.zeros((num_remaining_plans,self.relevant_features_dimension))#the each plan is along a row, the columns are the relevant features
-        # for idx in range(num_remaining_plans): #FILL the plans array
-        #     current_plan_idx = indices_list[idx]#this IS CORRECT, we need the normal idx as insertion position in plans array
-        #     plans_array[idx] = self.encode_by_relevant_features(current_plan_idx)
-        # #end for
-        # chosen_indices = []
-        # chosen_indices.append(max(index_value_list,key=lambda x:x[1])[0])
-        # while len(chosen_indices) < num_samples:
-        #     last_chosen_plan = self.formatted_plan_dataset[chosen_indices[-1]]
-        #     #compute distance with all other plans
-        #     #and add distance between this plan and all other plans to the index_distanceSum_list
-        #     tiled_plan_array = np.tile(last_chosen_plan,(num_remaining_plans,1))
-        #     difference_array = np.abs(plans_array-tiled_plan_array)
-        #     add_distances_array = np.sum(difference_array,axis=1) #sum across the columns (axis =1) (within each row)
-        #     distances_array += add_distances_array
-        #     norm_dist_array = distances_array/np.max(distances_array)
-        #     score_array = norm_dist_array*norm_gain_array
-        #     chosen_indices.append(np.where(score_array==np.max(score_array))[0])
-        # #end while loop
 
     # ================================================================================================
     def reformat_features_and_update_indices(self, annotated_plans):
@@ -1110,6 +784,9 @@ class Manager:
         self.update_indices(filtered_plans)
 
     # ================================================================================================
+
+
+
     def update_indices(self, annotated_plans):
         """
         Takes annotated plans and update indices required for R-BUS and DBS modules
@@ -1397,14 +1074,14 @@ class Manager:
         num_trivial_plans = test_set_size - 2 * per_region_num_interesting_plans
         # the above trivial plans are split into two groups as well just below the preferred mark, and just above the rejected mark as in the function comments
         # TODO remove all the print statements and integral checks, will speed things up considerably
-        available_indices = set(range(len(self.formatted_plan_dataset)))
+        available_indices = set(range(len(self.plan_dataset)))
         available_indices.difference_update(self.indices_used)
         # print("num available points = ",len(available_indices))
         index_value_list = []  # a list of tuples of type (index,value)
         with CodeTimer():
             # compute and order the predicted scores for the remaining plans
             self.sim_human.change_rating_noise(0.0) #the balanced dataset depends on true ratings
-            rated_annot_plans = self.sim_human.get_feedback(self.formatted_plan_dataset)
+            rated_annot_plans = self.sim_human.get_feedback(self.plan_dataset)
             rated_annot_plans = enumerate(rated_annot_plans,0) #start from zero
             sorted_all_results = sorted(rated_annot_plans, key=lambda x: x[1][-1], reverse=True)
             num_results = len(sorted_all_results)

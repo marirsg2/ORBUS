@@ -42,8 +42,8 @@ def test_full_cycle_and_accuracy(test_size, num_rounds , num_plans_per_round , e
         RATING_NOISE = input_rating_noise
 
 
-        manager = Manager(FEATURE_FREQ_CUTOFF= 0.05, test_set_size=test_size ,prob_per_level=prob_per_level,
-                          random_seed=random_seed,preference_distribution_string=preference_distribution_string)
+        manager = Manager(FEATURE_FREQ_CUTOFF= 0.05, test_set_size=test_size, prob_feature_selection=prob_per_level,
+                          random_seed=random_seed, preference_distribution_string=preference_distribution_string)
         pref_list = [x for x in manager.sim_human.feature_preferences_dict.items()]
         pref_list = sorted(pref_list, key=lambda x: x[0])
         print("TRUE FEATURE PREFERENCE DICT", pref_list)

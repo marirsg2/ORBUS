@@ -15,8 +15,7 @@ class oracle:
 
     def __init__(self,
                  all_s1_features,
-                 l_n_max = 2,
-                 probability_per_level = (0.75, 0.25),
+                 probability_of_feat_selec = (0.75, 0.25),
                  like_probability = 0.5,
                  seed = 18,
                  preference_distribution_string ="power_law",
@@ -26,13 +25,13 @@ class oracle:
         """
         Using self.probability_per_level assigns what this human likes and dislikes, and what features are irrelevant
         :param l_n_max: the maximum level of features. Default at 2.
-        :param probability_per_level: The probability of features that are relevant for each level of features
+        :param probability_of_feat_selec: The probability of features that are relevant for each level of features
         :param like_probability: the probability with which the user will like a relevant feature
         :param seed: to have the same preference model
         """
         self.gaussian_noise_sd = gaussian_noise_sd
-        self.probability_per_level = probability_per_level
-        if len(probability_per_level) != l_n_max:
+        self.probability_per_level = probability_of_feat_selec
+        if len(probability_of_feat_selec) != l_n_max:
             raise Exception("Did not provide probability values for all the levels of features")
 
         if seed is not None:
@@ -76,9 +75,10 @@ class oracle:
         # now assigning features he likes and dislikes.
         self.feature_preferences_dict = {}
 
+        l_n_max = 1 #HARDCODED, we assume the features are already at various lengths, and types, no more sequencing to make higher features
         if preference_distribution_string != "freq_law":
             feature_level_list = [l+1 for l in range(l_n_max)]
-            for current_feature_level, relevance_probability in zip(feature_level_list, probability_per_level):
+            for current_feature_level, relevance_probability in zip(feature_level_list, probability_of_feat_selec):
                 features_at_current_level = permutations(self.s1_features, current_feature_level)
                 for single_feature in features_at_current_level:
                     r1 = random.random()
@@ -96,7 +96,7 @@ class oracle:
             for single_feature in freq_dict.keys():
                 r1 = random.random()
                 try:
-                    relevance_probability = probability_per_level[len(single_feature)-1]
+                    relevance_probability = probability_of_feat_selec[len(single_feature) - 1]
                 except:
                     continue
                 if r1 <= relevance_probability:
@@ -137,7 +137,7 @@ class oracle:
 
         annotated_plans_list = []
         for single_plan in plans:
-            all_plan_features = single_plan[1]
+            all_plan_features = single_plan
             plan_rating = 0.0 + random.gauss(mu = 0.0, sigma=self.gaussian_noise_sd)# we start with this, and add
             # each feature rating onto it, if that feature
             # is relevant to the user.
@@ -152,46 +152,13 @@ class oracle:
                     else:
                         disliked_features.append(single_feature)
                     plan_rating += feature_preference_info[1]
-            annotated_plan = [single_plan[0],
-                              single_plan[1],
+            annotated_plan = [single_plan,
                               liked_features,
                               disliked_features,
                               plan_rating]
             annotated_plans_list.append(annotated_plan)
         return annotated_plans_list
-    # ===============================================================================
-    # def OLD_get_feedback(self, plans):
-    #     """
-    #     The input plans are in standard format - [<state-seq>, <list of features>]
-    #     :param plans: accepts a list of plans, and returns their annotated version. Will be used by R-BUS.
-    #     :return: plans in annotated format [<state-seq>, <list of features>, <liked features>, <disliked features>, rating]
-    #     """
-    #
-    #     annotated_plans_list = []
-    #     for single_plan in plans:
-    #         contained_features = single_plan[1]
-    #         plan_rating = 0.5 + random.gauss(mu = 0.0, sigma=self.gaussian_noise_sd)# we start with this, and add
-    #         # each feature rating onto it, if that feature
-    #         # is relevant to the user.
-    #         liked_features = []
-    #         disliked_features = []
-    #         for single_feature in contained_features:
-    #             if single_feature in self.feature_preferences_dict:
-    #                 # if it is present then its relevant to the preference model
-    #                 feature_preference_info = self.feature_preferences_dict[single_feature]
-    #                 if feature_preference_info[0] == "like":
-    #                     liked_features.append(single_feature)
-    #                 else:
-    #                     disliked_features.append(single_feature)
-    #                 plan_rating += feature_preference_info[1]
-    #         annotated_plan = [single_plan[0],
-    #                           single_plan[1],
-    #                           liked_features,
-    #                           disliked_features,
-    #                           plan_rating]
-    #         annotated_plans_list.append(annotated_plan)
-    #         logger.debug("Plan Rated, uncapped rating: %.4f" % plan_rating)
-    #     return annotated_plans_list
+
     # ===============================================================================
     def change_rating_noise(self,new_noise_sd):
         self.gaussian_noise_sd = new_noise_sd
