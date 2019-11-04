@@ -1,3 +1,18 @@
+
+"""
+search for "todo index"
+that is where code changes are noted
+
+PRIOR OUGHT TO BE UNIFORM PROBABILITY, but for simplicity, the prior is gaussian for blm
+
+self.relevant_features_dimension should NOT be set to feature set size EVEN if we assume all are known to be relevant.
+
+@ NEED TO COMPUTE THE UNKNOWN FEATURE CONSTANT which is the gain function x uniform distribution. Do in separate function at start
+                    and save as global var.
+                    THEN SCALE BOTH THE INTEGRAL AND THE VARIANCE
+
+
+"""
 from itertools import combinations
 from pyclustering.cluster.kmedoids import kmedoids
 from pyclustering.utils import timedcall, metric
@@ -186,7 +201,7 @@ class Manager:
                  test_set_size=1000,
                  plans_per_round = 30,
                  use_features_seen_in_plan_dataset = True,
-                 prob_per_level = (0.75,0.25),
+                 prob_per_level = (0.25), #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  relevant_features_prior_weights = (0.1, -0.1),
                  preference_distribution_string="power_law",
@@ -223,52 +238,17 @@ class Manager:
                 for feature_key in step.keys():
                     self.all_s1_features.add(feature_key)
 
-        # formatted plan dataset -- plans in the agreed upon format; plan-ids are indexes of the plans in this dataset
-        # DBS and R-BUS, happen in this dataset
-        self.formatted_plan_dataset = []
-        needs_conversion = type(list(self.plan_dataset)[0][1]) != dict #helps distinguish if plans are action seq, or state seq
-        for single_plan in self.plan_dataset:
-            state_seq = single_plan
-            if needs_conversion:
-                state_seq = self.planner.convert_actionSeq_to_StateSeq(single_plan)
-            feature_sequence = []
-            for step in state_seq:
-                non_feature_keys_set = set()#set(["x","y"])
-                for feature_key in set(step.keys()).difference(non_feature_keys_set):
-                    feature_sequence.append(feature_key)
-                    self.all_s1_features.add(feature_key)
-                #end inner for loop
-            #end for loop through state seq
-            all_features = []
-            for i in range(1,max_feature_size+1):
-                all_features += list(combinations(feature_sequence, i))
-            #end for loop
-            feature_string = "".join(feature_sequence)
-            formatted_plan = [state_seq, all_features,feature_string]
-            # all_iterables = []
-            # for i in range(1,max_feature_size+1):
-            #     all_iterables.append(combinations(feature_sequence, i))
-            # #end for loop
-            # formatted_plan = [state_seq, all_iterables]
-            self.formatted_plan_dataset.append(formatted_plan)
+
+
         self.annotated_plans = []
         self.annotated_plans_by_round = []
-        #todo NOTE THE FOLLOWING DICT SHOULD NOT BE USED FOR TRAINING.
-        self.previously_annot_plans_dict = {} #maps feature string to full annotated plan.
-        self.switch_to_diversity_sampling = False #set to true when the plan scores for selection by freq hit 0
         self.sorted_plans = []
-        self.score_dict = {}
-        self.seen_features = set()
-        self.subsumed_smaller_bigger_dict = {}#maps to the parent feature
-        self.subsumed_score_dict = {}#maps from the parent feature to the children
-        # format used - [[state-sequence], [list of features], [liked features], [disliked features], rating]
-        # this will be updated once the user annotates the presented plans
-        # after each round
-
+        self.feature_score_dict = {} #maps feature to list or array of possible parameter values
         #important data structures
         # maps feature to index in the vector to be used for DBS/RBUS purpose. So take a plan, and encode it using this
         # data structure when you want to do DBS/RBUS
         self.RBUS_indexing = []
+        self.seen_features = set()
         self.liked_features = set()
         self.disliked_features = set()
                     # print("---BIG ERROR-- RIGHT NOW ALL THE FEATURES ARE KNOWN AT THE START")
@@ -285,16 +265,13 @@ class Manager:
         self.RBUS_prior_weights = [0.0]*self.relevant_features_dimension
         self.num_cores_RBUS = 5
 
-        #now compute the features, scores, and plan sorting
-        self.average_feat_distance = 0.0
-        # self.compute_average_feature_distance() #NEVER USE THIS, TAKES FOREVER, need more efficient version
         self.tried_indices = set()
         self.freq_dict = None
-        self.feature_freq_scoring(FEATURE_FREQ_CUTOFF)
-        self.order_plans()
+        self.compute_freq_dict(self.plan_dataset,self.all_s1_features)
+        #todo INDEX 1: cleaned up till here
         if with_simulated_human:
             gaussian_noise_sd = 0.0 #start with this and then set it later as needed
-            # todo pass modules into the manager instead of instantiating it inside
+            #todo change this sim human to only use s1 features, those are all the features.
             print("SIMULATED HUMAN has probabilities", prob_per_level, " AND gaussian noise sd = ",gaussian_noise_sd)
             self.sim_human = oracle(self.all_s1_features, l_n_max=len(prob_per_level), probability_per_level=prob_per_level,
                                     gaussian_noise_sd=gaussian_noise_sd, seed=random_seed, freq_dict=self.freq_dict,
@@ -306,122 +283,169 @@ class Manager:
         self.results_by_round = []
     # ================================================================================================
 
-    def compute_freq_dict(self, formatted_plan_dataset, features_set):
+    def compute_freq_dict(self, plan_dataset, features_set):
         """
         :summary:
-        :param formatted_plan_dataset: at index 1, must have the sequence of features in the plan
+        :param plan_dataset: at index 1, must have the sequence of features in the plan
         :param features_set:
         :return:
         """
-        dataset_size = len(formatted_plan_dataset)
+        dataset_size = len(plan_dataset)
         freq_dict = {x: 0 for x in features_set}
-        for plan in formatted_plan_dataset:
+        for plan in plan_dataset:
             plan_features = plan[1]
-            for feature_seq_tuple in features_set:
-                if self.check_for_feature(feature_seq_tuple,plan_features):
-                    freq_dict[feature_seq_tuple] += 1 / dataset_size  # this was the freq is automatically calculated at the end
+            for feature in features_set:
+                if feature in plan:
+                    freq_dict[feature] += 1 / dataset_size  # this will sum up to the freq at the end
             # end for loop through features
         # end for loop through plans
         return freq_dict
 
 
     # ================================================================================================
-    def feature_freq_scoring(self,FREQ_CUTOFF = 0.20):
-        """
-        :summary : find all features greater than the cutoff and score each feature by it's frequency
-        :return:
-        """
-
-        # the following code is done so that you can have tuples of size 1
-        base_s1_features = [(x,) for x in self.all_s1_features]
-        new_set_features_to_measure = base_s1_features
-        while len(new_set_features_to_measure) > 0:
-            with CodeTimer():
-                freq_results_dict = self.compute_freq_dict(self.formatted_plan_dataset, new_set_features_to_measure)
-            freq_results_items = freq_results_dict.items()
-            filtered_freq_results = [x for x in freq_results_items if x[1] > FREQ_CUTOFF]
-            filtered_features_set = set([x[0] for x in filtered_freq_results])
-            filtered_score_dict = dict(filtered_freq_results)
-            self.score_dict = {**(self.score_dict),**filtered_score_dict}  # new dict merge in python 3.5. Shallow merge (one level), with 2nd dict getting precedence
-            new_set_features_to_measure = set()
-            for precursor_feature in filtered_features_set: #do NOT need to ALSO do all_s1->filtered because a+bc will be in ab+c
-                for successor_feature in base_s1_features:
-                    new_feature = tuple(list(precursor_feature) + list(successor_feature))
-                    new_set_features_to_measure.add(new_feature)
-                #end inner for
-            #end outer for
-        # end while loop
-        print("BEFORE subsuming checks")
-        print("The score dict keys ",sorted(list(self.score_dict.keys())))
-        print("The num keys",len(self.score_dict.keys()))
-        self.freq_dict = copy.deepcopy(self.score_dict)
-        # remove subsumed features
-        # todo NOTE this was important because (by example) if ab and cd and klm were freq and in a plan, and we scored ab and cd
-        #  then that plan would be chosen over a plan with abcd which was also a (less) frequent pattern. but abcd subsumes ab and cd.
-        #  we would kill two birds with one stone. HOWEVER if another plan has a better pattern and also ab cd (separately), then the
-        #  score for abcd should go down. Hence we track the subsumption dict. CAN BE SUBSUMED BY MORE THAN ONE !
-        all_feature_seq = self.score_dict.keys()
-        for primary_feature_tuple_seq in all_feature_seq:
-            for compared_feature_tuple_seq in all_feature_seq:
-                if primary_feature_tuple_seq == compared_feature_tuple_seq:  # and note that there should NOT be any duplicates.
-                    continue
-                if len(compared_feature_tuple_seq) < len(primary_feature_tuple_seq):
-                    continue #cannot be a subsequence
-                primary_feature_len = len(primary_feature_tuple_seq)
-                compared_feature_len = len(compared_feature_tuple_seq)
-                #check for substring matching at any of the possible start indices
-                if any((all(primary_feature_tuple_seq[j] == compared_feature_tuple_seq[i + j] for j in range(primary_feature_len))
-                                                for i in range(compared_feature_len - primary_feature_len + 1))):
-                    try:
-                        self.subsumed_smaller_bigger_dict[primary_feature_tuple_seq].append(compared_feature_tuple_seq)
-                    except KeyError:
-                        self.subsumed_smaller_bigger_dict[primary_feature_tuple_seq] = [compared_feature_tuple_seq]
-
-                # end if all the elements in the features match
-            # end for loop through the compared features
-        # end for loop through the primary features
-
-        features_to_subsume = list(self.subsumed_smaller_bigger_dict.keys())
-        for feature in features_to_subsume:
-            subsuming_features = self.subsumed_smaller_bigger_dict[feature]
-            for single_subsuming_feature in subsuming_features:
-                if single_subsuming_feature not in features_to_subsume: #this check ensures that we do not increase the score of ab in the case <a,ab,abc>
-                    self.score_dict[single_subsuming_feature] += self.score_dict[feature]  # INCREASE THE SCORE
-            self.subsumed_score_dict[feature] = self.score_dict[feature]
-            del self.score_dict[feature]
-        print("AFTER subsuming checks")
-        print("The score dict keys ",sorted(list(self.score_dict.keys())))
-        print("The num keys",len(self.score_dict.keys()))
-
-    # ---end function
-
-    # ================================================================================================
-    def order_plans(self):
+    def get_plans_for_round(self,num_plans=30, use_gain_function=True,include_feature_distinguishing= True,include_probability_term = True):
         """
         :param self:
         :return:
         """
         sorted_plans = []  # should contain the PLAN, FEATURES, SCORE
-        for plan_idx in range(len(self.formatted_plan_dataset)):
-            plan = self.formatted_plan_dataset[plan_idx]
-            curr_score = 0.0
-            plan_features = plan[1]
-            for feature_seq_tuple in self.score_dict.keys():
-                if self.check_for_feature(feature_seq_tuple,plan_features):
-                    curr_score += self.score_dict[feature_seq_tuple]
-            # end for through features
-            sorted_plans.append([plan, plan_idx, curr_score])  # the plan and features are the same in this problem
-        # end for loop through plans
-        self.sorted_plans = sorted(sorted_plans, key=lambda x: x[-1], reverse=True)
+
+        print("RBUS RUNNING")
+        # if len(self.annotated_plans) == 0:
+        #     print("ERROR: no plans were annotated properly, just sending diversity sampling, cannot raise exception, show must go on")
+        #     return self.sample_randomly(num_samples) #todo add diverse sampling after fixing it
+        # if len(self.annotated_plans) < self.relevant_features_dimension:
+        #     #todo CRITICAL CHANGE THIS TO sample to find plans that have the most number of seen features
+        #     print("IMPORTANT: CHOOSING TO DO RANDOM SAMPLING over RBUS as the number of annotated plans < number of features")
+        #     return self.sample_randomly(num_samples)
+
+        try:
+            if self.relevant_features_dimension != self.learning_model_bayes.beta_params.shape[1]:
+                self.relearn_model(learn_LSfit=True, num_chains=2)
+        except:  # will happen if the learning model has never been trained yet
+            self.relearn_model(learn_LSfit=True, num_chains=2)
+
+        num_subProcess_to_use = self.num_cores_RBUS
+        # gain_function = RBUS_selection.get_gain_function(min_value=self.min_rating,max_value=self.max_rating)
+        # TODO remove all the print statements and integral checks, will speed things up considerably
+        available_indices = set(range(len(self.plan_dataset)))
+        available_indices.difference_update(self.indices_used)
+        # print("num available points = ",len(available_indices))
+        index_value_list = []  # a list of tuples of type (index,value)
+        with CodeTimer():
+            p = Pool(num_subProcess_to_use)
+            all_parallel_params = []
+
+            # check and divide here if a plan has any features seen, or all unseen.
+            # where available indices is used below, replace with blm_indices.
+            # do gain *uniform distr for the unseen features and take weighted sum.
+
+            # if self.relevant_features_dimension != 0:
+            blm_indices = []
+            non_blm_indices = []
+            dict_blm_idx_to_num_relev = {}
+            for single_plan_idx in available_indices:
+                current_plan = self.plan_dataset[single_plan_idx][1]
+                encoded_plan = np.zeros(self.relevant_features_dimension)
+                for single_feature in current_plan:
+                    num_relevant = 0
+                    if single_feature in self.relevant_features:
+                        encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
+                        blm_indices.append(single_plan_idx)
+                        num_relevant +=1
+                    if num_relevant > 0:
+                        dict_blm_idx_to_num_relev[single_plan_idx] = num_relevant
+                    else:
+                        non_blm_indices.append(single_plan_idx)
+
+                #end for through features
+                all_parallel_params.append(
+                    [self.learning_model_bayes, encoded_plan, self.min_rating, self.max_rating, use_gain_function])
+            # end for loop through the available indices
+            # Note the last parameter below is a LIST, each entry is for a new process
+            results = p.map(self.parallel_variance_computation,
+                            all_parallel_params)  # Note the last parameter is a LIST, each entry is for a new process
+            # results = [self.parallel_variance_computation(x) for x in all_parallel_params]
+
+            unknown_features_score_weight,unknown_features_variance = self.unknown_feature_score_computation([self.min_rating, self.max_rating, use_gain_function])
+
+            for single_idx_and_result in zip(blm_indices, results):
+                single_plan_idx = single_idx_and_result[0]
+                single_result = single_idx_and_result[1]
+                composite_func_integral, preference_variance = single_result
+                #adjust the scores based on the number of relevant/known vs unknown features
+                num_relev = dict_blm_idx_to_num_relev[single_plan_idx]
+                num_unknown = set(self.plan_dataset[single_plan_idx]).difference(self.seen_features)
+                num_valid_features = num_relev + num_unknown
+                updated_score = (composite_func_integral*num_relevant + unknown_features_score_weight*num_unknown)/num_valid_features
+                updated_variance_score = (preference_variance*num_relevant + unknown_features_variance*num_unknown)/num_valid_features
+                index_value_list.append((single_plan_idx, updated_score, updated_variance_score,num_valid_features))
+            #now for those plans that did not have any known relevant features
+            for single_plan_idx in non_blm_indices:
+                num_unknown = set(self.plan_dataset[single_plan_idx]).difference(self.seen_features)
+                num_valid_features = num_unknown
+                index_value_list.append((single_plan_idx, unknown_features_score_weight, unknown_features_variance,num_unknown))
+
+
+        # end codetimer profiling section
+        # ---NOW we have to select top n plans such that every successive plan selected also considers diversity w.r.t to the previous plans selected
+        # the best plan is determined by normalized gain * normalized variance
+
+        if use_gain_function:
+            gain_array = np.array([x[1] for x in index_value_list])
+        else:
+            gain_array = np.array([1.0 for x in index_value_list])
+        gain_normalizing_denom = np.max(gain_array)
+        if gain_normalizing_denom == 0.0:
+            gain_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+        variance_array = np.array([x[2] for x in index_value_list])
+        var_normalizing_denom = np.max(variance_array)
+        if var_normalizing_denom == 0.0:
+            var_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        norm_gain_variance_array = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        # now store (idx,norm_gain*norm_variance)
+        addendum = [0.0]*len(index_value_list)
+        if include_feature_distinguishing:
+            # += score/|features|
+            # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral for a function to always above zero
+            addendum = [addendum[x] + norm_gain_variance_array[x]/index_value_list[x][-1] for x in range(len(index_value_list))]
+        if include_probability_term:
+            # += score*plan_probability
+            addendum = [addendum[x] + norm_gain_variance_array[x]*self.compute_prob_plan(self.plan_dataset[index_value_list[x][0]]) for x in range(len(index_value_list))]
+        #now update the score and store
+        index_value_list = [(index_value_list[x][0], norm_gain_variance_array[x]+addendum[x]) for x in
+                            range(len(index_value_list))]
+        # NOTE the order of ENTRIES in index value list will now be fixed
+        indices_list = tuple([x[0] for x in index_value_list])  # to map plan_index (entry) to the physical index(position)
+        # see the use of indices list a little further down in code.
+
+        chosen_indices = []
+        chosen_scores = []
+        while len(chosen_indices < num_plans):
+            a = max(index_value_list,key=lambda x:x[1])
+            chosen_indices.append(a[0])
+            chosen_scores.append(a[1])
+            index_value_list.remove(a)
+
+        print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
+        print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
+        print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(norm_gain_variance_array+addendum))
+        self.indices_used.update(chosen_indices)
+        return indices_list
 
     # ================================================================================================
-    def conduct_rounds(self):
+    def compute_RBUS_score(self,input_features):
         """
-
         :return:
         """
+        #either use BLM parameter samples, or prior distribution's parameter samples
+        input_seen_features = self.relevant_features.intersection(input_features)
+        input_unseen_features = input_features.difference(input_seen_features)
+        self.learning_model_bayes
 
-        #TODO NOT YET USED OR TESTED
+
         pass
 
     # ================================================================================================
@@ -559,12 +583,12 @@ class Manager:
                 curr_score = 0.0
                 plan_feature_list = plan[1]
                 features_in_curr_plan = []
-                for single_feature in self.score_dict.keys():
+                for single_feature in self.feature_score_dict.keys():
                     if single_feature in self.seen_features:
                         continue
                     if single_feature in plan_feature_list :
                         features_in_curr_plan.append(single_feature)
-                        curr_score += self.score_dict[single_feature]
+                        curr_score += self.feature_score_dict[single_feature]
                 # end for loop through features
                 self.sorted_plans[0][-1] = curr_score
                 if self.sorted_plans[0][-1] >= self.sorted_plans[1][-1]:
@@ -610,7 +634,7 @@ class Manager:
                         try:
                             #this will only be done once as the subsumed feature will be removed from the dict after that.
                             #so the score of the bigger feature will go only as low as it's true frequency.
-                            self.score_dict[single_bigger_feature] -= self.subsumed_score_dict[single_subsumed_feature_tupleSeq]
+                            self.feature_score_dict[single_bigger_feature] -= self.subsumed_score_dict[single_subsumed_feature_tupleSeq]
                         except KeyError: #this can happen when the bigger feature itself is subsumed. eg <a,ab,abc>
                             pass
             #end for loop through subsumed features
@@ -757,6 +781,67 @@ class Manager:
         # this composite_func_integral is the Expected gain from taking this sample
         return predictions, composite_func_integral, preference_variance
 
+
+    # ================================================================================================
+    @staticmethod
+    def unknown_feature_score_computation(input_list):
+        """
+
+        :param input_list:
+        :return:
+        """
+        def get_gain_function(min_value, max_value, lower_percentile = 0.2, upper_percentile = 0.8):
+            """
+            :summary: abstract gain function
+            :param x_value:
+            :return:
+            :return:
+            """
+            range = max_value - min_value
+            lower_fifth = min_value + range * lower_percentile
+            upper_fifth = min_value + range * upper_percentile
+            scaled_std_dev = range * 0.1
+            return get_biModal_gaussian_gain_function(lower_fifth, upper_fifth, scaled_std_dev)
+        # --------------
+        def get_biModal_gaussian_gain_function(a=0.2, b=0.8, sd=0.1):
+            """
+            :summary: It averages two gaussians at means "a" and "b" who have the same std deviation.
+            There is no special property with probabilities and summing to 1 in this application. Only relative gain values
+            that match what we need.
+            :param x_value:
+            :param a: IS NOT PERCENTILE, but absolute values
+            :param b:
+            :return: the function
+            """
+            gain_a = norm(a, sd)
+            gain_b = norm(b, sd)
+            return lambda x: (gain_a.pdf(x) + gain_b.pdf(x)) / 2
+        #-----end inner function get_biModal_gaussian_gain_function
+
+        min_rating, max_rating, include_gain  = input_list
+        preference_possible_values = np.linspace(min_rating, max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
+        gain_function = get_gain_function(min_rating,max_rating)
+        #todo index 3 the distribution for unknown feature weights is uniform
+        preference_prob_density = [1/(max_rating-min_rating)]*len(preference_possible_values)
+        normalizing_denom = np.sum(preference_prob_density)
+        if normalizing_denom == 0.0:
+            normalizing_denom = 1.0 # THIS IS VERY HACKY and needed to avoid nan, that occurs when there are no features, and alpha is deterministic
+        #todo NOTE this is HACKY/SAMPLING APPROACH of computing the mean value. It is not mathematically valid, but WORKS if x axis is sampled sufficiently
+        # AND very fast + works well
+        mean_preference = np.sum(preference_prob_density * preference_possible_values) / normalizing_denom
+        preference_variance = np.sum(np.square(preference_possible_values - mean_preference) * preference_prob_density) / normalizing_denom
+        composite_func_integral = 0.0
+        if include_gain:  # saves time when we do not use gain function
+            gain_outputs = np.array([gain_function(x) for x in preference_possible_values])
+            composite_func_outputs = preference_prob_density * gain_outputs #elementwise product of two vectors
+            composite_func_outputs = composite_func_outputs.reshape(composite_func_outputs.shape[0])
+            #todo MAYBE USE THE SAMPLING APPROACH HERE AS WELL !! speed it up considerably !!
+            composite_func_integral = integrate.trapz(composite_func_outputs, preference_possible_values)
+        # print("TEMP PRINT: The composite_func_integral of the prob*gain over the outputs is =", composite_func_integral)
+        # this composite_func_integral is the Expected gain from taking this sample
+        return composite_func_integral, preference_variance
+
+
     # ================================================================================================
     @staticmethod
     def parallel_variance_computation(input_list):
@@ -794,8 +879,6 @@ class Manager:
         #-----end inner function get_biModal_gaussian_gain_function
 
         learning_model_bayes,encoded_plan, min_rating, max_rating, include_gain  = input_list
-        min_rating = min_rating #sample from a large spread
-        max_rating = max_rating
         preference_possible_values = np.linspace(min_rating, max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
         predictions, kernel = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
                                                                                               num_samples=NUM_SAMPLES_KDE)
@@ -811,13 +894,13 @@ class Manager:
         composite_func_integral = 0.0
         if include_gain:  # saves time when we do not use gain function
             gain_outputs = np.array([gain_function(x) for x in preference_possible_values])
-            composite_func_outputs = preference_prob_density * gain_outputs
+            composite_func_outputs = preference_prob_density * gain_outputs #elementwise product of two vectors
             composite_func_outputs = composite_func_outputs.reshape(composite_func_outputs.shape[0])
             #todo MAYBE USE THE SAMPLING APPROACH HERE AS WELL !! speed it up considerably !!
             composite_func_integral = integrate.trapz(composite_func_outputs, preference_possible_values)
         # print("TEMP PRINT: The composite_func_integral of the prob*gain over the outputs is =", composite_func_integral)
         # this composite_func_integral is the Expected gain from taking this sample
-        return predictions,composite_func_integral, preference_variance
+        return composite_func_integral, preference_variance
 
     # ================================================================================================
     def sample_for_SAME_features(self, num_samples=10):
@@ -858,13 +941,13 @@ class Manager:
         :return:
         """
         print("RBUS RUNNING")
-        if len(self.annotated_plans) == 0:
-            print("ERROR: no plans were annotated properly, just sending diversity sampling, cannot raise exception, show must go on")
-            return self.sample_randomly(num_samples) #todo add diverse sampling after fixing it
-        if len(self.annotated_plans) < self.relevant_features_dimension:
-            #todo CRITICAL CHANGE THIS TO sample to find plans that have the most number of seen features
-            print("IMPORTANT: CHOOSING TO DO RANDOM SAMPLING over RBUS as the number of annotated plans < number of features")
-            return self.sample_randomly(num_samples)
+        # if len(self.annotated_plans) == 0:
+        #     print("ERROR: no plans were annotated properly, just sending diversity sampling, cannot raise exception, show must go on")
+        #     return self.sample_randomly(num_samples) #todo add diverse sampling after fixing it
+        # if len(self.annotated_plans) < self.relevant_features_dimension:
+        #     #todo CRITICAL CHANGE THIS TO sample to find plans that have the most number of seen features
+        #     print("IMPORTANT: CHOOSING TO DO RANDOM SAMPLING over RBUS as the number of annotated plans < number of features")
+        #     return self.sample_randomly(num_samples)
 
         try:
             if self.relevant_features_dimension != self.learning_model_bayes.beta_params.shape[1]:
@@ -932,7 +1015,7 @@ class Manager:
         norm_gain_variance_array = [norm_gain_array[x]*norm_variance_array[x] for x in range(len(norm_gain_array))]
         #now store (idx,norm_gain*norm_variance)
         if include_feature_distinguishing:
-            # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral
+            # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral for a function to always above zero
             index_value_list = [(index_value_list[x][0],
                                 norm_gain_variance_array[x]+norm_gain_variance_array[x]/len(self.formatted_plan_dataset[x][1]))
                                 for x in range(len(index_value_list))]

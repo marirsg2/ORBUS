@@ -5,16 +5,17 @@
 import pickle
 import random
 NUM_PLANS_NEEDED = 10000
-NUM_FEATURES = 10
-HIGH_OCCURRENCE_COUNT =300
+NUM_FEATURES = 20
+HIGH_OCCURRENCE_COUNT =300 #these counts are used as weights for generating plans
 MED_OCCURRENCE_COUNT =100
 LOW_OCCURRENCE_COUNT =10
-MAX_LENGTH = 6 #prob that the plan will end with this step
-RATIO_HIGH_FREQ_FEATURES = 0.1
+MAX_LENGTH = 5 #prob that the plan will end with this step
+RATIO_HIGH_FREQ_FEATURES = 0.03
 RATIO_MED_FREQ_FEATURES = 0.2
 
 dest_pickle_file_name = "default_plans_pool.p"
 all_plans = set()
+all_features = set()
 s1_features = [x for x in "abcdefghijklmnopqrstuvwxyz"] #are represented by letters
 s1_features = s1_features[:NUM_FEATURES]
 s1_counts= [LOW_OCCURRENCE_COUNT]*len(s1_features) # this will EITHER be converted into probabilities.or be used as weights to sample
@@ -22,9 +23,9 @@ num_high_freq = int(RATIO_HIGH_FREQ_FEATURES*NUM_FEATURES)
 num_med_freq = int(RATIO_MED_FREQ_FEATURES*NUM_FEATURES) #the rest are low freq
 chosen_features = set()
 
-high_freq_features = random.sample(set(s1_features).difference(chosen_features),num_high_freq)
-chosen_features.update(high_freq_features)
-for single_feat in high_freq_features:
+high_freq_s1_features = random.sample(set(s1_features).difference(chosen_features), num_high_freq)
+chosen_features.update(high_freq_s1_features)
+for single_feat in high_freq_s1_features:
     s1_counts[s1_features.index(single_feat)] = HIGH_OCCURRENCE_COUNT
 #---end for
 med_freq_features = random.sample(set(s1_features).difference(chosen_features),num_med_freq)
