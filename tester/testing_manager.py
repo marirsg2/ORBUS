@@ -15,13 +15,14 @@ matplotlib.use("TkAgg")
 #====================================================
 
 
-def test_full_cycle_and_accuracy(test_size, num_rounds , num_plans_per_round , exploration_rounds , num_dbs_samples,random_sampling_enabled = False,
-                                 include_gain = False,include_feature_distinguishing=True,random_seed = 40,
-                                 manager_pickle_file = None,input_rating_noise =0.0,
-                                 prob_per_level=(0.1, 0.1),preference_distribution_string="power_law"):
+def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, random_sampling_enabled = False,
+                                 include_gain = False, include_feature_distinguishing=True,include_prob_term = True,
+                                 random_seed = 40,
+                                 manager_pickle_file = None, input_rating_noise =0.0,
+                                 prob_feat_select= 0.2, preference_distribution_string="power_law"):
 
     learn_LSfit = True
-    print("doing probability per level =", prob_per_level)
+    print("doing probability per level =", prob_feat_select)
     print("RANOM SAMPLING ENABLED = ",random_sampling_enabled)
     print("Rating Noise =", input_rating_noise)
     in_region_error = []
@@ -41,8 +42,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds , num_plans_per_round , e
     except :
         RATING_NOISE = input_rating_noise
 
-
-        manager = Manager(FEATURE_FREQ_CUTOFF= 0.05, test_set_size=test_size, prob_feature_selection=prob_per_level,
+        manager = Manager(prob_feature_selection=prob_feat_select,
                           random_seed=random_seed, preference_distribution_string=preference_distribution_string)
         pref_list = [x for x in manager.sim_human.feature_preferences_dict.items()]
         pref_list = sorted(pref_list, key=lambda x: x[0])
@@ -68,46 +68,24 @@ def test_full_cycle_and_accuracy(test_size, num_rounds , num_plans_per_round , e
     print(sorted(scores))
 
     manager.sim_human.change_rating_noise(input_rating_noise)  # SET NOISE IN RATING
-    #now sample
+
     random.seed(random_seed)
-    if exploration_rounds == 0:
-        exploration_rounds += 1
-    # end if
 
     for round_num in range(num_rounds):
         print("============ ROUND ",round_num,"====================")
-        if round_num < exploration_rounds:
-            if random_sampling_enabled:
-                sampled_plans = manager.sample_randomly(num_plans_per_round)
-                # sampled_plans = manager.sample_randomly_wDiversity(num_plans_per_round)
-                # sampled_plans = manager.sample_randomly(num_plans_per_round)
-            else:
-                sampled_plans = manager.sample_by_DBS(num_plans_per_round)
-        else:
-            #----exploratory sampling
-            if random_sampling_enabled:
-                sampled_plans = manager.sample_randomly(num_dbs_samples)
-                # sampled_plans = manager.sample_randomly_wDiversity(num_dbs_samples)
 
-            else:
-                sampled_plans = manager.sample_by_DBS( num_dbs_samples)
-            #---also sample by rbus to exploit the features discovered
-            if random_sampling_enabled:
-                sampled_plans += manager.sample_randomly(num_samples=num_plans_per_round - num_dbs_samples)
-                # sampled_plans += manager.sample_randomly_wDiversity(num_samples=num_plans_per_round - num_dbs_samples)
-                # sampled_plans += manager.sample_for_SAME_features(num_samples=num_plans_per_round - num_dbs_samples)
-                # sampled_plans += manager.sample_by_DBS(num_samples=num_plans_per_round - num_dbs_samples)
-            else:
-                sampled_plans += manager.sample_by_RBUS(num_samples=num_plans_per_round - num_dbs_samples,
-                                            include_gain = include_gain,include_feature_distinguishing=include_feature_distinguishing)
-        #end outer else if we are past the exploratory rounds
+        if random_sampling_enabled:
+            sampled_plans = manager.sample_randomly(num_plans_per_round)
+        else:
+            sampled_plans = manager.get_plans_for_round(num_plans_per_round)
+
         annotated_plans = manager.get_feedback(sampled_plans)
         #analyze the plans sampled. For each plan print the number of s1 features, s2 features,etc WITH their associated
         # freq and score
         sampled_plan_analytics = []
         for single_plan in annotated_plans:
             #get the liked and disliked features
-            all_features = single_plan[-2] + single_plan[-3]
+            all_features = single_plan[0]
             feature_analytics = []
             feature_count_by_size = {}
             for single_feature in all_features:
@@ -130,22 +108,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds , num_plans_per_round , e
             learn_LSfit = True
         #end if
         manager.update_indices(annotated_plans)
-        global_feature_analytics = []
-        feature_count_by_size = {}
-        for single_feature in manager.relevant_features:
-            try:
-                feature_count_by_size[len(single_feature)] += 1
-            except:
-                feature_count_by_size[len(single_feature)] = 1
-            try:
-                global_feature_analytics.append((single_feature,
-                                          manager.freq_dict[single_feature],
-                                          manager.sim_human.feature_preferences_dict[single_feature]))
-            except:
-                pass
-        # end for loop over all features
-        global_feature_analytics = sorted(global_feature_analytics, key=lambda x: x[1],reverse=True)
-        print(" ALL SEEN FEATURES ANALYTICS = ", global_feature_analytics)
+
         manager.relearn_model(learn_LSfit, num_chains=2) # here is where we first train the model
         #todo REMOVE THIS and maybe move it to replace the test set
         # manager.select_best_and_worst(30)
@@ -228,21 +191,22 @@ def test_basic_MV_linModel(toy_data_input, toy_data_output):
     print("Intercept: %.4f" % reg.intercept_)
 
 
-def Active_Learning_Testing(total_num_plans = 240,plans_per_round = 30,random_seed = 150,noise_value = 1.0,random_sampling_enabled = False,
-                            include_gain=True,include_feature_distinguishing=True,manager_pickle_file = "default_man.p",
-                             prob_per_level=(0.1, 0.1),preference_distribution_string="power_law"):
+def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_seed = 150, noise_value = 1.0, random_sampling_enabled = False,
+                            include_gain=True, include_feature_distinguishing=True, include_prob_term=True, manager_pickle_file = "default_man.p",
+                            prob_feat_select= 0.2, preference_distribution_string="power_law"):
 
-    #todo remove all features known in "manager"
-    print ("doing probability per level =", prob_per_level)
+
+    print ("doing probability per level =", prob_feat_select)
     print(manager_pickle_file)
     for i in range(1):
         with CodeTimer():
             NOgain_in_region_error,NOgain_out_region_error, NOgain_bayes_error_list,NOgain_MLE_error_list = \
                 test_full_cycle_and_accuracy(test_size=1000, num_rounds = int(total_num_plans/plans_per_round),
-                    num_plans_per_round = plans_per_round,exploration_rounds= int(0.33 * total_num_plans/plans_per_round),num_dbs_samples=int(plans_per_round/5),
-                    random_sampling_enabled = random_sampling_enabled, include_gain=include_gain,include_feature_distinguishing=include_feature_distinguishing,
-                    random_seed= random_seed, manager_pickle_file=manager_pickle_file,input_rating_noise=noise_value,
-                                             prob_per_level=prob_per_level,preference_distribution_string=preference_distribution_string)
+                                             num_plans_per_round = plans_per_round,
+                                             random_sampling_enabled = random_sampling_enabled, include_gain=include_gain, include_feature_distinguishing=include_feature_distinguishing,
+                                             include_prob_term = include_prob_term,
+                                             random_seed= random_seed, manager_pickle_file=manager_pickle_file, input_rating_noise=noise_value,
+                                             prob_feat_select=prob_feat_select, preference_distribution_string=preference_distribution_string)
 
 
 
@@ -266,35 +230,10 @@ def Active_Learning_Testing(total_num_plans = 240,plans_per_round = 30,random_se
 
 if __name__ == "__main__":
 
-    #todo NOTE the number of plans is 180
-    #
-
-    # repeat for 0.2 0.7, this will reduce the num features to much less than 120, (num exploration plans)
-    # TEST your theory that starting bayes model must be good.
-
-    Active_Learning_Testing(total_num_plans = 210,plans_per_round = 30,random_seed = 150,noise_value = 0.6,random_sampling_enabled = True,
-                                    include_gain=False,include_feature_distinguishing=False,manager_pickle_file = "man_02_07_n06.p",
-                                        prob_per_level=(0.2, 0.7),preference_distribution_string="power_law")
-
-    # Active_Learning_Testing(total_num_plans = 240,plans_per_round = 30,random_seed = 150,noise_value = 1.0,random_sampling_enabled = False,
-    #                                 include_gain=False,include_feature_distinguishing=False,manager_pickle_file = "new_man.p",
-    #                                     prob_per_level=(0.3, 0.2),preference_distribution_string="power_law")
-
-    # Active_Learning_Testing(total_num_plans = 240,plans_per_round = 30,random_seed = 150,noise_value = 1.0,random_sampling_enabled = False,
-    #                                 include_gain=False,include_feature_distinguishing=True,manager_pickle_file = "new_man.p",
-    #                                     prob_per_level=(0.3, 0.2),preference_distribution_string="power_law")
+    now do testing from here !!
 
 
-    # Active_Learning_Testing(total_num_plans = 240,plans_per_round = 30,random_seed = 150,noise_value = 1.0,random_sampling_enabled = False,
-    #                                 include_gain=True,include_feature_distinguishing=False,manager_pickle_file = "new_man.p",
-    #                                     prob_per_level=(0.3, 0.2),preference_distribution_string="power_law")
-
-
-    # Active_Learning_Testing(total_num_plans = 210,plans_per_round = 30,random_seed = 150,noise_value = 0.6,random_sampling_enabled = False,
-    #                                 include_gain=True,include_feature_distinguishing=True,manager_pickle_file = "man_02_07_n06.p",
-    #                                 prob_per_level=(0.2, 0.7),preference_distribution_string="power_law")
-    #
-    # Also try different cases, it maybe that you're sampling with bayes is good enough to discover others.
-    #
-    # On the bright side, you are outdoing random sampling.
+    Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.6, random_sampling_enabled = True,
+                            include_gain=False, include_feature_distinguishing=False, include_prob_term =True, manager_pickle_file = "man_02_n06.p",
+                            prob_feat_select= 0.2, preference_distribution_string="power_law")
 
