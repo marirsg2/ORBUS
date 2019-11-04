@@ -234,11 +234,8 @@ class Manager:
 
         self.all_s1_features = set()
         for plan in self.plan_dataset:
-            for step in plan:
-                for feature_key in step.keys():
-                    self.all_s1_features.add(feature_key)
-
-
+            for feature in plan:
+                self.all_s1_features.add(feature)
 
         self.annotated_plans = []
         self.annotated_plans_by_round = []
@@ -293,13 +290,12 @@ class Manager:
         dataset_size = len(plan_dataset)
         freq_dict = {x: 0 for x in features_set}
         for plan in plan_dataset:
-            plan_features = plan[1]
             for feature in features_set:
                 if feature in plan:
                     freq_dict[feature] += 1 / dataset_size  # this will sum up to the freq at the end
             # end for loop through features
         # end for loop through plans
-        return freq_dict
+        self.freq_dict = freq_dict
 
 
     # ================================================================================================
@@ -798,9 +794,9 @@ class Manager:
         liked_features = set()
         disliked_features = set()
         for single_plan in annotated_plans:
-            liked_features.update(single_plan[2])
-            disliked_features.update(single_plan[3])
-            if len(single_plan[2]) + len(single_plan[3]) == 0:
+            liked_features.update(single_plan[1])
+            disliked_features.update(single_plan[2])
+            if len(single_plan[1]) + len(single_plan[2]) == 0:
                 continue #disregard this plan
             self.annotated_plans.append(single_plan)
         #end for loop through annotated plans
@@ -824,27 +820,20 @@ class Manager:
                     self.relevant_features_prior_weights[1]
 
     #================================================================================================
-    def get_feedback(self,plans):
+    def get_feedback(self,all_plans):
         """
 
         :param plans:
         :return:
         """
-        left_over_plans = []
         annot_plans = []
-        for single_plan in plans:
-            try:
-                annot_plans.append(self.previously_annot_plans_dict[single_plan[2]])
-            except KeyError:
-                left_over_plans.append(single_plan)
+
 
         #todo SAVE all the feedback annotations and ratings, so the noise is consistent across all the methods
-        if len(left_over_plans) > 0:
-            print("ANNOTATION NEW PLANS of size ",len(left_over_plans))
-        newly_annot_plans = self.sim_human.get_feedback(left_over_plans)
+        if len(all_plans) > 0:
+            print("ANNOTATION NEW PLANS of size ",len(all_plans))
+        newly_annot_plans = self.sim_human.get_feedback(all_plans)
         annot_plans += newly_annot_plans
-        for single_new_annot_idx in range(len(newly_annot_plans)):
-            self.previously_annot_plans_dict[left_over_plans[single_new_annot_idx][2]] = newly_annot_plans[single_new_annot_idx]
         sorted_annot_plans = sorted(annot_plans, key = lambda x:x[-1])
         print("FEEDBACK GIVEN WAS =", sorted_annot_plans)
 
@@ -854,7 +843,7 @@ class Manager:
         """
         :return:
         """
-        remaining_plans = [self.formatted_plan_dataset[x] for x in range(len(self.formatted_plan_dataset)) if x not in self.indices_used]
+        remaining_plans = [self.plan_dataset[x] for x in range(len(self.plan_dataset)) if x not in self.indices_used]
         self.get_feedback(remaining_plans)
 
 
@@ -897,9 +886,9 @@ class Manager:
 
         encoded_plans_list = []
         for single_plan in rescaled_plans:
-            encoded_plan = [np.zeros(self.relevant_features_dimension), single_plan[4]]
+            encoded_plan = [np.zeros(self.relevant_features_dimension), single_plan[3]]
 
-            for single_feature in single_plan[2] + single_plan[3]: #the liked and disliked features
+            for single_feature in single_plan[1] + single_plan[2]: #the liked and disliked features
                 encoded_plan[0][self.RBUS_indexing.index(single_feature)] = 1
             encoded_plans_list.append(encoded_plan)
 
@@ -994,7 +983,7 @@ class Manager:
         print("=====EVALUATION===== after round ",self.curr_round/2-1)#recall we double the round numbers to handle dbs and rbus separation, except for first round which is only dbs.
         for single_annot_plan_struct in annotated_test_plans:
 
-            current_plan_features = single_annot_plan_struct[2] + single_annot_plan_struct[3]
+            current_plan_features = single_annot_plan_struct[1] + single_annot_plan_struct[2]
             encoded_plan = np.zeros(self.relevant_features_dimension)
             count_samples +=1
             for single_feature in current_plan_features:
@@ -1123,7 +1112,7 @@ class Manager:
         per_region_num_interesting_plans = int(test_set_size/2)
         # the above trivial plans are split into two groups as well just below the preferred mark, and just above the rejected mark as in the function comments
         # TODO remove all the print statements and integral checks, will speed things up considerably
-        available_indices = set(range(len(self.formatted_plan_dataset)))
+        available_indices = set(range(len(self.plan_dataset)))
         available_indices.difference_update(self.indices_used)
         # print("num available points = ",len(available_indices))
         index_value_list = []  # a list of tuples of type (index,value)
@@ -1131,7 +1120,7 @@ class Manager:
         with CodeTimer():
             # compute and order the predicted scores for the remaining plans
             self.sim_human.change_rating_noise(0.0)  # the balanced dataset depends on true ratings
-            rated_annot_plans = self.sim_human.get_feedback(self.formatted_plan_dataset)
+            rated_annot_plans = self.sim_human.get_feedback(self.plan_dataset)
             rated_annot_plans = enumerate(rated_annot_plans, 0)  # start from zero
             sorted_all_results = sorted(rated_annot_plans, key=lambda x: x[1][-1])
             min_rating = sorted_all_results[0][1][-1]
@@ -1152,7 +1141,7 @@ class Manager:
             # sort the results are get plans on either end
         self.indices_used.update(chosen_indices)
         self.sim_human.change_rating_noise(old_noise)
-        return [self.formatted_plan_dataset[x] for x in chosen_indices]
+        return [self.plan_dataset[x] for x in chosen_indices]
 
     # ================================================================================================
 

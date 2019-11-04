@@ -45,9 +45,9 @@ while len(all_plans) < NUM_PLANS_NEEDED:
 #end while
 all_plans_formatted = []
 for single_plan in all_plans:
-    mod_single_plan = []
+    mod_single_plan = set()
     for step in single_plan:
-        mod_single_plan.append({x:1 for x in step })
+        mod_single_plan = mod_single_plan.union({x for x in step })
     #end for loop
     all_plans_formatted.append(mod_single_plan)
 #end outer for loop

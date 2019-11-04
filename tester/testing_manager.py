@@ -38,6 +38,8 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
             annotated_test_plans = pickle.load(src)
             pref_list = [x for x in manager.sim_human.feature_preferences_dict.items()]
             pref_list = sorted(pref_list, key=lambda x: x[0])
+            print("TRUE FEATURE PREFERENCE DICT", pref_list)
+            print("num features =", len(pref_list))
             print("-=-=-=-= USING PICKLED FILE-=-=-=-=-=-")
     except :
         RATING_NOISE = input_rating_noise
@@ -53,7 +55,6 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         test_plans = manager.get_extremities_test_set_before_training(test_set_size=1000) #0.1 top and 0.1 bottom
         annotated_test_plans = manager.get_feedback(test_plans)
         manager.sim_human.change_rating_noise(input_rating_noise)  # todo NOTE the test dataset has no noise.
-        manager.store_all_plans_feedback()
         manager.test_set = annotated_test_plans
         with open(manager_pickle_file, "wb")as dest:
             pickle.dump(manager,dest)
@@ -151,7 +152,6 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("INTERESTING REGION BAYES ERROR LIST ", inRegion_bayes_error_list)
     print("INTERESTING REGION  MLE ERROR LIST ", inRegion_MLE_error_list)
     print("MIN,MAX",manager.min_rating,manager.max_rating)
-    print("NUMBER OF EXPLORATION ROUNDS = ", exploration_rounds)
 
     #todo remove plotting code for speed
     #manager.learning_model_bayes.plot_learnt_parameters()
@@ -229,8 +229,6 @@ def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_
 
 
 if __name__ == "__main__":
-
-    now do testing from here !!
 
 
     Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.6, random_sampling_enabled = True,

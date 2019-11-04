@@ -31,8 +31,7 @@ class oracle:
         """
         self.gaussian_noise_sd = gaussian_noise_sd
         self.probability_per_level = probability_of_feat_selec
-        if len(probability_of_feat_selec) != l_n_max:
-            raise Exception("Did not provide probability values for all the levels of features")
+
 
         if seed is not None:
             random.seed(seed)
@@ -77,26 +76,23 @@ class oracle:
 
         l_n_max = 1 #HARDCODED, we assume the features are already at various lengths, and types, no more sequencing to make higher features
         if preference_distribution_string != "freq_law":
-            feature_level_list = [l+1 for l in range(l_n_max)]
-            for current_feature_level, relevance_probability in zip(feature_level_list, probability_of_feat_selec):
-                features_at_current_level = permutations(self.s1_features, current_feature_level)
-                for single_feature in features_at_current_level:
-                    r1 = random.random()
-                    if r1 <= relevance_probability:
-                        # so this feature is relevant
-                        r2 = random.random()
-                        if r2 <= like_probability:
-                            # so the user likes the feature
-                            self.feature_preferences_dict[single_feature] = ["like",
-                                                                            rating_distribution(self, "like")]
-                        else:
-                            self.feature_preferences_dict[single_feature] = ["dislike",
-                                                             rating_distribution(self, "dislike")]
+            for single_feature in self.s1_features:
+                r1 = random.random()
+                if r1 <= probability_of_feat_selec:
+                    # so this feature is relevant
+                    r2 = random.random()
+                    if r2 <= like_probability:
+                        # so the user likes the feature
+                        self.feature_preferences_dict[single_feature] = ["like",
+                                                                        rating_distribution(self, "like")]
+                    else:
+                        self.feature_preferences_dict[single_feature] = ["dislike",
+                                                         rating_distribution(self, "dislike")]
         else: #we rate according to the freq dict passed in
             for single_feature in freq_dict.keys():
                 r1 = random.random()
                 try:
-                    relevance_probability = probability_of_feat_selec[len(single_feature) - 1]
+                    relevance_probability = probability_of_feat_selec
                 except:
                     continue
                 if r1 <= relevance_probability:
