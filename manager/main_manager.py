@@ -197,7 +197,7 @@ class Manager:
                  num_dataset_plans = 10000,
                  with_simulated_human = True,
                  max_feature_size = 5,
-                 feature_freq_dict = {},
+                 feature_freq_dict = None, #use this later when there are more involved PGM to compute prob of plan
                  test_set_size=1000,
                  plans_per_round = 30,
                  use_features_seen_in_plan_dataset = True,
@@ -240,7 +240,6 @@ class Manager:
         self.annotated_plans = []
         self.annotated_plans_by_round = []
         self.sorted_plans = []
-        self.feature_score_dict = {} #maps feature to list or array of possible parameter values
         #important data structures
         # maps feature to index in the vector to be used for DBS/RBUS purpose. So take a plan, and encode it using this
         # data structure when you want to do DBS/RBUS
@@ -304,8 +303,10 @@ class Manager:
         :return:
         """
 
-        #todo use the frequency dict
-        return 1/len(input_plan)
+        prob_plan =1.0
+        for feat in input_plan:
+            prob_plan *= self.freq_dict[feat]
+        return prob_plan
 
     # ================================================================================================
     def get_plans_for_round(self,num_plans=30, use_gain_function=True,include_feature_distinguishing= True,include_probability_term = True):
@@ -401,9 +402,7 @@ class Manager:
         #now update the score and store. SCORE = rbus_score+ addendum. Addendum = rbus/|F| + rbus*prob_plan. The addendum is what was previously computed
         index_value_list = [(index_value_list[x][0], norm_gain_variance_array[x]+addendum[x]) for x in range(len(index_value_list))]
         # NOTE the order of ENTRIES in index value list will now be fixed
-        indices_list = tuple([x[0] for x in index_value_list])  # to map plan_index (entry) to the physical index(position)
         # see the use of indices list a little further down in code.
-
         chosen_indices = []
         chosen_scores = []
         while len(chosen_indices) < num_plans:
@@ -411,12 +410,12 @@ class Manager:
             chosen_indices.append(a[0])
             chosen_scores.append(a[1])
             index_value_list.remove(a)
-
+        #end while
         print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
         print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
         print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(norm_gain_variance_array+addendum))
         self.indices_used.update(chosen_indices)
-        return indices_list
+        return [self.plan_dataset[x] for x in chosen_indices]
 
 
     # ================================================================================================
