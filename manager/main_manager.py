@@ -197,7 +197,7 @@ class Manager:
                  num_dataset_plans = 10000,
                  with_simulated_human = True,
                  max_feature_size = 5,
-                 FEATURE_FREQ_CUTOFF = 0.05,
+                 feature_freq_dict = {},
                  test_set_size=1000,
                  plans_per_round = 30,
                  use_features_seen_in_plan_dataset = True,
@@ -297,6 +297,15 @@ class Manager:
         # end for loop through plans
         self.freq_dict = freq_dict
 
+    # ================================================================================================
+    def compute_prob_plan(self,input_plan):
+        """
+        :param input_plan:
+        :return:
+        """
+
+        #todo use the frequency dict
+        return 1/len(input_plan)
 
     # ================================================================================================
     def get_plans_for_round(self,num_plans=30, use_gain_function=True,include_feature_distinguishing= True,include_probability_term = True):
@@ -337,24 +346,17 @@ class Manager:
             # do gain *uniform distr for the unseen features and take weighted sum.
 
             # if self.relevant_features_dimension != 0:
-            blm_indices = []
-            non_blm_indices = []
-            dict_blm_idx_to_num_relev = {}
             for single_plan_idx in available_indices:
-                current_plan = self.plan_dataset[single_plan_idx][1]
+                current_plan = self.plan_dataset[single_plan_idx]
                 encoded_plan = np.zeros(self.relevant_features_dimension)
                 for single_feature in current_plan:
-                    num_relevant = 0
                     if single_feature in self.relevant_features:
                         encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
-                        blm_indices.append(single_plan_idx)
-                        num_relevant +=1
-                    if num_relevant > 0:
-                        dict_blm_idx_to_num_relev[single_plan_idx] = num_relevant
-                    else:
-                        non_blm_indices.append(single_plan_idx)
-
                 #end for through features
+                #special case for first round
+                if self.min_rating == 0 and self.max_rating == 0:
+                    self.min_rating = -1.0
+                    self.max_rating = 1.0
                 all_parallel_params.append(
                     [self.learning_model_bayes, encoded_plan, self.min_rating, self.max_rating, use_gain_function])
             # end for loop through the available indices
@@ -363,26 +365,12 @@ class Manager:
                             all_parallel_params)  # Note the last parameter is a LIST, each entry is for a new process
             # results = [self.parallel_variance_computation(x) for x in all_parallel_params]
 
-            unknown_features_score_weight,unknown_features_variance = self.unknown_feature_score_computation([self.min_rating, self.max_rating, use_gain_function])
-
-            for single_idx_and_result in zip(blm_indices, results):
+            for single_idx_and_result in zip(available_indices, results):
                 single_plan_idx = single_idx_and_result[0]
                 single_result = single_idx_and_result[1]
                 composite_func_integral, preference_variance = single_result
-                #adjust the scores based on the number of relevant/known vs unknown features
-                num_relev = dict_blm_idx_to_num_relev[single_plan_idx]
-                num_unknown = set(self.plan_dataset[single_plan_idx]).difference(self.seen_features)
-                num_valid_features = num_relev + num_unknown
-                updated_score = (composite_func_integral*num_relevant + unknown_features_score_weight*num_unknown)/num_valid_features
-                updated_variance_score = (preference_variance*num_relevant + unknown_features_variance*num_unknown)/num_valid_features
-                index_value_list.append((single_plan_idx, updated_score, updated_variance_score,num_valid_features))
+                index_value_list.append((single_plan_idx, composite_func_integral, preference_variance,len(self.plan_dataset[single_plan_idx])))
             #now for those plans that did not have any known relevant features
-            for single_plan_idx in non_blm_indices:
-                num_unknown = set(self.plan_dataset[single_plan_idx]).difference(self.seen_features)
-                num_valid_features = num_unknown
-                index_value_list.append((single_plan_idx, unknown_features_score_weight, unknown_features_variance,num_unknown))
-
-
         # end codetimer profiling section
         # ---NOW we have to select top n plans such that every successive plan selected also considers diversity w.r.t to the previous plans selected
         # the best plan is determined by normalized gain * normalized variance
@@ -410,16 +398,15 @@ class Manager:
         if include_probability_term:
             # += score*plan_probability
             addendum = [addendum[x] + norm_gain_variance_array[x]*self.compute_prob_plan(self.plan_dataset[index_value_list[x][0]]) for x in range(len(index_value_list))]
-        #now update the score and store
-        index_value_list = [(index_value_list[x][0], norm_gain_variance_array[x]+addendum[x]) for x in
-                            range(len(index_value_list))]
+        #now update the score and store. SCORE = rbus_score+ addendum. Addendum = rbus/|F| + rbus*prob_plan. The addendum is what was previously computed
+        index_value_list = [(index_value_list[x][0], norm_gain_variance_array[x]+addendum[x]) for x in range(len(index_value_list))]
         # NOTE the order of ENTRIES in index value list will now be fixed
         indices_list = tuple([x[0] for x in index_value_list])  # to map plan_index (entry) to the physical index(position)
         # see the use of indices list a little further down in code.
 
         chosen_indices = []
         chosen_scores = []
-        while len(chosen_indices < num_plans):
+        while len(chosen_indices) < num_plans:
             a = max(index_value_list,key=lambda x:x[1])
             chosen_indices.append(a[0])
             chosen_scores.append(a[1])
@@ -509,7 +496,7 @@ class Manager:
         :return:
         """
 
-        plan_features = self.formatted_plan_dataset[formatted_plan_idx][1]
+        plan_features = self.plan_dataset[formatted_plan_idx][1]
         plan_encoding = np.zeros(self.relevant_features_dimension, dtype=float)
         for single_feature in plan_features:
             if single_feature in self.relevant_features:
@@ -858,11 +845,13 @@ class Manager:
         by Bayesian Learning. The manager will connect to the learning engine to learn and update the model
         :return:
         """
-        if len(self.annotated_plans) == 0: #this can happen when the user has not rated anything and just clicked
-            return #nothing to learn from
-
-
         rescaled_plans = copy.deepcopy(self.annotated_plans)
+        if len(self.annotated_plans) == 0: #this can happen when the user has not rated anything and just clicked
+            #create a dummy plan with no features and preference = 0
+            rescaled_plans = [[{},[],[],0.0]]
+
+
+
         #todo NOTe rescaling is currently removed but we still need to track min and max rating
 
         ratings = np.array([x[-1] for x in rescaled_plans])
@@ -1093,7 +1082,7 @@ class Manager:
                                    num_results / 2 + num_trivial_plans / 2)]]  # just below median
             # sort the results are get plans on either end
         self.indices_used.update(chosen_indices)
-        return [self.formatted_plan_dataset[x] for x in chosen_indices]
+        return [self.plan_dataset[x] for x in chosen_indices]
 
     # ================================================================================================
 
@@ -1163,7 +1152,7 @@ class Manager:
         num_trivial_plans = test_set_size - 2*per_region_num_interesting_plans
         #the above trivial plans are split into two groups as well just below the preferred mark, and just above the rejected mark as in the function comments
         #TODO remove all the print statements and integral checks, will speed things up considerably
-        available_indices = set(range(len(self.formatted_plan_dataset)))
+        available_indices = set(range(len(self.plan_dataset)))
         available_indices.difference_update(self.indices_used)
         # print("num available points = ",len(available_indices))
         index_value_list = [] # a list of tuples of type (index,value)
@@ -1171,7 +1160,7 @@ class Manager:
             #compute and order the predicted scores for the remaining plans
             all_results = []
             for single_plan_idx in available_indices:
-                current_plan = self.formatted_plan_dataset[single_plan_idx][1]
+                current_plan = self.plan_dataset[single_plan_idx][1]
                 encoded_plan = np.zeros(self.relevant_features_dimension)
                 for single_feature in current_plan:
                     if single_feature in self.relevant_features:
@@ -1199,7 +1188,7 @@ class Manager:
             chosen_indices += [x[0] for x in
                 sorted_all_results[int(num_results/2):int(num_results/2+num_trivial_plans/2)]] #just below median
             #sort the results are get plans on either end
-        return [self.formatted_plan_dataset[x] for x in chosen_indices]
+        return [self.plan_dataset[x] for x in chosen_indices]
 
 
 #=============================================================================
@@ -1325,13 +1314,13 @@ class Manager:
         #objective (x-mu) + (x-mu)*(1-NORM_var)
         print("REACHED select best and worst")
         predictions_list = []
-        available_indices = set(range(len(self.formatted_plan_dataset))).difference(self.indices_used)
+        available_indices = set(range(len(self.plan_dataset))).difference(self.indices_used)
         if quick_select:
             print("Doing QUICKSELECT FOR best and worst plan selection")
             available_indices = random.sample(list(available_indices), num_check_to_select)
 
         for single_formatted_plan_idx in available_indices:
-            single_formatted_plan_struct = self.formatted_plan_dataset[single_formatted_plan_idx]
+            single_formatted_plan_struct = self.plan_dataset[single_formatted_plan_idx]
             encoded_plan = np.zeros(self.relevant_features_dimension)
             for single_feature in single_formatted_plan_struct[1]:
                 temp_tuple_feature = tuple(single_feature)
@@ -1372,7 +1361,7 @@ class Manager:
         print("Test plans mean prediction, and prediction variance")
         print(predictions_list[0:int(num_samples/2)] + predictions_list[-int(num_samples/2):])
 
-        return [self.formatted_plan_dataset[x] for x in chosen_indices]
+        return [self.plan_dataset[x] for x in chosen_indices]
 
 
 

@@ -82,6 +82,7 @@ class bayesian_linear_model:
             # alpha = pm.Normal('alpha', mu=0.0, sd=sd)
             alpha = pm.Deterministic('alpha', bias_preference)
             cov = np.diag(np.full((number_of_dimensions,), sd)) #for both mu and beta (slope)
+            #todo add support to have the covariance of unknown features to be much larger ? SD = 1.0 is enough !!
             # Slope
             prior_weights = np.random.rand(number_of_dimensions)
             betas = pm.MvNormal('betas', mu=prior_weights, cov=cov, shape=(number_of_dimensions,))
