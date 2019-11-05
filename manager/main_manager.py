@@ -222,7 +222,7 @@ class Manager:
         self.max_feature_size = max_feature_size
         self.learning_model_bayes = bayesian_linear_model()
         self.model_MLE = None # will be set later
-        self.relevant_features_prior_weights = relevant_features_prior_weights
+        self.like_dislike_prior_weights = relevant_features_prior_weights
         self.min_rating = 1e10 #extreme starting values that will be updated after first round of feedback.
         self.max_rating = -1e10
         self.indices_used = set()
@@ -255,10 +255,10 @@ class Manager:
                     #         self.liked_features.add(single_feature)
                     #     else:
                     #         self.disliked_features.add(single_feature)
-        self.relevant_features = self.liked_features.union(self.disliked_features)
+        self.IRrelevant_features = set()
+        self.relevant_features = self.all_s1_features.difference(self.IRrelevant_features)
         self.relevant_features_dimension = len(self.relevant_features)
         self.RBUS_indexing = sorted(list(self.relevant_features))
-        self.RBUS_prior_weights = None
         self.RBUS_prior_weights = [0.0]*self.relevant_features_dimension
         self.num_cores_RBUS = 5
 
@@ -793,18 +793,22 @@ class Manager:
         self.annotated_plans_by_round.append(annotated_plans)
         liked_features = set()
         disliked_features = set()
+        irrelev_features = set()
         for single_plan in annotated_plans:
             liked_features.update(single_plan[1])
             disliked_features.update(single_plan[2])
+            irrelev_features.update(single_plan[0].difference(liked_features.union(disliked_features)))
             if len(single_plan[1]) + len(single_plan[2]) == 0:
                 continue #disregard this plan
             self.annotated_plans.append(single_plan)
         #end for loop through annotated plans
+        #NOTE this is incase there were some discrepancies or errors in the annotation.
+        irrelev_features = irrelev_features.difference(liked_features.union(disliked_features))
         self.liked_features.update(liked_features)
         self.disliked_features.update(disliked_features)
-
+        self.IRrelevant_features.update(irrelev_features)
         #Now reindex the features after the removals
-        self.relevant_features = self.liked_features.union(self.disliked_features)
+        self.relevant_features = self.all_s1_features.difference(self.IRrelevant_features)
         self.relevant_features_dimension = len(self.relevant_features)
         self.RBUS_indexing = sorted(list(self.relevant_features))
         # print("Temporary print RBUS index list",self.RBUS_indexing)
@@ -814,10 +818,10 @@ class Manager:
         for single_feature in self.relevant_features:
             if single_feature in self.liked_features:
                 self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
-                    self.relevant_features_prior_weights[0]
+                    self.like_dislike_prior_weights[0]
             else:
                 self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
-                    self.relevant_features_prior_weights[1]
+                    self.like_dislike_prior_weights[1]
 
     #================================================================================================
     def get_feedback(self,all_plans):
@@ -827,9 +831,7 @@ class Manager:
         :return:
         """
         annot_plans = []
-
-
-        #todo SAVE all the feedback annotations and ratings, so the noise is consistent across all the methods
+        #todo SAVE all the feedback annotations and ratings, so the noise effect is the same when testing the different methods
         if len(all_plans) > 0:
             print("ANNOTATION NEW PLANS of size ",len(all_plans))
         newly_annot_plans = self.sim_human.get_feedback(all_plans)

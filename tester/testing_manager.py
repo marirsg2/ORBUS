@@ -231,7 +231,9 @@ def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_
 if __name__ == "__main__":
 
 
-    Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.6, random_sampling_enabled = True,
+    # now do random sampling
+
+    Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.6, random_sampling_enabled = False,
                             include_gain=False, include_feature_distinguishing=False, include_prob_term =True, manager_pickle_file = "man_02_n06.p",
                             prob_feat_select= 0.2, preference_distribution_string="power_law")
 
