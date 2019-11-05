@@ -141,7 +141,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("Include gain is =", include_gain)
     print("The preference probabilities are", manager.sim_human.probability_per_level)
     print("TRUE FEATURE PREFERENCE", pref_list)
-    print("FREQ DICT", manager.compute_freq_dict(manager.formatted_plan_dataset,manager.relevant_features))
+    print("FREQ DICT", manager.compute_freq_dict(manager.freq_dict))
     print("num features =", len(pref_list), "gain included is ",include_gain)
     print("FEATURES DISCOVERED ", manager.relevant_features_dimension , " ", [(x,pref_dict[x]) for x in manager.relevant_features])
     print("IN REGION ERROR =" , in_region_error)
