@@ -200,9 +200,11 @@ class Manager:
                  feature_freq_dict = None, #use this later when there are more involved PGM to compute prob of plan
                  test_set_size=1000,
                  plans_per_round = 30,
+                 include_feature_distinguishing=True,
                  use_features_seen_in_plan_dataset = True,
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
+                 use_feature_feedback = True,
                  relevant_features_prior_weights = (0.1, -0.1),
                  preference_distribution_string="power_law",
                  random_seed = 18):
@@ -222,6 +224,7 @@ class Manager:
         self.max_feature_size = max_feature_size
         self.learning_model_bayes = bayesian_linear_model()
         self.model_MLE = None # will be set later
+        self.use_feature_feedback = use_feature_feedback
         self.like_dislike_prior_weights = relevant_features_prior_weights
         self.min_rating = 1e10 #extreme starting values that will be updated after first round of feedback.
         self.max_rating = -1e10
@@ -789,25 +792,28 @@ class Manager:
             self.annotated_plans.append(single_plan)
         #end for loop through annotated plans
         #NOTE this is incase there were some discrepancies or errors in the annotation.
-        irrelev_features = irrelev_features.difference(liked_features.union(disliked_features))
-        self.liked_features.update(liked_features)
-        self.disliked_features.update(disliked_features)
-        self.IRrelevant_features.update(irrelev_features)
-        #Now reindex the features after the removals
-        self.relevant_features = self.all_s1_features.difference(self.IRrelevant_features)
-        self.relevant_features_dimension = len(self.relevant_features)
-        self.RBUS_indexing = sorted(list(self.relevant_features))
-        # print("Temporary print RBUS index list",self.RBUS_indexing)
-        # todo we could define the prior weights based on the PREVIOUS MODEL trained in the previous round
-        # define prior weights based on what's liked and disliked
-        self.RBUS_prior_weights = np.zeros(self.relevant_features_dimension)
-        for single_feature in self.relevant_features:
-            if single_feature in self.liked_features:
-                self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
-                    self.like_dislike_prior_weights[0]
-            else:
-                self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
-                    self.like_dislike_prior_weights[1]
+        #todo INDEX 4: This will turn off learning about liked, disliked, and irrelevant features
+        if self.use_feature_feedback:
+            irrelev_features = irrelev_features.difference(liked_features.union(disliked_features))
+            self.liked_features.update(liked_features)
+            self.disliked_features.update(disliked_features)
+            self.IRrelevant_features.update(irrelev_features)
+            #Now reindex the features after the removals
+            self.relevant_features = self.all_s1_features.difference(self.IRrelevant_features)
+            self.relevant_features_dimension = len(self.relevant_features)
+            self.RBUS_indexing = sorted(list(self.relevant_features))
+            # print("Temporary print RBUS index list",self.RBUS_indexing)
+            # todo we could define the prior weights based on the PREVIOUS MODEL trained in the previous round
+            # define prior weights based on what's liked and disliked
+            self.RBUS_prior_weights = np.zeros(self.relevant_features_dimension)
+            for single_feature in self.relevant_features:
+                if single_feature in self.liked_features:
+                    self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
+                        self.like_dislike_prior_weights[0]
+                else:
+                    self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
+                        self.like_dislike_prior_weights[1]
+        #end if self.use_feature_feedback:
 
     #================================================================================================
     def get_feedback(self,all_plans):

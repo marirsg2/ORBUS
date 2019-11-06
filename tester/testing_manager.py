@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import os
 import math
 from manager.main_manager import Manager
 # from common.system_logger.general_logger import logger
@@ -16,14 +17,19 @@ matplotlib.use("TkAgg")
 
 
 def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, random_sampling_enabled = False,
-                                 include_gain = False, include_feature_distinguishing=True,include_prob_term = True,
+                                 include_gain = False, include_feature_distinguishing=True,
+                                 include_prob_term = True,include_feature_feedback =True,
                                  random_seed = 40,
                                  manager_pickle_file = None, input_rating_noise =0.0,
                                  prob_feat_select= 0.2, preference_distribution_string="power_law"):
 
     learn_LSfit = True
     print("doing probability per level =", prob_feat_select)
-    print("RANOM SAMPLING ENABLED = ",random_sampling_enabled)
+    print("include_gain = ",include_gain)
+    print("include_feature_distinguishing = ",include_feature_distinguishing)
+    print("include_prob_term = ",include_prob_term)
+    print("include_feature_feedback = ",include_feature_feedback)
+    print("RANOM SAMPLING ENABLED = ", random_sampling_enabled)
     print("Rating Noise =", input_rating_noise)
     in_region_error = []
     out_region_error = []
@@ -32,6 +38,11 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     inRegion_bayes_error_list = []
     inRegion_MLE_error_list = []
     annotated_test_plans = []
+
+
+    os.remove(manager_pickle_file)
+    print("Manager File Removed at start , to recreate manager!")
+
     try:
         with open(manager_pickle_file,"rb") as src:
             manager = pickle.load(src)
@@ -42,9 +53,9 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
             print("num features =", len(pref_list))
             print("-=-=-=-= USING PICKLED FILE-=-=-=-=-=-")
     except :
+        print("RECREATE manager")
         RATING_NOISE = input_rating_noise
-
-        manager = Manager(prob_feature_selection=prob_feat_select,
+        manager = Manager(prob_feature_selection=prob_feat_select,use_feature_feedback = include_feature_feedback,
                           random_seed=random_seed, preference_distribution_string=preference_distribution_string)
         pref_list = [x for x in manager.sim_human.feature_preferences_dict.items()]
         pref_list = sorted(pref_list, key=lambda x: x[0])
@@ -78,7 +89,9 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         if random_sampling_enabled:
             sampled_plans = manager.sample_randomly(num_plans_per_round)
         else:
-            sampled_plans = manager.get_plans_for_round(num_plans_per_round)
+            sampled_plans = manager.get_plans_for_round(num_plans_per_round,use_gain_function=True,\
+                                                include_feature_distinguishing= include_feature_distinguishing,\
+                                                        include_probability_term = include_prob_term)
 
         annotated_plans = manager.get_feedback(sampled_plans)
         #analyze the plans sampled. For each plan print the number of s1 features, s2 features,etc WITH their associated
@@ -141,7 +154,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("Include gain is =", include_gain)
     print("The preference probabilities are", manager.sim_human.probability_per_level)
     print("TRUE FEATURE PREFERENCE", pref_list)
-    print("FREQ DICT", manager.compute_freq_dict(manager.freq_dict))
+    print("FREQ DICT", manager.freq_dict)
     print("num features =", len(pref_list), "gain included is ",include_gain)
     print("FEATURES DISCOVERED ", manager.relevant_features_dimension , " ", [(x,pref_dict[x]) for x in manager.relevant_features])
     print("IN REGION ERROR =" , in_region_error)
@@ -155,13 +168,19 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
 
     #todo remove plotting code for speed
     #manager.learning_model_bayes.plot_learnt_parameters()
-    print("RANOM SAMPLING ENABLED = ",random_sampling_enabled)
-    print("Rating Noise =", input_rating_noise)
     print("manager file =", manager_pickle_file)
+    print("include_gain = ",include_gain)
+    print("include_feature_distinguishing = ",include_feature_distinguishing)
+    print("include_prob_term = ",include_prob_term)
+    print("include_feature_feedback = ",include_feature_feedback)
+    print("RANOM SAMPLING ENABLED = ", random_sampling_enabled)
+    print("Rating Noise =", input_rating_noise)
     print("used Indices (testplans+annot) =", manager.indices_used)
 
     return in_region_error,out_region_error, bayes_error_list,MLE_error_list
 #====================================================
+
+
 
 
 
@@ -192,7 +211,8 @@ def test_basic_MV_linModel(toy_data_input, toy_data_output):
 
 
 def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_seed = 150, noise_value = 1.0, random_sampling_enabled = False,
-                            include_gain=True, include_feature_distinguishing=True, include_prob_term=True, manager_pickle_file = "default_man.p",
+                            include_gain=True, include_feature_distinguishing=True, include_prob_term=True,  include_feature_feedback=True,
+                            manager_pickle_file = "default_man.p",
                             prob_feat_select= 0.2, preference_distribution_string="power_law"):
 
 
@@ -204,7 +224,7 @@ def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_
                 test_full_cycle_and_accuracy(test_size=1000, num_rounds = int(total_num_plans/plans_per_round),
                                              num_plans_per_round = plans_per_round,
                                              random_sampling_enabled = random_sampling_enabled, include_gain=include_gain, include_feature_distinguishing=include_feature_distinguishing,
-                                             include_prob_term = include_prob_term,
+                                             include_prob_term = include_prob_term, include_feature_feedback = include_feature_feedback,
                                              random_seed= random_seed, manager_pickle_file=manager_pickle_file, input_rating_noise=noise_value,
                                              prob_feat_select=prob_feat_select, preference_distribution_string=preference_distribution_string)
 
@@ -233,6 +253,8 @@ if __name__ == "__main__":
 
 
     Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.6, random_sampling_enabled = False,
-                            include_gain=False, include_feature_distinguishing=False, include_prob_term =True, manager_pickle_file = "man_02_n06.p",
+                            include_gain=True, include_feature_distinguishing=True,
+                            include_prob_term =True, include_feature_feedback = True,
+                            manager_pickle_file = "man_02_n06.p",
                             prob_feat_select= 0.2, preference_distribution_string="power_law")
 
