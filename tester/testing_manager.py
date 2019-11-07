@@ -182,7 +182,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("Rating Noise =", input_rating_noise)
     print("used Indices (testplans+annot) =", manager.indices_used)
 
-    return (in_region_error,out_region_error, bayes_error_list,MLE_error_list)
+    return (bayes_error_list,MLE_error_list,inRegion_bayes_error_list, inRegion_MLE_error_list,[manager.min_rating,manager.max_rating])
 #====================================================
 
 
@@ -266,14 +266,31 @@ if __name__ == "__main__":
     cases = itertools.product(*parameter_indexed_values)
 
     for case_parameters in cases:
-        all_data.append(Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.2,
+        all_data.append((case_parameters, Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.2,
                                 random_sampling_enabled = case_parameters[0],
                                 include_feature_feedback= case_parameters[1],
                                 include_gain= case_parameters[2],
                                 include_feature_distinguishing= case_parameters[3],
                                 include_prob_term = case_parameters[4],
                                 manager_pickle_file = "man_02_n06.p",
-                                prob_feat_select= 0.2, preference_distribution_string="power_law"))
+                                prob_feat_select= 0.2, preference_distribution_string="power_law")))
+
+    for single_data_set in all_data:
+        case_parameters = single_data_set[0]
+        print("============================================================")
+        print("CASE DESCRIPTIONS")
+        print( " || random_sampling_enabled =", case_parameters[0],
+                " || include_feature_feedback=", case_parameters[1],
+                " || include_gain=", case_parameters[2],
+                " || include_feature_distinguishing=", case_parameters[3],
+                " || include_prob_term =", case_parameters[4])
+
+    print("BAYES ERROR LIST ", single_data_set[1])
+    print("MLE ERROR LIST ", single_data_set[2])
+    print("INTERESTING REGION BAYES ERROR LIST ", single_data_set[3])
+    print("INTERESTING REGION  MLE ERROR LIST ", single_data_set[4])
+    print("MIN,MAX", single_data_set[5])
+    print("============================================================")
     #END FOR LOOP
         # all_data.append(Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.2,
         #                         random_sampling_enabled = True,
