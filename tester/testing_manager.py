@@ -1,7 +1,7 @@
 import numpy as np
 import pickle
 import os
-import math
+import itertools
 from manager.main_manager import Manager
 # from common.system_logger.general_logger import logger
 from common.visualizations.general_viz import GenerateVisualizations
@@ -39,9 +39,11 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     inRegion_MLE_error_list = []
     annotated_test_plans = []
 
-
-    os.remove(manager_pickle_file)
-    print("Manager File Removed at start , to recreate manager!")
+    try:
+        os.remove(manager_pickle_file)
+        print("Manager File Removed at start , to recreate manager!")
+    except FileNotFoundError:
+        pass #file was already deleted
 
     try:
         with open(manager_pickle_file,"rb") as src:
@@ -156,7 +158,10 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("TRUE FEATURE PREFERENCE", pref_list)
     print("FREQ DICT", manager.freq_dict)
     print("num features =", len(pref_list), "gain included is ",include_gain)
-    print("FEATURES DISCOVERED ", manager.relevant_features_dimension , " ", [(x,pref_dict[x]) for x in manager.relevant_features])
+    try:
+        print("FEATURES DISCOVERED ", manager.relevant_features_dimension , " ", [(x,pref_dict[x]) for x in manager.relevant_features])
+    except: #when we do not use features, it will throw an error
+        pass
     print("IN REGION ERROR =" , in_region_error)
     print("OUT OF REGION ERROR =" ,out_region_error)
     print("============================================================")
@@ -177,7 +182,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("Rating Noise =", input_rating_noise)
     print("used Indices (testplans+annot) =", manager.indices_used)
 
-    return in_region_error,out_region_error, bayes_error_list,MLE_error_list
+    return (in_region_error,out_region_error, bayes_error_list,MLE_error_list)
 #====================================================
 
 
@@ -213,20 +218,22 @@ def test_basic_MV_linModel(toy_data_input, toy_data_output):
 def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_seed = 150, noise_value = 1.0, random_sampling_enabled = False,
                             include_gain=True, include_feature_distinguishing=True, include_prob_term=True,  include_feature_feedback=True,
                             manager_pickle_file = "default_man.p",
-                            prob_feat_select= 0.2, preference_distribution_string="power_law"):
+                            prob_feat_select= 0.2, preference_distribution_string="power_law",repetitions = 1):
 
 
     print ("doing probability per level =", prob_feat_select)
     print(manager_pickle_file)
-    for i in range(1):
+    ret_struct = []
+    for i in range(repetitions):
         with CodeTimer():
-            NOgain_in_region_error,NOgain_out_region_error, NOgain_bayes_error_list,NOgain_MLE_error_list = \
-                test_full_cycle_and_accuracy(test_size=1000, num_rounds = int(total_num_plans/plans_per_round),
+             ret_struct.append(test_full_cycle_and_accuracy(test_size=1000, num_rounds = int(total_num_plans/plans_per_round),
                                              num_plans_per_round = plans_per_round,
                                              random_sampling_enabled = random_sampling_enabled, include_gain=include_gain, include_feature_distinguishing=include_feature_distinguishing,
                                              include_prob_term = include_prob_term, include_feature_feedback = include_feature_feedback,
                                              random_seed= random_seed, manager_pickle_file=manager_pickle_file, input_rating_noise=noise_value,
-                                             prob_feat_select=prob_feat_select, preference_distribution_string=preference_distribution_string)
+                                             prob_feat_select=prob_feat_select, preference_distribution_string=preference_distribution_string))
+    #end for loop
+    return ret_struct
 
 
 
@@ -252,9 +259,27 @@ if __name__ == "__main__":
 
 
 
-    Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.6, random_sampling_enabled = False,
-                            include_gain=True, include_feature_distinguishing=True,
-                            include_prob_term =True, include_feature_feedback = True,
-                            manager_pickle_file = "man_02_n06.p",
-                            prob_feat_select= 0.2, preference_distribution_string="power_law")
+    all_data = []
+    num_parameters = 5
+    parameter_values = [True, False]
+    parameter_indexed_values = [parameter_values] * num_parameters
+    cases = itertools.product(*parameter_indexed_values)
+
+    for case_parameters in cases:
+        all_data.append(Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.2,
+                                random_sampling_enabled = case_parameters[0],
+                                include_feature_feedback= case_parameters[1],
+                                include_gain= case_parameters[2],
+                                include_feature_distinguishing= case_parameters[3],
+                                include_prob_term = case_parameters[4],
+                                manager_pickle_file = "man_02_n06.p",
+                                prob_feat_select= 0.2, preference_distribution_string="power_law"))
+    #END FOR LOOP
+        # all_data.append(Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.2,
+        #                         random_sampling_enabled = True,
+        #                         include_feature_feedback=True,
+        #                         include_gain=True,
+        #                         include_feature_distinguishing=True,include_prob_term =True,
+        #                         manager_pickle_file = "man_02_n06.p",
+        #                         prob_feat_select= 0.2, preference_distribution_string="power_law"))
 
