@@ -2,3 +2,5 @@
 *.xml
 *.pyc
 .idea/
+/tester/*.txt
+

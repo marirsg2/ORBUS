@@ -41,7 +41,9 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     inRegion_MLE_error_list = []
     annotated_test_plans = []
 
-
+    #todo NOTE this.
+    if random_sampling_enabled == True:
+        random_seed = random.randint(1,100)
 
     try:
         with open(manager_pickle_file,"rb") as src:
@@ -98,9 +100,9 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         if random_sampling_enabled:
             sampled_plans = manager.sample_randomly(num_plans_per_round)
         else:
-            sampled_plans = manager.get_plans_for_round(num_plans_per_round,use_gain_function=include_gain,\
-                                                include_feature_distinguishing= include_feature_distinguishing,\
-                                                        include_probability_term = include_prob_term)
+            sampled_plans = manager.IMPORTANT_get_plans_for_round(num_plans_per_round, use_gain_function=include_gain, \
+                                                                  include_feature_distinguishing= include_feature_distinguishing, \
+                                                                  include_probability_term = include_prob_term)
 
         annotated_plans = manager.get_feedback(sampled_plans)
         #analyze the plans sampled. For each plan print the number of s1 features, s2 features,etc WITH their associated
@@ -167,7 +169,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("PREF & FREQ = ", [(x[0],manager.freq_dict[x[0]],x[1]) for x in pref_list])
     print("num features =", len(pref_list), "gain included is ",include_gain)
     try:
-        print("FEATURES DISCOVERED ", manager.relevant_features_dimension , " ", [(x,pref_dict[x]) for x in manager.relevant_features])
+        print("FEATURES DISCOVERED ", manager.POSSIBLE_features_dimension, " ", [(x, pref_dict[x]) for x in manager.POSSIBLE_features])
     except: #when we do not use features, it will throw an error
         pass
     print("IN REGION ERROR =" , in_region_error)
@@ -286,6 +288,7 @@ if __name__ == "__main__":
     print('test')
 
     manager_pickle_file = "man_02_n06.p"
+    random_seed = 666 #-1 means do not fix randomness. handled in code later
     try:
         os.remove(manager_pickle_file)
         print("Manager File Removed at start , to recreate manager!")
@@ -294,7 +297,7 @@ if __name__ == "__main__":
     cases = list(cases)
     random.shuffle(cases)
     for case_parameters in cases:
-        all_data.append((case_parameters, Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.2,
+        all_data.append((case_parameters, Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = random_seed, noise_value = 0.2,
                                 random_sampling_enabled = case_parameters[0],
                                 include_feature_feedback= case_parameters[1],
                                 include_gain= case_parameters[2],

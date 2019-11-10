@@ -250,6 +250,7 @@ class Manager:
         self.seen_features = set()
         self.liked_features = set()
         self.disliked_features = set()
+        self.confirmed_features = self.liked_features.union(self.disliked_features)
                     # print("---BIG ERROR-- RIGHT NOW ALL THE FEATURES ARE KNOWN AT THE START")
                     # for single_feature in self.sim_human.feature_preferences_dict.keys():
                     #     entry =  self.sim_human.feature_preferences_dict[single_feature]
@@ -258,10 +259,10 @@ class Manager:
                     #     else:
                     #         self.disliked_features.add(single_feature)
         self.IRrelevant_features = set()
-        self.relevant_features = self.all_s1_features.difference(self.IRrelevant_features)
-        self.relevant_features_dimension = len(self.relevant_features)
-        self.RBUS_indexing = sorted(list(self.relevant_features))
-        self.RBUS_prior_weights = [0.0]*self.relevant_features_dimension
+        self.POSSIBLE_features = self.all_s1_features.difference(self.IRrelevant_features)
+        self.POSSIBLE_features_dimension = len(self.POSSIBLE_features)
+        self.RBUS_indexing = sorted(list(self.POSSIBLE_features))
+        self.RBUS_prior_weights = [0.0]*self.POSSIBLE_features_dimension
         self.num_cores_RBUS = 5
 
         self.tried_indices = set()
@@ -311,19 +312,20 @@ class Manager:
         self.freq_dict = freq_dict
 
     # ================================================================================================
-    def compute_prob_plan(self,input_plan):
+    def compute_prob_set(self, input_set):
         """
-        :param input_plan:
+        :param input_set:
         :return:
         """
 
         prob_plan =1.0
-        for feat in input_plan:
+        for feat in input_set:
             prob_plan *= self.freq_dict[feat]
         return prob_plan
 
     # ================================================================================================
-    def get_plans_for_round(self,num_plans=30, use_gain_function=True,include_feature_distinguishing= True,include_probability_term = True):
+    def IMPORTANT_get_plans_for_round(self, num_plans=30, use_gain_function=True, include_feature_distinguishing= True, include_probability_term = True,
+                                      include_discovery_term_product = True):
         """
         :param self:
         :return:
@@ -340,7 +342,7 @@ class Manager:
         #     return self.sample_randomly(num_samples)
 
         try:
-            if self.relevant_features_dimension != self.learning_model_bayes.beta_params.shape[1]:
+            if self.POSSIBLE_features_dimension != self.learning_model_bayes.beta_params.shape[1]:
                 self.relearn_model(learn_LSfit=True, num_chains=2)
         except:  # will happen if the learning model has never been trained yet
             self.relearn_model(learn_LSfit=True, num_chains=2)
@@ -363,9 +365,9 @@ class Manager:
             # if self.relevant_features_dimension != 0:
             for single_plan_idx in available_indices:
                 current_plan = self.plan_dataset[single_plan_idx]
-                encoded_plan = np.zeros(self.relevant_features_dimension)
+                encoded_plan = np.zeros(self.POSSIBLE_features_dimension)
                 for single_feature in current_plan:
-                    if single_feature in self.relevant_features:
+                    if single_feature in self.POSSIBLE_features:
                         encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
                 #end for through features
                 #special case for first round
@@ -384,7 +386,7 @@ class Manager:
                 single_plan_idx = single_idx_and_result[0]
                 single_result = single_idx_and_result[1]
                 composite_func_integral, preference_variance = single_result
-                index_value_list.append((single_plan_idx, composite_func_integral, preference_variance,len(self.plan_dataset[single_plan_idx])))
+                index_value_list.append((single_plan_idx, composite_func_integral, preference_variance,self.plan_dataset[single_plan_idx].intersection(self.confirmed_features)))
             #now for those plans that did not have any known relevant features
         # end codetimer profiling section
         # ---NOW we have to select top n plans such that every successive plan selected also considers diversity w.r.t to the previous plans selected
@@ -407,14 +409,22 @@ class Manager:
         # now store (idx,norm_gain*norm_variance)
         addendum = [0.0]*len(index_value_list)
         if include_feature_distinguishing:
-            # += score/|features|
+            # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
             # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral for a function to always above zero
-            addendum = [addendum[x] + norm_gain_variance_array[x]/index_value_list[x][-1] for x in range(len(index_value_list))]
+            addendum = [addendum[x] + norm_gain_variance_array[x]/(1+len(index_value_list[x][-1])) for x in range(len(index_value_list))] # we div by (1+.) to avoid divide by zero error
         if include_probability_term:
-            # += score*plan_probability
-            addendum = [addendum[x] + norm_gain_variance_array[x]*self.compute_prob_plan(self.plan_dataset[index_value_list[x][0]]) for x in range(len(index_value_list))]
-        #now update the score and store. SCORE = rbus_score+ addendum. Addendum = rbus/|F| + rbus*prob_plan. The addendum is what was previously computed
-        index_value_list = [(index_value_list[x][0], norm_gain_variance_array[x]+addendum[x]) for x in range(len(index_value_list))]
+            # += score* (probabilityOF CONFIRMED FEATURES only)
+            addendum = [addendum[x] + norm_gain_variance_array[x] * self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
+        if include_discovery_term_product:
+            #discovery value is the probability of unseen terms
+            discovery_values = [1+ self.compute_prob_set(self.plan_dataset[index_value_list[x][0]]) for x in range(len(index_value_list))]
+
+            # now update the score and store. SCORE = rbus_score+ addendum. Addendum = rbus/|F| + rbus*prob_plan. The addendum is what was previously computed
+            index_value_list = [(index_value_list[x][0], (norm_gain_variance_array[x] + addendum[x])*discovery_values[x]) for x in
+                                range(len(index_value_list))]
+        else:
+            #now update the score and store. SCORE = rbus_score+ addendum. Addendum = rbus/|F| + rbus*prob_plan. The addendum is what was previously computed
+            index_value_list = [(index_value_list[x][0], norm_gain_variance_array[x]+addendum[x]) for x in range(len(index_value_list))]
         # NOTE the order of ENTRIES in index value list will now be fixed
         # see the use of indices list a little further down in code.
         chosen_indices = []
@@ -424,6 +434,8 @@ class Manager:
             chosen_indices.append(a[0])
             chosen_scores.append(a[1])
             index_value_list.remove(a)
+            self.seen_features.update(self.plan_dataset[a[0]])
+            #now update the scores with the new discovery score.
         #end while
         print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
         print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
@@ -510,9 +522,9 @@ class Manager:
         """
 
         plan_features = self.plan_dataset[formatted_plan_idx][1]
-        plan_encoding = np.zeros(self.relevant_features_dimension, dtype=float)
+        plan_encoding = np.zeros(self.POSSIBLE_features_dimension, dtype=float)
         for single_feature in plan_features:
-            if single_feature in self.relevant_features:
+            if single_feature in self.POSSIBLE_features:
                 plan_encoding[self.RBUS_indexing.index(single_feature)] = 1
         return plan_encoding
 
@@ -591,6 +603,8 @@ class Manager:
         available_indices.difference_update(self.indices_used)
         available_indices.difference(self.tried_indices)
         new_indices_sampled = random.choices(list(available_indices), k=num_samples)
+        for idx in new_indices_sampled:
+            self.seen_features.update(self.plan_dataset[idx])
         self.indices_used.update(new_indices_sampled)
         return [self.plan_dataset[x] for x in new_indices_sampled]
 
@@ -809,15 +823,16 @@ class Manager:
             self.liked_features.update(liked_features)
             self.disliked_features.update(disliked_features)
             self.IRrelevant_features.update(irrelev_features)
+            self.confirmed_features = self.liked_features.union(self.disliked_features)
             #Now reindex the features after the removals
-            self.relevant_features = self.all_s1_features.difference(self.IRrelevant_features)
-            self.relevant_features_dimension = len(self.relevant_features)
-            self.RBUS_indexing = sorted(list(self.relevant_features))
+            self.POSSIBLE_features = self.all_s1_features.difference(self.IRrelevant_features)
+            self.POSSIBLE_features_dimension = len(self.POSSIBLE_features)
+            self.RBUS_indexing = sorted(list(self.POSSIBLE_features))
             # print("Temporary print RBUS index list",self.RBUS_indexing)
             # todo we could define the prior weights based on the PREVIOUS MODEL trained in the previous round
             # define prior weights based on what's liked and disliked
-            self.RBUS_prior_weights = np.zeros(self.relevant_features_dimension)
-            for single_feature in self.relevant_features:
+            self.RBUS_prior_weights = np.zeros(self.POSSIBLE_features_dimension)
+            for single_feature in self.POSSIBLE_features:
                 if single_feature in self.liked_features:
                     self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
                         self.like_dislike_prior_weights[0]
@@ -893,7 +908,7 @@ class Manager:
 
         encoded_plans_list = []
         for single_plan in rescaled_plans:
-            encoded_plan = [np.zeros(self.relevant_features_dimension), single_plan[3]]
+            encoded_plan = [np.zeros(self.POSSIBLE_features_dimension), single_plan[3]]
 
             for single_feature in single_plan[1] + single_plan[2]: #the liked and disliked features
                 encoded_plan[0][self.RBUS_indexing.index(single_feature)] = 1
@@ -923,7 +938,7 @@ class Manager:
 
         self.learning_model_bayes.learn_bayesian_linear_model(encoded_plans_list,
                                                               self.RBUS_prior_weights,
-                                                              self.relevant_features_dimension,
+                                                              self.POSSIBLE_features_dimension,
                                                               sd= EXPECTED_NOISE_VARIANCE,
                                                               sampling_count=3000,
                                                               num_chains=3)
@@ -933,7 +948,7 @@ class Manager:
         if self.sim_human != None:  #i.e. we are in simulated testing
 
             param_stats = [self.learning_model_bayes.linear_params_values["betas"][0:2000, x] for x in
-                          range(self.relevant_features_dimension)]
+                           range(self.POSSIBLE_features_dimension)]
             param_stats = [summ_stats_fnc(x) for x in param_stats]
             bayes_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
             for single_feature in bayes_feature_dict:
@@ -991,11 +1006,11 @@ class Manager:
         for single_annot_plan_struct in annotated_test_plans:
 
             current_plan_features = single_annot_plan_struct[1] + single_annot_plan_struct[2]
-            encoded_plan = np.zeros(self.relevant_features_dimension)
+            encoded_plan = np.zeros(self.POSSIBLE_features_dimension)
             count_samples +=1
             for single_feature in current_plan_features:
                 temp_tuple_feature = tuple(single_feature)
-                if temp_tuple_feature in self.relevant_features:
+                if temp_tuple_feature in self.POSSIBLE_features:
                     encoded_plan[self.RBUS_indexing.index(temp_tuple_feature)] = 1
 
             true_value = float(single_annot_plan_struct[-1])
@@ -1177,9 +1192,9 @@ class Manager:
             all_results = []
             for single_plan_idx in available_indices:
                 current_plan = self.plan_dataset[single_plan_idx][1]
-                encoded_plan = np.zeros(self.relevant_features_dimension)
+                encoded_plan = np.zeros(self.POSSIBLE_features_dimension)
                 for single_feature in current_plan:
-                    if single_feature in self.relevant_features:
+                    if single_feature in self.POSSIBLE_features:
                         encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
                 #end for loop through current plan
                 #the last false is for including gain, we do not care about that for output prediction
@@ -1252,9 +1267,9 @@ class Manager:
                 continue
             count_samples += 1
             current_plan = single_annot_plan_struct[1]
-            encoded_plan = np.zeros(self.relevant_features_dimension)
+            encoded_plan = np.zeros(self.POSSIBLE_features_dimension)
             for single_feature in current_plan:
-                if single_feature in self.relevant_features:
+                if single_feature in self.POSSIBLE_features:
                     encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
             # ---first do the simple MLE model, easier
 
@@ -1337,10 +1352,10 @@ class Manager:
 
         for single_formatted_plan_idx in available_indices:
             single_formatted_plan_struct = self.plan_dataset[single_formatted_plan_idx]
-            encoded_plan = np.zeros(self.relevant_features_dimension)
+            encoded_plan = np.zeros(self.POSSIBLE_features_dimension)
             for single_feature in single_formatted_plan_struct[1]:
                 temp_tuple_feature = tuple(single_feature)
-                if temp_tuple_feature in self.relevant_features:
+                if temp_tuple_feature in self.POSSIBLE_features:
                     encoded_plan[self.RBUS_indexing.index(temp_tuple_feature)] = 1
             #end for loop
             predictions,kernel = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
