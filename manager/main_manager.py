@@ -281,6 +281,17 @@ class Manager:
         self.plans_for_subseq_rounds = [] # will be initialized by the subprocess function that handles the manager
         self.results_by_round = []
     # ================================================================================================
+    def set_AL_params(self, use_feature_feedback=True,random_seed=0 ):
+        """
+
+        :param prob_feature_selection:
+        :param use_feature_feedback:
+        :param random_seed:
+        :return:
+        """
+        self.use_feature_feedback = use_feature_feedback
+        self.random_seed = random_seed
+    # ================================================================================================
 
     def compute_freq_dict(self, plan_dataset, features_set):
         """
@@ -1027,18 +1038,18 @@ class Manager:
             MLE_final_error = math.sqrt(MLE_total_squared_error / count_samples)
             print("LINEAR MODEL The average error in ALL regions is = ", MLE_final_error)
             print("LINEAR MODEL Error Statistics of ALL regions, ", summ_stats_fnc(MLE_error_list))
-            print("LINEAR MODEL target and prediction ", MLE_target_prediction_list)
+            # print("LINEAR MODEL target and prediction ", MLE_target_prediction_list)
 
         #end if
         bayes_final_error = math.sqrt(bayes_total_squared_error / count_samples)
         print("BAYES MODEL The average error in ALL regions= ", bayes_final_error)
         print("BAYES MODEL Error Statistics of ALL regions , ",summ_stats_fnc(bayes_error_list))
-        print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
+        # print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
         if self.results_by_round == None:
             self.results_by_round = []
         self.results_by_round = self.results_by_round.append([bayes_final_error,MLE_final_error])
-        print("bayes error list ", bayes_error_list)
-        print("MLE error list ", MLE_error_list)
+        # print("bayes error list ", bayes_error_list)
+        # print("MLE error list ", MLE_error_list)
 
         return bayes_final_error,MLE_final_error
 
@@ -1228,9 +1239,9 @@ class Manager:
         # cutoff_regions = [(self.min_rating + x[0]*ratings_range, self.min_rating + x[1]*ratings_range) for x in eval_percentile_regions]
         count_samples = 0
 
-        print(
-            "NOTE WE ASSUME A PLAN WITH NO KNOWN FEATURES IS OF VALUE 0, AND SO NOT COUNTED IN THE TEST SET EVALUATION")
-        print("ALL RATINGS are = ", sorted_ratings)
+        # print(
+        #     "NOTE WE ASSUME A PLAN WITH NO KNOWN FEATURES IS OF VALUE 0, AND SO NOT COUNTED IN THE TEST SET EVALUATION")
+        # print("ALL RATINGS are = ", sorted_ratings)
         print("Cutoffregions = ", cutoff_regions)
         for single_annot_plan_struct in annotated_test_plans:
             true_rating = single_annot_plan_struct[-1]
@@ -1295,14 +1306,14 @@ class Manager:
             print("LINEAR MODEL The average REGION error is = ", MLE_final_error, "for percentile regions ",
                   eval_percentile_regions)
             print("LINEAR MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(MLE_error_list))
-            print("LINEAR MODEL target and prediction ", MLE_target_prediction_list)
+            # print("LINEAR MODEL target and prediction ", MLE_target_prediction_list)
 
         # end if
         bayes_final_error = math.sqrt(bayes_total_squared_error / count_samples)
         print("BAYES MODEL The average REGION error is = ", bayes_final_error, "for percentile regions ",
               eval_percentile_regions)
         print("BAYES MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(bayes_error_list))
-        print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
+        # print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
 
         return bayes_final_error,MLE_final_error
 

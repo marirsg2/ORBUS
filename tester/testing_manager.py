@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import sys
 import os
 import itertools
 from manager.main_manager import Manager
@@ -39,11 +40,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     inRegion_MLE_error_list = []
     annotated_test_plans = []
 
-    try:
-        os.remove(manager_pickle_file)
-        print("Manager File Removed at start , to recreate manager!")
-    except FileNotFoundError:
-        pass #file was already deleted
+
 
     try:
         with open(manager_pickle_file,"rb") as src:
@@ -51,7 +48,12 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
             annotated_test_plans = pickle.load(src)
             pref_list = [x for x in manager.sim_human.feature_preferences_dict.items()]
             pref_list = sorted(pref_list, key=lambda x: x[0])
-            print("TRUE FEATURE PREFERENCE DICT", pref_list)
+            manager.set_AL_params(use_feature_feedback = include_feature_feedback,random_seed=random_seed)
+            print("TRUE FEATURE PREFERENCE", pref_list)
+            print("FREQ DICT", manager.freq_dict)
+            sorted_freq_pref_list = [(x[0], manager.freq_dict[x[0]], x[1]) for x in pref_list]
+            sorted_freq_pref_list = sorted(sorted_freq_pref_list,key= lambda x:x[-1][-1])
+            print("PREF & FREQ = ",sorted_freq_pref_list)
             print("num features =", len(pref_list))
             print("-=-=-=-= USING PICKLED FILE-=-=-=-=-=-")
     except :
@@ -61,7 +63,11 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
                           random_seed=random_seed, preference_distribution_string=preference_distribution_string)
         pref_list = [x for x in manager.sim_human.feature_preferences_dict.items()]
         pref_list = sorted(pref_list, key=lambda x: x[0])
-        print("TRUE FEATURE PREFERENCE DICT", pref_list)
+        print("TRUE FEATURE PREFERENCE", pref_list)
+        print("FREQ DICT", manager.freq_dict)
+        sorted_freq_pref_list = [(x[0], manager.freq_dict[x[0]], x[1]) for x in pref_list]
+        sorted_freq_pref_list = sorted(sorted_freq_pref_list, key=lambda x: x[-1][-1])
+        print("PREF & FREQ = ", sorted_freq_pref_list)
         print("num features =", len(pref_list))
         print("Include gain is =", include_gain)
         manager.sim_human.change_rating_noise(0.0)# todo NOTE the test dataset has no noise.
@@ -91,7 +97,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         if random_sampling_enabled:
             sampled_plans = manager.sample_randomly(num_plans_per_round)
         else:
-            sampled_plans = manager.get_plans_for_round(num_plans_per_round,use_gain_function=True,\
+            sampled_plans = manager.get_plans_for_round(num_plans_per_round,use_gain_function=include_gain,\
                                                 include_feature_distinguishing= include_feature_distinguishing,\
                                                         include_probability_term = include_prob_term)
 
@@ -157,6 +163,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("The preference probabilities are", manager.sim_human.probability_per_level)
     print("TRUE FEATURE PREFERENCE", pref_list)
     print("FREQ DICT", manager.freq_dict)
+    print("PREF & FREQ = ", [(x[0],manager.freq_dict[x[0]],x[1]) for x in pref_list])
     print("num features =", len(pref_list), "gain included is ",include_gain)
     try:
         print("FEATURES DISCOVERED ", manager.relevant_features_dimension , " ", [(x,pref_dict[x]) for x in manager.relevant_features])
@@ -181,6 +188,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("RANOM SAMPLING ENABLED = ", random_sampling_enabled)
     print("Rating Noise =", input_rating_noise)
     print("used Indices (testplans+annot) =", manager.indices_used)
+    print("--------END OF TESTING-------")
 
     return (bayes_error_list,MLE_error_list,inRegion_bayes_error_list, inRegion_MLE_error_list,[manager.min_rating,manager.max_rating])
 #====================================================
@@ -260,11 +268,23 @@ if __name__ == "__main__":
 
 
     all_data = []
+    num_repetitions = 1
     num_parameters = 5
     parameter_values = [True, False]
     parameter_indexed_values = [parameter_values] * num_parameters
     cases = itertools.product(*parameter_indexed_values)
 
+    manager_pickle_file = "man_02_n06.p"
+    sys.stdout = open('RBUS_output_results.txt', 'w')
+    print('test')
+
+    try:
+        os.remove(manager_pickle_file)
+        print("Manager File Removed at start , to recreate manager!")
+    except FileNotFoundError:
+        pass #file was already deleted
+    cases = list(cases)
+    random.shuffle(cases)
     for case_parameters in cases:
         all_data.append((case_parameters, Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.2,
                                 random_sampling_enabled = case_parameters[0],
@@ -272,10 +292,17 @@ if __name__ == "__main__":
                                 include_gain= case_parameters[2],
                                 include_feature_distinguishing= case_parameters[3],
                                 include_prob_term = case_parameters[4],
-                                manager_pickle_file = "man_02_n06.p",
+                                manager_pickle_file = manager_pickle_file,
+                                repetitions=num_repetitions,
                                 prob_feat_select= 0.2, preference_distribution_string="power_law")))
 
+    #end for loop through the cases and collecting data
+    print("============================================================")
+    print(all_data)
+    print("============================================================")
+
     for single_data_set in all_data:
+        print(single_data_set)
         case_parameters = single_data_set[0]
         print("============================================================")
         print("CASE DESCRIPTIONS")
@@ -284,14 +311,14 @@ if __name__ == "__main__":
                 " || include_gain=", case_parameters[2],
                 " || include_feature_distinguishing=", case_parameters[3],
                 " || include_prob_term =", case_parameters[4])
-
-    print("BAYES ERROR LIST ", single_data_set[1])
-    print("MLE ERROR LIST ", single_data_set[2])
-    print("INTERESTING REGION BAYES ERROR LIST ", single_data_set[3])
-    print("INTERESTING REGION  MLE ERROR LIST ", single_data_set[4])
-    print("MIN,MAX", single_data_set[5])
-    print("============================================================")
-    #END FOR LOOP
+        for i in range(num_repetitions):
+            print("BAYES ERROR LIST ", single_data_set[1][i][0])
+            print("MLE ERROR LIST ", single_data_set[1][i][1])
+            print("INTERESTING REGION BAYES ERROR LIST ", single_data_set[1][i][2])
+            print("INTERESTING REGION  MLE ERROR LIST ", single_data_set[1][i][3])
+            print("MIN,MAX", single_data_set[1][i][4])
+            print("============================================================")
+    #END FOR LOOP through printing the data
         # all_data.append(Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.2,
         #                         random_sampling_enabled = True,
         #                         include_feature_feedback=True,
