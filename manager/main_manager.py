@@ -1137,9 +1137,9 @@ class Manager:
 
             num_results = len(sorted_all_results)
             # get plans from top, bottom, and middle
-            print("******EXPECTED RATINGS in interesting regions (we sample every other point)*********")
-            print(sorted_all_results[0:2*per_region_num_interesting_plans] + sorted_all_results[
-                                                                           -2*per_region_num_interesting_plans:])
+            # print("******EXPECTED RATINGS in interesting regions (we sample every other point)*********")
+            # print(sorted_all_results[0:2*per_region_num_interesting_plans] + sorted_all_results[
+            #                                                                -2*per_region_num_interesting_plans:])
             #now dont take all the top and bottom plans, alternate and sample
             chosen_indices = [x[0] for x in
                               sorted_all_results[1:per_region_num_interesting_plans:2]]  # most preferred value

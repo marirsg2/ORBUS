@@ -5,7 +5,7 @@
 import pickle
 import random
 NUM_PLANS_NEEDED = 10000
-NUM_FEATURES = 40
+NUM_FEATURES = 200
 HIGH_OCCURRENCE_COUNT =300 #these counts are used as weights for generating plans
 MED_OCCURRENCE_COUNT =100
 LOW_OCCURRENCE_COUNT =10

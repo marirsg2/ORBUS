@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import datetime
 import sys
 import os
 import itertools
@@ -85,7 +86,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         scores.append(plan[-1])
     print("TEST set scores stats")
     print(summ_stats_fnc(scores))
-    print(sorted(scores))
+    # print(sorted(scores))
 
     manager.sim_human.change_rating_noise(input_rating_noise)  # SET NOISE IN RATING
 
@@ -274,10 +275,17 @@ if __name__ == "__main__":
     parameter_indexed_values = [parameter_values] * num_parameters
     cases = itertools.product(*parameter_indexed_values)
 
-    manager_pickle_file = "man_02_n06.p"
-    sys.stdout = open('RBUS_output_results.txt', 'w')
+    date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
+    date_time_str = date_time_str.replace(" ", "_")
+    date_time_str = date_time_str.replace("/", "_")
+    date_time_str = date_time_str.replace(",", "_")
+    date_time_str = date_time_str.replace(":", "_")
+    print("date and time:", date_time_str)
+    output_file_name = 'RBUS_output_results' + "_" + date_time_str
+    sys.stdout = open(output_file_name + '.txt', 'w')
     print('test')
 
+    manager_pickle_file = "man_02_n06.p"
     try:
         os.remove(manager_pickle_file)
         print("Manager File Removed at start , to recreate manager!")
