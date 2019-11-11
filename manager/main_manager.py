@@ -1292,7 +1292,7 @@ class Manager:
             if not inside_region and True in region_checks:
                 continue
             count_samples += 1
-            current_plan = single_annot_plan_struct[1]
+            current_plan = single_annot_plan_struct[0]
             encoded_plan = np.zeros(self.POSSIBLE_features_dimension)
             for single_feature in current_plan:
                 if single_feature in self.POSSIBLE_features:
