@@ -4,17 +4,29 @@
 
 import pickle
 import random
-NUM_PLANS_NEEDED = 5000
-NUM_FEATURES = 25
-HIGH_OCCURRENCE_COUNT =10 #these counts are used as weights for generating plans
-MED_OCCURRENCE_COUNT =10
-LOW_OCCURRENCE_COUNT =10
-MIN_FEATURES = 4 #prob that the plan will end with this step
+import datetime
+
+#--------------------------------
+NUM_PLANS_NEEDED = 3500
+NUM_FEATURES = 100
+HIGH_OCCURRENCE_COUNT = 1350 #these counts are used as weights for generating plans
+MED_OCCURRENCE_COUNT = 450
+LOW_OCCURRENCE_COUNT = 150
+MIN_FEATURES = 2 #prob that the plan will end with this step
 MAX_FEATURES = 4 #prob that the plan will end with this step
-RATIO_HIGH_FREQ_FEATURES = 0.33 #this is the NUMBER of features, what constitutes as high occurrence (probability) is given by the COUNTS defined previously
-RATIO_MED_FREQ_FEATURES = 0.33
+RATIO_HIGH_FREQ_FEATURES = 0.15 #this is the NUMBER of features, what constitutes as high occurrence (probability) is given by the COUNTS defined previously
+RATIO_MED_FREQ_FEATURES = 0.7 #THE REST ARE LOW FREQ
+
+# date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
+# date_time_str = date_time_str.replace(" ", "_")
+# date_time_str = date_time_str.replace("/", "_")
+# date_time_str = date_time_str.replace(",", "_")
+# date_time_str = date_time_str.replace(":", "_")
+# print("date and time:", date_time_str)
+# dest_pickle_file_name = "plans_pool" + date_time_str +".p"
 
 dest_pickle_file_name = "default_plans_pool.p"
+
 all_plans = set()
 all_features = set()
 # s1_features = [str(x) for x in "abcdefghijklmnopqrstuvwxyz"] #are represented by letters

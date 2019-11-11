@@ -28,7 +28,7 @@ matplotlib.use("TkAgg")
 
 
 def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, random_sampling_enabled = False,
-                                 include_gain = False, include_feature_distinguishing=True,
+                                 include_gain = False, include_discovery_term=True, include_feature_distinguishing=True,
                                  include_prob_term = True,include_feature_feedback =True,
                                  random_seed = 40,
                                  manager_pickle_file = None, input_rating_noise =0.0,
@@ -38,6 +38,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     RATIO_TEST_SET = 0.1
     print("doing probability per level =", prob_feat_select)
     print("include_gain = ",include_gain)
+    print("include_discovery_term = ",include_discovery_term)
     print("include_feature_distinguishing = ",include_feature_distinguishing)
     print("include_prob_term = ",include_prob_term)
     print("include_feature_feedback = ",include_feature_feedback)
@@ -115,9 +116,16 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
             else:
                 sampled_plans = manager.IMPORTANT_get_plans_for_round(num_plans_per_round, use_gain_function=include_gain, \
                                                                       include_feature_distinguishing= include_feature_distinguishing, \
+                                                                      include_discovery_term_product=include_discovery_term,
                                                                       include_probability_term = include_prob_term)
 
         annotated_plans = manager.get_feedback(sampled_plans)
+
+        print("FEEDBACK AND QUERIES FOR ROUND ", round_num, " are \n", annotated_plans)
+        print("SUM OF PROB OF SEEN FEATURES =", sum([manager.freq_dict[x] for x in manager.seen_features]) ," ; SEEN FEATURES = ", manager.seen_features)
+        print("LIKED FEATURES ", manager.liked_features)
+        print("DISLIKED FEATURES ", manager.disliked_features)
+        print("UNKNOWN FEATURES ", manager.all_s1_features.difference(manager.seen_features))
         #analyze the plans sampled. For each plan print the number of s1 features, s2 features,etc WITH their associated
         # freq and score
         sampled_plan_analytics = []
@@ -147,7 +155,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         #end if
         manager.update_indices(annotated_plans)
 
-        manager.relearn_model(learn_LSfit, num_chains=3) # here is where we first train the model
+        manager.relearn_model(learn_LSfit, num_chains=2) # here is where we first train the model
         #todo REMOVE THIS and maybe move it to replace the test set
         # manager.select_best_and_worst(30)
         bayes_error, MLE_error = manager.evaluate(annotated_test_plans)
@@ -178,13 +186,14 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("Include gain is =", include_gain)
     print("The preference probabilities are", manager.sim_human.probability_per_level)
     print("TRUE FEATURE PREFERENCE", pref_list)
-    print("FREQ DICT", manager.freq_dict)
+    print("FREQ DICT", sorted(manager.freq_dict.items(),key = lambda x:x[1]))
     print("PREF & FREQ = ", [(x[0],manager.freq_dict[x[0]],x[1]) for x in pref_list])
     print("num features =", len(pref_list), "gain included is ",include_gain)
     try:
         print("FEATURES DISCOVERED ", manager.POSSIBLE_features_dimension, " ", [(x, pref_dict[x]) for x in manager.POSSIBLE_features])
     except: #when we do not use features, it will throw an error
         pass
+    print("ANNOTATED PLANS BY ROUND =", manager.annotated_plans_by_round)
     print("IN REGION ERROR =" , in_region_error)
     print("OUT OF REGION ERROR =" ,out_region_error)
     print("============================================================")
@@ -240,7 +249,7 @@ def test_basic_MV_linModel(toy_data_input, toy_data_output):
 
 
 def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_seed = 150, noise_value = 1.0, random_sampling_enabled = False,
-                            include_gain=True, include_feature_distinguishing=True, include_prob_term=True,  include_feature_feedback=True,
+                            include_gain=True,include_discovery_term=True, include_feature_distinguishing=True, include_prob_term=True,  include_feature_feedback=True,
                             manager_pickle_file = "default_man.p",
                             prob_feat_select= 0.2, preference_distribution_string="power_law",repetitions = 1):
 
@@ -252,7 +261,8 @@ def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_
         with CodeTimer():
              ret_struct.append(test_full_cycle_and_accuracy(test_size=1000, num_rounds = int(total_num_plans/plans_per_round),
                                              num_plans_per_round = plans_per_round,
-                                             random_sampling_enabled = random_sampling_enabled, include_gain=include_gain, include_feature_distinguishing=include_feature_distinguishing,
+                                             random_sampling_enabled = random_sampling_enabled, include_gain=include_gain,
+                                                            include_discovery_term=include_discovery_term,include_feature_distinguishing=include_feature_distinguishing,
                                              include_prob_term = include_prob_term, include_feature_feedback = include_feature_feedback,
                                              random_seed= random_seed, manager_pickle_file=manager_pickle_file, input_rating_noise=noise_value,
                                              prob_feat_select=prob_feat_select, preference_distribution_string=preference_distribution_string))
@@ -293,10 +303,10 @@ if __name__ == "__main__":
 
     # preference_distribution_string = "power_law"
     preference_distribution_string = "uniform"
-    total_num_plans = 50
+    total_num_plans = 40
     plans_per_round = 5
     noise_value = 0.2
-    prob_feat_select = 1.0
+    prob_feat_select = 0.2
 
     date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     date_time_str = date_time_str.replace(" ", "_")
@@ -318,25 +328,53 @@ if __name__ == "__main__":
     cases = [list(x) for x in cases]
     random.shuffle(cases)
 
+
+    # --------------------------------------------------------------
     random_sampling_state = False
+    # FAVORITE SETUP
     for i in range(1):
-        all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-                              random_sampling_enabled=random_sampling_state,
-                              include_feature_feedback=True,
-                              include_gain=True,
-                              include_feature_distinguishing=False,
-                              include_prob_term=False,
-                                manager_pickle_file = manager_pickle_file,
-                                repetitions=num_repetitions,
-                                prob_feat_select= prob_feat_select,
-                                preference_distribution_string= preference_distribution_string)))
+        all_data.append(([random_sampling_state] + cases[0],
+                         Active_Learning_Testing(total_num_plans=total_num_plans, plans_per_round=plans_per_round,
+                                                 random_seed=random_seed, noise_value=noise_value,
+                                                 random_sampling_enabled=random_sampling_state,
+                                                 include_feature_feedback=True,
+                                                 include_discovery_term=True,
+                                                 include_gain=False,
+                                                 include_feature_distinguishing=False,
+                                                 include_prob_term=True,
+                                                 manager_pickle_file=manager_pickle_file,
+                                                 repetitions=num_repetitions,
+                                                 prob_feat_select=prob_feat_select,
+                                                 preference_distribution_string=preference_distribution_string)))
 
 
+    # --------------------------------------------------------------
+    random_sampling_state = False
+    # FAVORITE SETUP
+    for i in range(1):
+        all_data.append(([random_sampling_state] + cases[0],
+                         Active_Learning_Testing(total_num_plans=total_num_plans, plans_per_round=plans_per_round,
+                                                 random_seed=random_seed, noise_value=noise_value,
+                                                 random_sampling_enabled=random_sampling_state,
+                                                 include_feature_feedback=True,
+                                                 include_discovery_term=True,
+                                                 include_gain=True,
+                                                 include_feature_distinguishing=True,
+                                                 include_prob_term=True,
+                                                 manager_pickle_file=manager_pickle_file,
+                                                 repetitions=num_repetitions,
+                                                 prob_feat_select=prob_feat_select,
+                                                 preference_distribution_string=preference_distribution_string)))
+
+
+
+    # --------------------------------------------------------------
     random_sampling_state = True
     for i in range(1):
         all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
                                 random_sampling_enabled =  random_sampling_state,
                                 include_feature_feedback= True,
+                                include_discovery_term = False,
                                 include_gain= False,
                                 include_feature_distinguishing= False,
                                 include_prob_term = False,
@@ -345,6 +383,7 @@ if __name__ == "__main__":
                                 prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
 
 
+    #--------------------------------------------------------------
 
 
 
@@ -354,7 +393,8 @@ if __name__ == "__main__":
     for case_parameters in cases:
         all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
                                 random_sampling_enabled =  random_sampling_state,
-                                include_feature_feedback= case_parameters[0],
+                                include_feature_feedback= True,
+                                include_discovery_term = case_parameters[0],
                                 include_gain= case_parameters[1],
                                 include_feature_distinguishing= case_parameters[2],
                                 include_prob_term = case_parameters[3],
@@ -368,6 +408,7 @@ if __name__ == "__main__":
         all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
                                 random_sampling_enabled =  random_sampling_state,
                                 include_feature_feedback= True,
+                                include_discovery_term = False,
                                 include_gain= False,
                                 include_feature_distinguishing= False,
                                 include_prob_term = False,

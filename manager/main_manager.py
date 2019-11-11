@@ -229,8 +229,8 @@ class Manager:
         # self.min_rating = 1e10 #extreme starting values that will be updated after first round of feedback.
         # self.max_rating = -1e10
 
-        self.min_rating = -3.0 #extreme starting values that will be updated after first round of feedback.
-        self.max_rating = 3.0
+        self.min_rating = -1.8 #extreme starting values that will be updated after first round of feedback.
+        self.max_rating = 1.8
 
         self.indices_used = set()
         self.random_seed = random_seed
@@ -364,9 +364,9 @@ class Manager:
 
         try:
             if self.POSSIBLE_features_dimension != self.learning_model_bayes.beta_params.shape[1]:
-                self.relearn_model(learn_LSfit=True, num_chains=3)
+                self.relearn_model(learn_LSfit=True, num_chains=2)
         except:  # will happen if the learning model has never been trained yet
-            self.relearn_model(learn_LSfit=True, num_chains=3)
+            self.relearn_model(learn_LSfit=True, num_chains=2)
 
         num_subProcess_to_use = self.num_cores_RBUS
         # gain_function = RBUS_selection.get_gain_function(min_value=self.min_rating,max_value=self.max_rating)
@@ -417,12 +417,14 @@ class Manager:
             gain_array = np.array([x[1] for x in index_value_list])
         else:
             gain_array = np.array([1.0 for x in index_value_list])
-        gain_normalizing_denom = np.max(gain_array)
+        # gain_normalizing_denom = np.max(gain_array)
+        gain_normalizing_denom = np.var(gain_array)
         if gain_normalizing_denom == 0.0:
             gain_normalizing_denom = 1.0  # avoids "nan" problem
         norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
         variance_array = np.array([x[2] for x in index_value_list])
-        var_normalizing_denom = np.max(variance_array)
+        # var_normalizing_denom = np.max(variance_array)
+        var_normalizing_denom = np.var(variance_array)
         if var_normalizing_denom == 0.0:
             var_normalizing_denom = 1.0  # avoids "nan" problem
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
@@ -471,6 +473,7 @@ class Manager:
                     for x in range(len(index_value_list))]
             #now update the scores with the new discovery score.
         #end while
+        print("update_min max",self.min_rating,self.max_rating)
         print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
         print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
         print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(norm_gain_variance_array+addendum))
@@ -864,7 +867,7 @@ class Manager:
 
 
     # ================================================================================================
-    def relearn_model(self, learn_LSfit = False, num_chains=3):
+    def relearn_model(self, learn_LSfit = False, num_chains=2):
         """
         since we have the relevant features and some annotated plans(<plans, rating>, we learn a liner regression model
         by Bayesian Learning. The manager will connect to the learning engine to learn and update the model
@@ -934,7 +937,7 @@ class Manager:
                                                               self.RBUS_prior_weights,
                                                               self.POSSIBLE_features_dimension,
                                                               sd= EXPECTED_NOISE_VARIANCE,
-                                                              sampling_count=3000,
+                                                              sampling_count=2000,
                                                               num_chains=num_chains)
                                                               # num_chains=num_chains)
 
@@ -957,6 +960,7 @@ class Manager:
                 except ValueError:  # for the feature not being in the list
                     pass
             #todo not just mean, do MODE of features
+            print("RATINGS seen are = ", summ_stats_fnc(ratings))
             print("Bayes params ","  ||  ".join([str(x) for x in bayes_feature_dict.items()]))
             print("Bayes intercept summ stats")
             print(summ_stats_fnc(self.learning_model_bayes.linear_params_values["alpha"][0:2000]))
