@@ -429,10 +429,9 @@ if __name__ == "__main__":
         print("============================================================")
         print("CASE DESCRIPTIONS")
         print( " || random_sampling_enabled =", case_parameters[0],
-                " || include_feature_feedback=", case_parameters[1],
-                " || include_gain=", case_parameters[2],
-                " || include_feature_distinguishing=", case_parameters[3],
-                " || include_prob_term =", case_parameters[4])
+                " || include_gain=", case_parameters[1],
+                " || include_feature_distinguishing=", case_parameters[2],
+                " || include_prob_term =", case_parameters[3])
         for i in range(num_repetitions):
             print("BAYES ERROR LIST ", single_data_set[1][i][0])
             print("MLE ERROR LIST ", single_data_set[1][i][1])
