@@ -272,10 +272,18 @@ if __name__ == "__main__":
 
     all_data = []
     num_repetitions = 1
-    num_parameters = 5
+    NUM_RANDOM_SAMPLES = 3
+    num_parameters = 4
     parameter_values = [True, False]
     parameter_indexed_values = [parameter_values] * num_parameters
     cases = itertools.product(*parameter_indexed_values)
+
+    # preference_distribution_string = "power_law"
+    preference_distribution_string = "uniform"
+    total_num_plans = 180
+    plans_per_round = 60
+    noise_value = 0.2
+    prob_feat_select = 1.0
 
     date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     date_time_str = date_time_str.replace(" ", "_")
@@ -294,18 +302,64 @@ if __name__ == "__main__":
         print("Manager File Removed at start , to recreate manager!")
     except FileNotFoundError:
         pass #file was already deleted
-    cases = list(cases)
+    cases = [list(x) for x in cases]
     random.shuffle(cases)
-    for case_parameters in cases:
-        all_data.append((case_parameters, Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = random_seed, noise_value = 0.2,
-                                random_sampling_enabled = case_parameters[0],
-                                include_feature_feedback= case_parameters[1],
-                                include_gain= case_parameters[2],
-                                include_feature_distinguishing= case_parameters[3],
-                                include_prob_term = case_parameters[4],
+
+    random_sampling_state = True
+    for i in range(1):
+        all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+                                random_sampling_enabled =  random_sampling_state,
+                                include_feature_feedback= True,
+                                include_gain= False,
+                                include_feature_distinguishing= False,
+                                include_prob_term = False,
                                 manager_pickle_file = manager_pickle_file,
                                 repetitions=num_repetitions,
-                                prob_feat_select= 0.2, preference_distribution_string="power_law")))
+                                prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
+
+
+
+    random_sampling_state = False
+    for case_parameters in cases:
+        all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+                                random_sampling_enabled =  random_sampling_state,
+                                include_feature_feedback= True,
+                                include_gain= False,
+                                include_feature_distinguishing= False,
+                                include_prob_term = False,
+                                manager_pickle_file = manager_pickle_file,
+                                repetitions=num_repetitions,
+                                prob_feat_select= prob_feat_select,
+                                preference_distribution_string= preference_distribution_string)))
+
+
+
+    random_sampling_state = False
+    for case_parameters in cases:
+        all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+                                random_sampling_enabled =  random_sampling_state,
+                                include_feature_feedback= case_parameters[0],
+                                include_gain= case_parameters[1],
+                                include_feature_distinguishing= case_parameters[2],
+                                include_prob_term = case_parameters[3],
+                                manager_pickle_file = manager_pickle_file,
+                                repetitions=num_repetitions,
+                                prob_feat_select= prob_feat_select,
+                                preference_distribution_string= preference_distribution_string)))
+
+    random_sampling_state = True
+    for i in range(NUM_RANDOM_SAMPLES-1):
+        all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+                                random_sampling_enabled =  random_sampling_state,
+                                include_feature_feedback= True,
+                                include_gain= False,
+                                include_feature_distinguishing= False,
+                                include_prob_term = False,
+                                manager_pickle_file = manager_pickle_file,
+                                repetitions=num_repetitions,
+                                prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
+
+
 
     #end for loop through the cases and collecting data
     print("============================================================")

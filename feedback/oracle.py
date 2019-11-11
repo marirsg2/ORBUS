@@ -18,7 +18,7 @@ class oracle:
                  probability_of_feat_selec = (0.75, 0.25),
                  like_probability = 0.5,
                  seed = 18,
-                 preference_distribution_string ="power_law",
+                 preference_distribution_string ="uniform",
                  gaussian_noise_sd = 0.1,
                  freq_dict = {},
                  verbose = False):
@@ -114,8 +114,8 @@ class oracle:
         :return:
         """
         if sentiment == "like":
-            return random.uniform(0.1, 0.5)
-        return -random.uniform(0.1, 0.5)
+            return random.uniform(0.0, 1.0)
+        return -random.uniform(0.0, 1.0)
 
     # ===============================================================================
     def rating_power_law(self, sentiment):

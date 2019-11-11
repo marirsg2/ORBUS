@@ -314,6 +314,7 @@ class Manager:
     # ================================================================================================
     def compute_prob_set(self, input_set):
         """
+        :summary: prob of the elements in the set occurring together. Marginalized over all others.
         :param input_set:
         :return:
         """
@@ -322,6 +323,20 @@ class Manager:
         for feat in input_set:
             prob_plan *= self.freq_dict[feat]
         return prob_plan
+    # ================================================================================================
+
+    def compute_discovery_value(self, input_set):
+        """
+        :param input_set:
+        :return:
+        NOTE: we assume equal likelihood of a feature being liked or disliked
+        TODO: IF  a likelihood of being relevant is given, then that is the probability that should be used in expected
+         discovery calculation. as of now we sum up the probabilities. better than doing 1/n averaging which is VERY conservative
+        """
+        prob_plan =0.0
+        for feat in input_set:
+            prob_plan += self.freq_dict[feat]
+        return prob_plan
 
     # ================================================================================================
     def IMPORTANT_get_plans_for_round(self, num_plans=30, use_gain_function=True, include_feature_distinguishing= True, include_probability_term = True,
@@ -329,6 +344,8 @@ class Manager:
         """
         :param self:
         :return:
+        :NOTE: the overall INFORMATION FUNCTION is  (RBUS + RBUS/|confirmed features| + RBUS*prob(confirmed features in plan) ) (1 + discovery value of unseen features)
+
         """
         sorted_plans = []  # should contain the PLAN, FEATURES, SCORE
 
@@ -416,25 +433,35 @@ class Manager:
             # += score* (probabilityOF CONFIRMED FEATURES only)
             addendum = [addendum[x] + norm_gain_variance_array[x] * self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
         if include_discovery_term_product:
-            #discovery value is the probability of unseen terms
-            discovery_values = [1+ self.compute_prob_set(self.plan_dataset[index_value_list[x][0]]) for x in range(len(index_value_list))]
+            # discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
+            # it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
+            discovery_values = [1 + self.compute_discovery_value(self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
+                for x in range(len(index_value_list))]
 
-            # now update the score and store. SCORE = rbus_score+ addendum. Addendum = rbus/|F| + rbus*prob_plan. The addendum is what was previously computed
-            index_value_list = [(index_value_list[x][0], (norm_gain_variance_array[x] + addendum[x])*discovery_values[x]) for x in
-                                range(len(index_value_list))]
-        else:
-            #now update the score and store. SCORE = rbus_score+ addendum. Addendum = rbus/|F| + rbus*prob_plan. The addendum is what was previously computed
-            index_value_list = [(index_value_list[x][0], norm_gain_variance_array[x]+addendum[x]) for x in range(len(index_value_list))]
+        index_value_list = [(index_value_list[x][0], norm_gain_variance_array[x]+addendum[x]) for x in range(len(index_value_list))]
         # NOTE the order of ENTRIES in index value list will now be fixed
         # see the use of indices list a little further down in code.
         chosen_indices = []
         chosen_scores = []
+        UNSCALED_index_value_list = copy.deepcopy(index_value_list)
         while len(chosen_indices) < num_plans:
+            index_value_list = [
+                (index_value_list[x][0], index_value_list[x][1] * discovery_values[x]) for x in
+                range(len(index_value_list))]
             a = max(index_value_list,key=lambda x:x[1])
+            a_idx = index_value_list.index(a)
             chosen_indices.append(a[0])
             chosen_scores.append(a[1])
-            index_value_list.remove(a)
+            del index_value_list[a_idx]
+            del UNSCALED_index_value_list[a_idx]
+            del discovery_values[a_idx]
             self.seen_features.update(self.plan_dataset[a[0]])
+            if include_discovery_term_product:
+                #discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
+                #it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
+                discovery_values = [
+                    1 + self.compute_discovery_value(self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
+                    for x in range(len(index_value_list))]
             #now update the scores with the new discovery score.
         #end while
         print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
@@ -1009,9 +1036,8 @@ class Manager:
             encoded_plan = np.zeros(self.POSSIBLE_features_dimension)
             count_samples +=1
             for single_feature in current_plan_features:
-                temp_tuple_feature = tuple(single_feature)
-                if temp_tuple_feature in self.POSSIBLE_features:
-                    encoded_plan[self.RBUS_indexing.index(temp_tuple_feature)] = 1
+                if single_feature in self.POSSIBLE_features:
+                    encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
 
             true_value = float(single_annot_plan_struct[-1])
             #end for loop

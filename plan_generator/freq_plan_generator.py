@@ -5,13 +5,14 @@
 import pickle
 import random
 NUM_PLANS_NEEDED = 10000
-NUM_FEATURES = 200
+NUM_FEATURES = 30
 HIGH_OCCURRENCE_COUNT =300 #these counts are used as weights for generating plans
 MED_OCCURRENCE_COUNT =100
 LOW_OCCURRENCE_COUNT =10
-MAX_LENGTH = 4 #prob that the plan will end with this step
-RATIO_HIGH_FREQ_FEATURES = 0.03
-RATIO_MED_FREQ_FEATURES = 0.2
+MIN_FEATURES = 4 #prob that the plan will end with this step
+MAX_FEATURES = 4 #prob that the plan will end with this step
+RATIO_HIGH_FREQ_FEATURES = 0.1 #this is the NUMBER of features, what constitutes as high occurrence (probability) is given by the COUNTS defined previously
+RATIO_MED_FREQ_FEATURES = 0.3
 
 dest_pickle_file_name = "default_plans_pool.p"
 all_plans = set()
@@ -38,22 +39,15 @@ for single_feat in med_freq_features:
 
 #todo add check to see if the num of all possible permutations can be generated from the num plans
 while len(all_plans) < NUM_PLANS_NEEDED:
-    plan_length = random.randint(1,MAX_LENGTH) #includes max length
-    curr_plan = random.choices(s1_features,weights = s1_counts,k=plan_length)
-    curr_plan = [(x,) for x in curr_plan ]
+    plan_feature_num = random.randint(MIN_FEATURES, MAX_FEATURES) #includes max length
+    curr_plan = set()
+    while len(curr_plan) < plan_feature_num:
+        choice = random.choices(s1_features,weights = s1_counts,k=1)
+        curr_plan.add(choice[0])
     # curr_plan = {x:1 for x in curr_plan}
     all_plans.add(tuple(curr_plan))
 #end while
-all_plans_formatted = []
-for single_plan in all_plans:
-    mod_single_plan = set()
-    for step in single_plan:
-        mod_single_plan = mod_single_plan.union({x for x in step })
-    #end for loop
-    all_plans_formatted.append(mod_single_plan)
-#end outer for loop
-all_plans = all_plans_formatted
-
+all_plans = [set(x) for x in all_plans]
 with open(dest_pickle_file_name, "wb") as dest:
     pickle.dump(all_plans,dest)
 print(all_plans)
