@@ -26,6 +26,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
                                  prob_feat_select= 0.2, preference_distribution_string="power_law"):
 
     learn_LSfit = True
+    RATIO_TEST_SET = 0.1
     print("doing probability per level =", prob_feat_select)
     print("include_gain = ",include_gain)
     print("include_feature_distinguishing = ",include_feature_distinguishing)
@@ -33,6 +34,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("include_feature_feedback = ",include_feature_feedback)
     print("RANOM SAMPLING ENABLED = ", random_sampling_enabled)
     print("Rating Noise =", input_rating_noise)
+    print("RATIO TEST SET =", RATIO_TEST_SET)
     in_region_error = []
     out_region_error = []
     bayes_error_list = []
@@ -74,7 +76,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         print("num features =", len(pref_list))
         print("Include gain is =", include_gain)
         manager.sim_human.change_rating_noise(0.0)# todo NOTE the test dataset has no noise.
-        test_plans = manager.get_extremities_test_set_before_training(test_set_size=1000) #0.1 top and 0.1 bottom
+        test_plans = manager.extract_test_set(test_set_size= int(RATIO_TEST_SET*len(manager.plan_dataset)))
         annotated_test_plans = manager.get_feedback(test_plans)
         manager.sim_human.change_rating_noise(input_rating_noise)  # todo NOTE the test dataset has no noise.
         manager.test_set = annotated_test_plans
@@ -280,8 +282,8 @@ if __name__ == "__main__":
 
     # preference_distribution_string = "power_law"
     preference_distribution_string = "uniform"
-    total_num_plans = 180
-    plans_per_round = 60
+    total_num_plans = 40
+    plans_per_round = 5
     noise_value = 0.2
     prob_feat_select = 1.0
 
@@ -305,6 +307,20 @@ if __name__ == "__main__":
     cases = [list(x) for x in cases]
     random.shuffle(cases)
 
+    random_sampling_state = False
+    for i in range(1):
+        all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+                              random_sampling_enabled=random_sampling_state,
+                              include_feature_feedback=True,
+                              include_gain=False,
+                              include_feature_distinguishing=False,
+                              include_prob_term=False,
+                                manager_pickle_file = manager_pickle_file,
+                                repetitions=num_repetitions,
+                                prob_feat_select= prob_feat_select,
+                                preference_distribution_string= preference_distribution_string)))
+
+
     random_sampling_state = True
     for i in range(1):
         all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
@@ -319,18 +335,7 @@ if __name__ == "__main__":
 
 
 
-    random_sampling_state = False
-    for case_parameters in cases:
-        all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-                                random_sampling_enabled =  random_sampling_state,
-                                include_feature_feedback= True,
-                                include_gain= False,
-                                include_feature_distinguishing= False,
-                                include_prob_term = False,
-                                manager_pickle_file = manager_pickle_file,
-                                repetitions=num_repetitions,
-                                prob_feat_select= prob_feat_select,
-                                preference_distribution_string= preference_distribution_string)))
+
 
 
 

@@ -4,15 +4,15 @@
 
 import pickle
 import random
-NUM_PLANS_NEEDED = 10000
-NUM_FEATURES = 30
-HIGH_OCCURRENCE_COUNT =300 #these counts are used as weights for generating plans
-MED_OCCURRENCE_COUNT =100
+NUM_PLANS_NEEDED = 1000
+NUM_FEATURES = 20
+HIGH_OCCURRENCE_COUNT =10 #these counts are used as weights for generating plans
+MED_OCCURRENCE_COUNT =10
 LOW_OCCURRENCE_COUNT =10
 MIN_FEATURES = 4 #prob that the plan will end with this step
 MAX_FEATURES = 4 #prob that the plan will end with this step
-RATIO_HIGH_FREQ_FEATURES = 0.1 #this is the NUMBER of features, what constitutes as high occurrence (probability) is given by the COUNTS defined previously
-RATIO_MED_FREQ_FEATURES = 0.3
+RATIO_HIGH_FREQ_FEATURES = 0.33 #this is the NUMBER of features, what constitutes as high occurrence (probability) is given by the COUNTS defined previously
+RATIO_MED_FREQ_FEATURES = 0.33
 
 dest_pickle_file_name = "default_plans_pool.p"
 all_plans = set()
