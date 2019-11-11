@@ -1,3 +1,12 @@
+"""
+
+Small batch size
+?? weights larger than noise. 0.5 >0.2
+gain calculation and sampling is bad.
+
+
+"""
+
 import numpy as np
 import pickle
 import datetime
@@ -96,15 +105,17 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
 
     random.seed(random_seed)
 
-    for round_num in range(num_rounds):
+    for round_num in range(1,num_rounds+1):
         print("============ ROUND ",round_num,"====================")
-
-        if random_sampling_enabled:
+        if round_num == 1:
             sampled_plans = manager.sample_randomly(num_plans_per_round)
         else:
-            sampled_plans = manager.IMPORTANT_get_plans_for_round(num_plans_per_round, use_gain_function=include_gain, \
-                                                                  include_feature_distinguishing= include_feature_distinguishing, \
-                                                                  include_probability_term = include_prob_term)
+            if random_sampling_enabled:
+                sampled_plans = manager.sample_randomly(num_plans_per_round)
+            else:
+                sampled_plans = manager.IMPORTANT_get_plans_for_round(num_plans_per_round, use_gain_function=include_gain, \
+                                                                      include_feature_distinguishing= include_feature_distinguishing, \
+                                                                      include_probability_term = include_prob_term)
 
         annotated_plans = manager.get_feedback(sampled_plans)
         #analyze the plans sampled. For each plan print the number of s1 features, s2 features,etc WITH their associated
@@ -136,7 +147,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         #end if
         manager.update_indices(annotated_plans)
 
-        manager.relearn_model(learn_LSfit, num_chains=2) # here is where we first train the model
+        manager.relearn_model(learn_LSfit, num_chains=3) # here is where we first train the model
         #todo REMOVE THIS and maybe move it to replace the test set
         # manager.select_best_and_worst(30)
         bayes_error, MLE_error = manager.evaluate(annotated_test_plans)
@@ -274,7 +285,7 @@ if __name__ == "__main__":
 
     all_data = []
     num_repetitions = 1
-    NUM_RANDOM_SAMPLES = 3
+    NUM_RANDOM_SAMPLES = 5
     num_parameters = 4
     parameter_values = [True, False]
     parameter_indexed_values = [parameter_values] * num_parameters
@@ -282,7 +293,7 @@ if __name__ == "__main__":
 
     # preference_distribution_string = "power_law"
     preference_distribution_string = "uniform"
-    total_num_plans = 40
+    total_num_plans = 50
     plans_per_round = 5
     noise_value = 0.2
     prob_feat_select = 1.0
@@ -312,7 +323,7 @@ if __name__ == "__main__":
         all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
                               random_sampling_enabled=random_sampling_state,
                               include_feature_feedback=True,
-                              include_gain=False,
+                              include_gain=True,
                               include_feature_distinguishing=False,
                               include_prob_term=False,
                                 manager_pickle_file = manager_pickle_file,

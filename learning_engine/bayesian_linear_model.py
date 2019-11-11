@@ -193,18 +193,19 @@ class bayesian_linear_model:
             num_samples = all_outputs.shape[0]
         #todo NOTE this was changed to sample the last n parameter points
         outputs = np.random.choice(all_outputs,num_samples, replace=False)
-        try:
-            kernel = scipy.stats.gaussian_kde(outputs)
-        except:
-            #an error can be thrown when the covariance matrix computed is a singular matrix.
-            #if the encodings is all zeros (no features), then the output could be all 0 as well, leading to problems
-            # print(" Singular covariance matrix error, the outputs are")
-            # print(outputs)
-            singular_value = outputs[0]
-            #then density is 1.0 for y = default bias value. Which is the value we want to output when there are no features
-            current_bias = np.mean(self.alpha_param)
-            kernel = lambda x: np.array([1.0*int(y == current_bias) for y in x])
-        return outputs,kernel
+        return outputs
+        # try:
+        #     kernel = scipy.stats.gaussian_kde(outputs)
+        # except:
+        #     #an error can be thrown when the covariance matrix computed is a singular matrix.
+        #     #if the encodings is all zeros (no features), then the output could be all 0 as well, leading to problems
+        #     # print(" Singular covariance matrix error, the outputs are")
+        #     # print(outputs)
+        #     singular_value = outputs[0]
+        #     #then density is 1.0 for y = default bias value. Which is the value we want to output when there are no features
+        #     current_bias = np.mean(self.alpha_param)
+        #     kernel = lambda x: np.array([1.0*int(y == current_bias) for y in x])
+        # return outputs,kernel
 
 
 #---end class bayesian linear model

@@ -226,8 +226,12 @@ class Manager:
         self.model_MLE = None # will be set later
         self.use_feature_feedback = use_feature_feedback
         self.like_dislike_prior_weights = relevant_features_prior_weights
-        self.min_rating = 1e10 #extreme starting values that will be updated after first round of feedback.
-        self.max_rating = -1e10
+        # self.min_rating = 1e10 #extreme starting values that will be updated after first round of feedback.
+        # self.max_rating = -1e10
+
+        self.min_rating = -3.0 #extreme starting values that will be updated after first round of feedback.
+        self.max_rating = 3.0
+
         self.indices_used = set()
         self.random_seed = random_seed
         self.sim_human = None
@@ -360,9 +364,9 @@ class Manager:
 
         try:
             if self.POSSIBLE_features_dimension != self.learning_model_bayes.beta_params.shape[1]:
-                self.relearn_model(learn_LSfit=True, num_chains=2)
+                self.relearn_model(learn_LSfit=True, num_chains=3)
         except:  # will happen if the learning model has never been trained yet
-            self.relearn_model(learn_LSfit=True, num_chains=2)
+            self.relearn_model(learn_LSfit=True, num_chains=3)
 
         num_subProcess_to_use = self.num_cores_RBUS
         # gain_function = RBUS_selection.get_gain_function(min_value=self.min_rating,max_value=self.max_rating)
@@ -418,13 +422,13 @@ class Manager:
             gain_normalizing_denom = 1.0  # avoids "nan" problem
         norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
         variance_array = np.array([x[2] for x in index_value_list])
-        norm_variance_array = variance_array
-
-        # var_normalizing_denom = np.max(variance_array)
-        # if var_normalizing_denom == 0.0:
-        #     var_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        var_normalizing_denom = np.max(variance_array)
+        if var_normalizing_denom == 0.0:
+            var_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
         norm_gain_variance_array = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+
+
         # now store (idx,norm_gain*norm_variance)
         addendum = [0.0]*len(index_value_list)
         if include_feature_distinguishing:
@@ -638,42 +642,6 @@ class Manager:
         self.indices_used.update(new_indices_sampled)
         return [self.plan_dataset[x] for x in new_indices_sampled]
 
-    # ================================================================================================
-
-
-
-
-    @staticmethod
-    def APPROX_parallel_variance_computation(input_list):
-        """
-
-        :param input_list:
-        :return:
-        """
-
-
-        # -----end inner function get_biModal_gaussian_gain_function
-
-        learning_model_bayes, encoded_plan, min_rating, max_rating, include_gain = input_list
-        preference_possible_values = np.linspace(min_rating, max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
-        predictions, kernel = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-                                                                                         num_samples=NUM_SAMPLES_KDE)
-        gain_function = get_gain_function(min_rating, max_rating)
-        preference_prob_density = kernel(preference_possible_values)
-        normalizing_denom = np.sum(preference_prob_density)
-        mean_preference = np.sum(preference_prob_density * preference_possible_values) / normalizing_denom
-        preference_variance = np.sum(
-            np.square(preference_possible_values - mean_preference) * preference_prob_density) / normalizing_denom
-        composite_func_integral = 0.0
-        if include_gain:  # saves time when we do not use gain function, otherwise we only need the variance
-            gain_outputs = np.array([gain_function(x) for x in preference_possible_values])
-            composite_func_outputs = preference_prob_density * gain_outputs
-            # composite_func_outputs = composite_func_outputs.reshape(composite_func_outputs.shape[0])
-            composite_func_integral = np.sum(composite_func_outputs* preference_possible_values)
-        # print("TEMP PRINT: The composite_func_integral of the prob*gain over the outputs is =", composite_func_integral)
-        # this composite_func_integral is the Expected gain from taking this sample
-        return predictions, composite_func_integral, preference_variance
-
 
     # ================================================================================================
     @staticmethod
@@ -773,35 +741,23 @@ class Manager:
 
         learning_model_bayes,encoded_plan, min_rating, max_rating, include_gain  = input_list
         preference_possible_values = np.linspace(min_rating, max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
-        predictions, kernel = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-                                                                                              num_samples=NUM_SAMPLES_KDE)
-
-        gain_function = get_gain_function(min_rating, max_rating)
+        # predictions, kernel = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
+        #                                                                                       num_samples=NUM_SAMPLES_KDE)
+        predictions = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,num_samples=NUM_SAMPLES_KDE)
         mean_preference = np.mean(predictions)
         preference_variance = np.sum(np.square(predictions - mean_preference) )/(len(predictions)-1)
 
-        return 1.0, preference_variance
 
-
-        # gain_function = get_gain_function(min_rating,max_rating)
-        # preference_prob_density = kernel(preference_possible_values)
-        # normalizing_denom = np.sum(preference_prob_density)
-        # if normalizing_denom == 0.0:
-        #     normalizing_denom = 1.0 # THIS IS VERY HACKY and needed to avoid nan, that occurs when there are no features, and alpha is deterministic
-        # #todo NOTE this is HACKY/SAMPLING APPROACH of computing the mean value. It is not mathematically valid, but WORKS if well sampled and "uniform".
-        # # AND very fast + works well
-        # mean_preference = np.sum(preference_prob_density * preference_possible_values) / normalizing_denom
-        # preference_variance = np.sum(np.square(preference_possible_values - mean_preference) * preference_prob_density) / normalizing_denom
-        # composite_func_integral = 0.0
-        # if include_gain:  # saves time when we do not use gain function
-        #     gain_outputs = np.array([gain_function(x) for x in preference_possible_values])
-        #     composite_func_outputs = preference_prob_density * gain_outputs #elementwise product of two vectors
-        #     composite_func_outputs = composite_func_outputs.reshape(composite_func_outputs.shape[0])
-        #     #todo MAYBE USE THE SAMPLING APPROACH HERE AS WELL !! speed it up considerably !!
-        #     composite_func_integral = integrate.trapz(composite_func_outputs, preference_possible_values)
-        # # print("TEMP PRINT: The composite_func_integral of the prob*gain over the outputs is =", composite_func_integral)
-        # # this composite_func_integral is the Expected gain from taking this sample
-        # return composite_func_integral, preference_variance
+        mean_gain_value = 0.0
+        if include_gain:  # saves time when we do not use gain function
+            gain_function = get_gain_function(min_rating, max_rating)
+            gain_values = np.array([gain_function(x) for x in predictions])
+            # todo NOTE this is HACKY/SAMPLING APPROACH of computing the mean value. It is not mathematically valid, but WORKS if well sampled and "uniform".
+            # AND very fast + works well
+            mean_gain_value = np.mean(gain_values)
+        # print("TEMP PRINT: The composite_func_integral of the prob*gain over the outputs is =", composite_func_integral)
+        # this composite_func_integral is the Expected gain from taking this sample
+        return mean_gain_value, preference_variance
 
 
     # ================================================================================================
@@ -908,7 +864,7 @@ class Manager:
 
 
     # ================================================================================================
-    def relearn_model(self, learn_LSfit = False, num_chains=1):
+    def relearn_model(self, learn_LSfit = False, num_chains=3):
         """
         since we have the relevant features and some annotated plans(<plans, rating>, we learn a liner regression model
         by Bayesian Learning. The manager will connect to the learning engine to learn and update the model
@@ -978,7 +934,7 @@ class Manager:
                                                               self.RBUS_prior_weights,
                                                               self.POSSIBLE_features_dimension,
                                                               sd= EXPECTED_NOISE_VARIANCE,
-                                                              sampling_count=2000,
+                                                              sampling_count=3000,
                                                               num_chains=num_chains)
                                                               # num_chains=num_chains)
 
@@ -1059,26 +1015,28 @@ class Manager:
                 MLE_error_list.append(math.sqrt(current_squared_error))
                 MLE_target_prediction_list.append((true_value,mle_predict))
 
-            predictions,kernel = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
-            preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
-            preference_prob_density = kernel(preference_possible_values)
-            if not np.min(preference_prob_density) == np.max(preference_prob_density):
-                index_mode= np.where(preference_prob_density == np.max(preference_prob_density))[0][0]
-                mode_prediction = preference_possible_values[index_mode]
-                normalizing_denom = np.sum(preference_prob_density)
-                mean_prediction = np.sum(preference_prob_density * preference_possible_values)/normalizing_denom #this is a HACK but computationally faster
-                prediction_variance = np.sum(np.square(preference_possible_values-mean_prediction)*preference_prob_density)/normalizing_denom #this is a HACK, not true variance, but computationally faster
-            else:
-                #absolute uniform distribution over all preference values, actually means we have no information,
-                # we SET the alpha to be fixed, so no variations in the output.
-                mode_prediction = 0.0
-                mean_prediction = 0.0
-                prediction_variance = 0.0
+            predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+            mean_prediction = np.mean(predictions)
+            prediction_variance = np.var(predictions)
+            # preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
+            # preference_prob_density = kernel(preference_possible_values)
+            # if not np.min(preference_prob_density) == np.max(preference_prob_density):
+            #     index_mode= np.where(preference_prob_density == np.max(preference_prob_density))[0][0]
+            #     mode_prediction = preference_possible_values[index_mode]
+            #     normalizing_denom = np.sum(preference_prob_density)
+            #     mean_prediction = np.sum(preference_prob_density * preference_possible_values)/normalizing_denom #this is a HACK but computationally faster
+            #     prediction_variance = np.sum(np.square(preference_possible_values-mean_prediction)*preference_prob_density)/normalizing_denom #this is a HACK, not true variance, but computationally faster
+            # else:
+            #     #absolute uniform distribution over all preference values, actually means we have no information,
+            #     # we SET the alpha to be fixed, so no variations in the output.
+            #     mode_prediction = 0.0
+            #     mean_prediction = 0.0
+            #     prediction_variance = 0.0
             #todo NOTE USING MEAN PREDICTION, makes more sense with using variance for decisions
             current_squared_error = math.pow(true_value - mean_prediction, 2)
             bayes_total_squared_error += current_squared_error
             bayes_error_list.append( math.sqrt(current_squared_error))
-            bayes_target_prediction_list.append((true_value, mode_prediction, mean_prediction, prediction_variance))
+            bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
 
 
         if count_samples == 0:
@@ -1320,28 +1278,14 @@ class Manager:
                 MLE_target_prediction_list.append((true_value,mle_predict))
 
             # ---now do the bayes model, need to get the MODE prediction
-            predictions, kernel = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-                                                                                                  num_samples=NUM_SAMPLES_KDE)
-            preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
-            preference_prob_density = kernel(preference_possible_values)
-            if not np.min(preference_prob_density) == np.max(preference_prob_density):
-                index_mode = np.where(preference_prob_density == np.max(preference_prob_density))[0][0]
-                mode_prediction = preference_possible_values[index_mode]
-                normalizing_denom = np.sum(preference_prob_density)
-                mean_prediction = np.sum(preference_prob_density * preference_possible_values) / normalizing_denom #this is a HACK (done in many places), but computationally faster
-                prediction_variance = np.sum(np.square(
-                    preference_possible_values - mean_prediction) * preference_prob_density) / normalizing_denom #this is a HACK, not true variance, but computationally faster
-            else:
-                # absolute uniform distribution over all preference values, actually means we have no information,
-                # we SET the alpha to be fixed, so no variations in the output.
-                mode_prediction = 0.0
-                mean_prediction = 0.0
-                prediction_variance = 0.0
-            #todo NOTE USING MEAN PREDICTION, makes more sense with using variance for decisions
+            predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,num_samples=NUM_SAMPLES_KDE)
+            mean_prediction = np.mean(predictions)
+            prediction_variance = np.var(predictions)
+
             current_squared_error = math.pow(true_value - mean_prediction, 2)
             bayes_total_squared_error += current_squared_error
             bayes_error_list.append( math.sqrt(current_squared_error))
-            bayes_target_prediction_list.append((true_value, mode_prediction, mean_prediction, prediction_variance))
+            bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
 
         # end for loop
         print(" If inside INTERESTING REGION is ", inside_region)
