@@ -207,6 +207,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     #manager.learning_model_bayes.plot_learnt_parameters()
     print("manager file =", manager_pickle_file)
     print("include_gain = ",include_gain)
+    print("include_discovery_term = ",include_discovery_term)
     print("include_feature_distinguishing = ",include_feature_distinguishing)
     print("include_prob_term = ",include_prob_term)
     print("include_feature_feedback = ",include_feature_feedback)
@@ -326,46 +327,10 @@ if __name__ == "__main__":
     except FileNotFoundError:
         pass #file was already deleted
     cases = [list(x) for x in cases]
+    print("The parameter cases are ",cases)
     random.shuffle(cases)
-
-
-    # --------------------------------------------------------------
-    random_sampling_state = False
-    # FAVORITE SETUP
-    for i in range(1):
-        all_data.append(([random_sampling_state] + cases[0],
-                         Active_Learning_Testing(total_num_plans=total_num_plans, plans_per_round=plans_per_round,
-                                                 random_seed=random_seed, noise_value=noise_value,
-                                                 random_sampling_enabled=random_sampling_state,
-                                                 include_feature_feedback=True,
-                                                 include_discovery_term=True,
-                                                 include_gain=False,
-                                                 include_feature_distinguishing=False,
-                                                 include_prob_term=True,
-                                                 manager_pickle_file=manager_pickle_file,
-                                                 repetitions=num_repetitions,
-                                                 prob_feat_select=prob_feat_select,
-                                                 preference_distribution_string=preference_distribution_string)))
-
-
-    # --------------------------------------------------------------
-    random_sampling_state = False
-    # FAVORITE SETUP
-    for i in range(1):
-        all_data.append(([random_sampling_state] + cases[0],
-                         Active_Learning_Testing(total_num_plans=total_num_plans, plans_per_round=plans_per_round,
-                                                 random_seed=random_seed, noise_value=noise_value,
-                                                 random_sampling_enabled=random_sampling_state,
-                                                 include_feature_feedback=True,
-                                                 include_discovery_term=True,
-                                                 include_gain=True,
-                                                 include_feature_distinguishing=True,
-                                                 include_prob_term=True,
-                                                 manager_pickle_file=manager_pickle_file,
-                                                 repetitions=num_repetitions,
-                                                 prob_feat_select=prob_feat_select,
-                                                 preference_distribution_string=preference_distribution_string)))
-
+    # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
+    cases = [[True, True, True, True], [True, False, True, True], [False, True, True, True],  [True, True, False, True]]
 
 
     # --------------------------------------------------------------
@@ -384,10 +349,6 @@ if __name__ == "__main__":
 
 
     #--------------------------------------------------------------
-
-
-
-
 
     random_sampling_state = False
     for case_parameters in cases:
@@ -428,10 +389,11 @@ if __name__ == "__main__":
         case_parameters = single_data_set[0]
         print("============================================================")
         print("CASE DESCRIPTIONS")
-        print( " || random_sampling_enabled =", case_parameters[0],
-                " || include_gain=", case_parameters[1],
-                " || include_feature_distinguishing=", case_parameters[2],
-                " || include_prob_term =", case_parameters[3])
+        print( "|| feature feedback = True \n || random_sampling_enabled =", case_parameters[0],
+                " || include_discovery=", case_parameters[1],
+                " || include_gain=", case_parameters[2],
+                " || include_feature_distinguishing=", case_parameters[3],
+                " || include_prob_term =", case_parameters[4])
         for i in range(num_repetitions):
             print("BAYES ERROR LIST ", single_data_set[1][i][0])
             print("MLE ERROR LIST ", single_data_set[1][i][1])

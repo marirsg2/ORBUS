@@ -62,19 +62,12 @@ class bayesian_linear_model:
                                     num_chains = 3,
                                     bias_preference = 0.0):
 
+        #TODO NOTE EVEN WITHOUT PRIOR WEIGHTS ARE NOT CURRENTLY USED, and works just as well
         #the encoded plans contains a list of [<encoding>,<rating>]
         input_dataset = np.array([x[0] for x in encoded_plans],dtype=np.float)
         output_dataset = np.array([x[1]  for x in encoded_plans],dtype=np.float)
 
-        # try:
-        #     vif = [variance_inflation_factor(input_dataset, i) for i in range(input_dataset.shape[1])]
-        #     print(vif)
-        #     print("number of entries in vif should match num discovered features")
-        # except:
-        #     print("Error during VIF Variance Inflation Factor computation")
 
-        #TODO USE SAME MODEL AND TEST ON DUMMY DATA WITH CLEARLY KNOWN FUNCTION
-        # maybe it is ok that it does not converge, but works with metropolis sampling. Expected? in early stages
         bias_preference = tt.constant(bias_preference)
         #todo Make bias A  learnable parameter
         with pm.Model() as linear_model:
@@ -84,7 +77,7 @@ class bayesian_linear_model:
             cov = np.diag(np.full((number_of_dimensions,), sd)) #for both mu and beta (slope)
             #todo add support to have the covariance of unknown features to be much larger ? SD = 1.0 is enough !!
             # Slope
-            prior_weights = np.random.rand(number_of_dimensions)
+            # prior_weights = np.random.rand(number_of_dimensions)
             betas = pm.MvNormal('betas', mu=prior_weights, cov=cov, shape=(number_of_dimensions,))
             # Standard deviation
             sigma = pm.HalfNormal('sigma', sd=sd)

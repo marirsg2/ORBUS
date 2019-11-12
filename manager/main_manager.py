@@ -205,7 +205,7 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_weights = (0.1, -0.1),
+                 relevant_features_prior_weights = (0.5, -0.5),
                  preference_distribution_string="power_law",
                  random_seed = 18):
         """
@@ -889,19 +889,12 @@ class Manager:
             self.min_rating = min_rating
         if max_rating > self.max_rating:
             self.max_rating = max_rating
-        scaler = self.max_rating - self.min_rating
-        min_rating = self.min_rating
-        max_rating = self.max_rating
 
         scores = []
         for plan in self.annotated_plans:
             scores.append(plan[-1])
 
-        #todo NOTE no rescaling needed and is REMOVED . The user just enters whatever range of values they like to express preference.
-        # We only try to be accurate about the bottom and top 20%
-        # for single_plan in rescaled_plans:
-        #     single_plan[-1] = single_plan[-1] / scaler - self.min_rating / scaler#last term is to make the min == 0
-        # # end for loop
+
 
         encoded_plans_list = []
         for single_plan in rescaled_plans:
@@ -934,7 +927,7 @@ class Manager:
         #end if learn_LSfit
 
         self.learning_model_bayes.learn_bayesian_linear_model(encoded_plans_list,
-                                                              self.RBUS_prior_weights,
+                                                              np.array(self.RBUS_prior_weights),
                                                               self.POSSIBLE_features_dimension,
                                                               sd= EXPECTED_NOISE_VARIANCE,
                                                               sampling_count=2000,

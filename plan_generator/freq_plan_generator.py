@@ -12,8 +12,8 @@ NUM_FEATURES = 100
 HIGH_OCCURRENCE_COUNT = 1350 #these counts are used as weights for generating plans
 MED_OCCURRENCE_COUNT = 450
 LOW_OCCURRENCE_COUNT = 150
-MIN_FEATURES = 2 #prob that the plan will end with this step
-MAX_FEATURES = 4 #prob that the plan will end with this step
+MIN_FEATURES = 3 #prob that the plan will end with this step
+MAX_FEATURES = 5 #prob that the plan will end with this step
 RATIO_HIGH_FREQ_FEATURES = 0.15 #this is the NUMBER of features, what constitutes as high occurrence (probability) is given by the COUNTS defined previously
 RATIO_MED_FREQ_FEATURES = 0.7 #THE REST ARE LOW FREQ
 
