@@ -205,7 +205,7 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_weights = (0.5, -0.5),
+                 relevant_features_prior_weights = (0.1, -0.1),
                  preference_distribution_string="power_law",
                  random_seed = 18):
         """
