@@ -304,8 +304,8 @@ if __name__ == "__main__":
 
     # preference_distribution_string = "power_law"
     preference_distribution_string = "uniform"
-    total_num_plans = 40
-    plans_per_round = 5
+    total_num_plans = 50
+    plans_per_round = 2
     noise_value = 0.2
     prob_feat_select = 0.2
 
