@@ -31,7 +31,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
                                  include_gain = False, include_discovery_term=True, include_feature_distinguishing=True,
                                  include_prob_term = True,include_feature_feedback =True,
                                  random_seed = 40,
-                                 manager_pickle_file = None, input_rating_noise =0.0,
+                                 manager_pickle_file = None, input_rating_noise =0.2,
                                  prob_feat_select= 0.2, preference_distribution_string="power_law"):
 
     learn_LSfit = True
@@ -65,7 +65,8 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
             pref_list = sorted(pref_list, key=lambda x: x[0])
             manager.set_AL_params(use_feature_feedback = include_feature_feedback,random_seed=random_seed)
             print("TRUE FEATURE PREFERENCE", pref_list)
-            print("FREQ DICT", manager.freq_dict)
+            freq_info = sorted(manager.freq_dict.items(),key=lambda x:x[1])
+            print("FREQ INFO", freq_info)
             sorted_freq_pref_list = [(x[0], manager.freq_dict[x[0]], x[1]) for x in pref_list]
             sorted_freq_pref_list = sorted(sorted_freq_pref_list,key= lambda x:x[-1][-1])
             print("PREF & FREQ = ",sorted_freq_pref_list)
@@ -75,14 +76,19 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         print("RECREATE manager")
         RATING_NOISE = input_rating_noise
         manager = Manager(prob_feature_selection=prob_feat_select,use_feature_feedback = include_feature_feedback,
-                          random_seed=random_seed, preference_distribution_string=preference_distribution_string)
+                          random_seed=random_seed, preference_distribution_string=preference_distribution_string,
+                          preference_gaussian_noise_sd=input_rating_noise)
         pref_list = [x for x in manager.sim_human.feature_preferences_dict.items()]
         pref_list = sorted(pref_list, key=lambda x: x[0])
         print("TRUE FEATURE PREFERENCE", pref_list)
-        print("FREQ DICT", manager.freq_dict)
+        freq_info = sorted(manager.freq_dict.items(), key=lambda x: x[1])
+        print("FREQ INFO", freq_info)
         sorted_freq_pref_list = [(x[0], manager.freq_dict[x[0]], x[1]) for x in pref_list]
         sorted_freq_pref_list = sorted(sorted_freq_pref_list, key=lambda x: x[-1][-1])
-        print("PREF & FREQ = ", sorted_freq_pref_list)
+        print("PREF & FREQ by pref = ", sorted_freq_pref_list)
+        sorted_freq_pref_list = [(x[0], manager.freq_dict[x[0]], x[1]) for x in pref_list]
+        sorted_freq_pref_list = sorted(sorted_freq_pref_list, key=lambda x: x[1])
+        print("PREF & FREQ by freq = ", sorted_freq_pref_list)
         print("num features =", len(pref_list))
         print("Include gain is =", include_gain)
         manager.sim_human.change_rating_noise(0.0)# todo NOTE the test dataset has no noise.
@@ -108,16 +114,16 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
 
     for round_num in range(1,num_rounds+1):
         print("============ ROUND ",round_num,"====================")
-        if round_num == 1:
+        # if round_num == 1:
+        #     sampled_plans = manager.sample_randomly(num_plans_per_round)
+        # else:
+        if random_sampling_enabled:
             sampled_plans = manager.sample_randomly(num_plans_per_round)
         else:
-            if random_sampling_enabled:
-                sampled_plans = manager.sample_randomly(num_plans_per_round)
-            else:
-                sampled_plans = manager.IMPORTANT_get_plans_for_round(num_plans_per_round, use_gain_function=include_gain, \
-                                                                      include_feature_distinguishing= include_feature_distinguishing, \
-                                                                      include_discovery_term_product=include_discovery_term,
-                                                                      include_probability_term = include_prob_term)
+            sampled_plans = manager.IMPORTANT_get_plans_for_round(num_plans_per_round, use_gain_function=include_gain, \
+                                                                  include_feature_distinguishing= include_feature_distinguishing, \
+                                                                  include_discovery_term_product=include_discovery_term,
+                                                                  include_probability_term = include_prob_term)
 
         annotated_plans = manager.get_feedback(sampled_plans)
 
@@ -125,6 +131,8 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         print("SUM OF PROB OF SEEN FEATURES =", sum([manager.freq_dict[x] for x in manager.seen_features]) ," ; SEEN FEATURES = ", manager.seen_features)
         print("LIKED FEATURES ", manager.liked_features)
         print("DISLIKED FEATURES ", manager.disliked_features)
+        print("RELEVANT FEATURES PROB MASS = ",sum([manager.freq_dict[x] for x in manager.liked_features.union(manager.disliked_features)]) )
+        print("RELEVANT FEATURES PREF MASS = ",sum([abs(manager.sim_human.feature_preferences_dict[x][-1]) for x in manager.liked_features.union(manager.disliked_features)]) )
         print("UNKNOWN FEATURES ", manager.all_s1_features.difference(manager.seen_features))
         #analyze the plans sampled. For each plan print the number of s1 features, s2 features,etc WITH their associated
         # freq and score
@@ -249,7 +257,7 @@ def test_basic_MV_linModel(toy_data_input, toy_data_output):
     print("Intercept: %.4f" % reg.intercept_)
 
 
-def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_seed = 150, noise_value = 1.0, random_sampling_enabled = False,
+def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_seed = 150, noise_value = 0.2, random_sampling_enabled = False,
                             include_gain=True,include_discovery_term=True, include_feature_distinguishing=True, include_prob_term=True,  include_feature_feedback=True,
                             manager_pickle_file = "default_man.p",
                             prob_feat_select= 0.2, preference_distribution_string="power_law",repetitions = 1):
@@ -302,10 +310,11 @@ if __name__ == "__main__":
     parameter_indexed_values = [parameter_values] * num_parameters
     cases = itertools.product(*parameter_indexed_values)
 
+    # preference_distribution_string = "uniform"
     # preference_distribution_string = "power_law"
-    preference_distribution_string = "uniform"
-    total_num_plans = 50
-    plans_per_round = 2
+    preference_distribution_string = "gaussian"
+    total_num_plans = 40
+    plans_per_round = 5
     noise_value = 0.2
     prob_feat_select = 0.2
 
@@ -330,7 +339,10 @@ if __name__ == "__main__":
     print("The parameter cases are ",cases)
     random.shuffle(cases)
     # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-    cases = [[True, True, True, True], [True, False, True, True], [False, True, True, True],  [True, True, False, True]]
+    special_order_cases = [[True, True, False, True],[True, False, False, True], [True, False, True, True], [False, True, True, True],[True, True, True, True]]
+    for single_case in special_order_cases:
+        cases.remove(single_case)
+    cases = special_order_cases + cases #reorders it
 
 
     # --------------------------------------------------------------
@@ -390,9 +402,9 @@ if __name__ == "__main__":
         print("============================================================")
         print("CASE DESCRIPTIONS")
         print( "|| feature feedback = True \n || random_sampling_enabled =", case_parameters[0],
-                " || include_discovery=", case_parameters[1],
-                " || include_gain=", case_parameters[2],
-                " || include_feature_distinguishing=", case_parameters[3],
+                " || include_discovery =", case_parameters[1],
+                " || include_gain =", case_parameters[2],
+                " || include_feature_distinguishing =", case_parameters[3],
                 " || include_prob_term =", case_parameters[4])
         for i in range(num_repetitions):
             print("BAYES ERROR LIST ", single_data_set[1][i][0])
