@@ -7,8 +7,8 @@ import random
 import datetime
 
 #--------------------------------
-NUM_PLANS_NEEDED = 3500
-NUM_FEATURES = 100
+NUM_PLANS_NEEDED = 5000
+NUM_FEATURES = 200
 HIGH_OCCURRENCE_COUNT = 1350 #these counts are used as weights for generating plans
 MED_OCCURRENCE_COUNT = 450
 LOW_OCCURRENCE_COUNT = 150

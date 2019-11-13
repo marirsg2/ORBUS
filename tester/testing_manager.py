@@ -134,6 +134,8 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         print("RELEVANT FEATURES PROB MASS = ",sum([manager.freq_dict[x] for x in manager.liked_features.union(manager.disliked_features)]) )
         print("RELEVANT FEATURES PREF MASS = ",sum([abs(manager.sim_human.feature_preferences_dict[x][-1]) for x in manager.liked_features.union(manager.disliked_features)]) )
         print("UNKNOWN FEATURES ", manager.all_s1_features.difference(manager.seen_features))
+        print("MIN,MAX", manager.min_rating, manager.max_rating)
+        print("ANNOTATED MIN,MAX", manager.annotated_min, manager.annotated_max)
         #analyze the plans sampled. For each plan print the number of s1 features, s2 features,etc WITH their associated
         # freq and score
         sampled_plan_analytics = []
@@ -210,6 +212,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("INTERESTING REGION BAYES ERROR LIST ", inRegion_bayes_error_list)
     print("INTERESTING REGION  MLE ERROR LIST ", inRegion_MLE_error_list)
     print("MIN,MAX",manager.min_rating,manager.max_rating)
+    print("ANNOTATED MIN,MAX",manager.annotated_min,manager.annotated_max)
 
     #todo remove plotting code for speed
     #manager.learning_model_bayes.plot_learnt_parameters()
@@ -316,7 +319,7 @@ if __name__ == "__main__":
     total_num_plans = 40
     plans_per_round = 5
     noise_value = 0.2
-    prob_feat_select = 0.2
+    prob_feat_select = 0.1
 
     date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     date_time_str = date_time_str.replace(" ", "_")
@@ -339,25 +342,25 @@ if __name__ == "__main__":
     print("The parameter cases are ",cases)
     random.shuffle(cases)
     # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-    special_order_cases = [[True, True, False, True],[True, False, False, True], [True, False, True, True], [False, True, True, True],[True, True, True, True]]
+    special_order_cases = [[True, True, True, True],[True, False, True, True], [True, True, False, True], [True, False, False, True],[True, True, True, False]]
     for single_case in special_order_cases:
         cases.remove(single_case)
     cases = special_order_cases + cases #reorders it
 
 
     # --------------------------------------------------------------
-    random_sampling_state = True
-    for i in range(1):
-        all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-                                random_sampling_enabled =  random_sampling_state,
-                                include_feature_feedback= True,
-                                include_discovery_term = False,
-                                include_gain= False,
-                                include_feature_distinguishing= False,
-                                include_prob_term = False,
-                                manager_pickle_file = manager_pickle_file,
-                                repetitions=num_repetitions,
-                                prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
+    # random_sampling_state = True
+    # for i in range(1):
+    #     all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+    #                             random_sampling_enabled =  random_sampling_state,
+    #                             include_feature_feedback= True,
+    #                             include_discovery_term = False,
+    #                             include_gain= False,
+    #                             include_feature_distinguishing= False,
+    #                             include_prob_term = False,
+    #                             manager_pickle_file = manager_pickle_file,
+    #                             repetitions=num_repetitions,
+    #                             prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
 
 
     #--------------------------------------------------------------

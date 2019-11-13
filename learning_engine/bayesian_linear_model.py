@@ -103,62 +103,6 @@ class bayesian_linear_model:
         self.set_normal_distr_params(num_chains=num_chains,num_last_samples=None)
     #---end function learn_linear_model
 
-    #===================================================================
-    # def OLD_learn_bayesian_linear_model(self,
-    #                                 encoded_plans,
-    #                                 prior_weights,
-    #                                 number_of_dimensions,
-    #                                 sd = 1,
-    #                                 sampling_count=2000,
-    #                                 num_chains = 2,
-    #                                 bias_preference = 0.0):
-    #
-    #     #the encoded plans contains a list of [<encoding>,<rating>]
-    #     input_dataset = np.array([x[0] for x in encoded_plans],dtype=np.float)
-    #     output_dataset = np.array([x[1]  for x in encoded_plans],dtype=np.float)
-    #
-    #     #TODO USE SAME MODEL AND TEST ON DUMMY DATA WITH CLEARLY KNOWN FUNCTION
-    #     # maybe it is ok that it does not converge, but works with metropolis sampling. Expected? in early stages
-    #     bias_preference = tt.constant(bias_preference)
-    #     with pm.Model() as linear_model:
-    #         # Intercept
-    #         # alpha = pm.Normal('alpha', mu=0.5, sd=sd)
-    #         alpha = pm.Deterministic('alpha', bias_preference)
-    #
-    #         cov = np.diag(np.full((number_of_dimensions,), sd)) #for both mu and beta (slope)
-    #         #todo note: may consider making mu and cov as parameters sampled from distributions too
-    #         # mu = pm.MvNormal('mu', mu=prior_weights, cov=cov, shape=(number_of_dimensions,))
-    #
-    #         # Slope
-    #         prior_weights = np.random.rand(number_of_dimensions)
-    #         betas = pm.MvNormal('betas', mu=prior_weights, cov=cov, shape=(number_of_dimensions,))
-    #
-    #         # Standard deviation
-    #
-    #         sigma = pm.HalfNormal('sigma', sd=sd)
-    #         # sigma = sd #seems to work better
-    #
-    #         # Estimate of mean
-    #         mean = alpha + tt.dot(input_dataset, betas)
-    #
-    #         # Observed values
-    #         Y_obs = pm.Normal('Y_obs', mu=mean, sd=sigma, observed=output_dataset)
-    #
-    #         # Sampler
-    #         step = pm.NUTS()
-    #         # step = pm.Metropolis()
-    #         # step = pm.HamiltonianMC()
-    #
-    #         # Posterior distribution
-    #         linear_params_trace= pm.sample(sampling_count, step,chains=num_chains,cores=num_chains) #todo NOTE do not add tuning if deterministic. Fails spectacularly, not it's intended use.
-    #     #end with
-    #     # todo look into the aplha values that were sampled, because they didn't appear in the plot
-    #     self.full_param_trace = linear_params_trace # we only take the last 2000, and assume it is after sufficient mixing and good values.
-    #     self.linear_params_values = linear_params_trace[-2000:] # we only take the last 2000, and assume it is after sufficient mixing and good values.
-    #
-
-    #---end function learn_linear_model
-
     #========================================================================
 
     def plot_learnt_parameters(self):

@@ -230,8 +230,8 @@ class Manager:
         # self.min_rating = 1e10 #extreme starting values that will be updated after first round of feedback.
         # self.max_rating = -1e10
 
-        self.min_rating = -1.0 #extreme starting values that will be updated after first round of feedback.
-        self.max_rating = 1.0
+        self.min_rating = -1.5 #extreme starting values that will be updated after first round of feedback.
+        self.max_rating = 1.5
         self.annotated_max = 0.0#will be updated with actually user feedback only
         self.annotated_min = 0.0
 
@@ -343,6 +343,9 @@ class Manager:
         :return:
         """
         #evaluate the training set and get the min and max values
+
+        return #for now we stick with the defaults !!
+
         temp_max = self.annotated_max
         temp_min = self.annotated_min
         available_indices = set(range(len(self.plan_dataset)))
@@ -975,10 +978,6 @@ class Manager:
             self.model_MLE = MLE_reg_model
         #end if learn_LSfit
 
-        print(encoded_plans_list)
-        print(len(self.RBUS_prior_weights))
-        print(self.CONFIRMED_features_dimension)
-
         self.learning_model_bayes.learn_bayesian_linear_model(encoded_plans_list,
                                                               np.array(self.RBUS_prior_weights),
                                                               self.CONFIRMED_features_dimension,
@@ -1064,6 +1063,10 @@ class Manager:
                 MLE_total_squared_error += current_squared_error
                 MLE_error_list.append(math.sqrt(current_squared_error))
                 MLE_target_prediction_list.append((true_value,mle_predict))
+            else:
+                MLE_total_squared_error += 0.0
+                MLE_error_list.append(0.0)
+                MLE_target_prediction_list.append((true_value,0.0))
 
             try:
                 predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
@@ -1103,7 +1106,9 @@ class Manager:
             MLE_final_error = math.sqrt(MLE_total_squared_error / count_samples)
             print("LINEAR MODEL The average error in ALL regions is = ", MLE_final_error)
             print("LINEAR MODEL Error Statistics of ALL regions, ", summ_stats_fnc(MLE_error_list))
-            # print("LINEAR MODEL target and prediction ", MLE_target_prediction_list)
+            # print("LINEAR MODEL target and prediction ", MLE_target_prediction_list
+        else:
+            MLE_final_error = 0.0
 
         #end if
         bayes_final_error = math.sqrt(bayes_total_squared_error / count_samples)
@@ -1332,6 +1337,10 @@ class Manager:
                 MLE_total_squared_error += current_squared_error
                 MLE_error_list.append(math.sqrt(current_squared_error))
                 MLE_target_prediction_list.append((true_value,mle_predict))
+            else:
+                MLE_total_squared_error += 0.0
+                MLE_error_list.append(0.0)
+                MLE_target_prediction_list.append((true_value,0.0))
 
             # ---now do the bayes model, need to get the MODE prediction
             try:
@@ -1363,6 +1372,8 @@ class Manager:
                   eval_percentile_regions)
             print("LINEAR MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(MLE_error_list))
             # print("LINEAR MODEL target and prediction ", MLE_target_prediction_list)
+        else:
+            MLE_final_error = 0.0
 
         # end if
         bayes_final_error = math.sqrt(bayes_total_squared_error / count_samples)
