@@ -125,8 +125,8 @@ class oracle:
     # ===============================================================================
     def rating_distribution_law(self, sentiment):
         if sentiment == "like":
-            return random.choice(self.distribution_sampled_points)
-        return -random.choice(self.distribution_sampled_points)
+            return abs(random.choice(self.distribution_sampled_points))
+        return -abs(random.choice(self.distribution_sampled_points))
 
     #===============================================================================
     def get_feedback(self, plans):
