@@ -106,6 +106,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         scores.append(plan[-1])
     print("TEST set scores stats")
     print(summ_stats_fnc(scores))
+    print("NUM PLANS =", len(manager.plan_dataset))
     # print(sorted(scores))
 
     manager.sim_human.change_rating_noise(input_rating_noise)  # SET NOISE IN RATING
@@ -319,7 +320,7 @@ if __name__ == "__main__":
     total_num_plans = 40
     plans_per_round = 5
     noise_value = 0.2
-    prob_feat_select = 0.1
+    prob_feat_select = 0.2
 
     date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     date_time_str = date_time_str.replace(" ", "_")
