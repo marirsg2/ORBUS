@@ -656,8 +656,8 @@ class Manager:
 
         learning_model_bayes, encoded_plan, min_rating, max_rating, include_gain = input_list
         preference_possible_values = np.linspace(min_rating, max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
-        predictions, kernel = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-                                                                                         num_samples=NUM_SAMPLES_KDE)
+        predictions, kernel = learning_model_bayes.get_outputs_from_distribution(encoded_plan,
+                                                                                 num_samples=NUM_SAMPLES_KDE)
         gain_function = get_gain_function(min_rating, max_rating)
         preference_prob_density = kernel(preference_possible_values)
         normalizing_denom = np.sum(preference_prob_density)
@@ -773,8 +773,8 @@ class Manager:
 
         learning_model_bayes,encoded_plan, min_rating, max_rating, include_gain  = input_list
         preference_possible_values = np.linspace(min_rating, max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
-        predictions, kernel = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-                                                                                              num_samples=NUM_SAMPLES_KDE)
+        predictions, kernel = learning_model_bayes.get_outputs_from_distribution(encoded_plan,
+                                                                                 num_samples=NUM_SAMPLES_KDE)
 
         gain_function = get_gain_function(min_rating, max_rating)
         mean_preference = np.mean(predictions)
@@ -1059,7 +1059,7 @@ class Manager:
                 MLE_error_list.append(math.sqrt(current_squared_error))
                 MLE_target_prediction_list.append((true_value,mle_predict))
 
-            predictions,kernel = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+            predictions,kernel = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
             preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
             preference_prob_density = kernel(preference_possible_values)
             if not np.min(preference_prob_density) == np.max(preference_prob_density):
@@ -1235,8 +1235,8 @@ class Manager:
                         encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
                 #end for loop through current plan
                 #the last false is for including gain, we do not care about that for output prediction
-                predictions, kernel = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-                                                                                                 num_samples=NUM_SAMPLES_KDE)
+                predictions, kernel = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan,
+                                                                                              num_samples=NUM_SAMPLES_KDE)
                 preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
                 preference_prob_density = kernel(preference_possible_values)
                 index_mode = np.where(preference_prob_density == np.max(preference_prob_density))[0][0]
@@ -1320,8 +1320,8 @@ class Manager:
                 MLE_target_prediction_list.append((true_value,mle_predict))
 
             # ---now do the bayes model, need to get the MODE prediction
-            predictions, kernel = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-                                                                                                  num_samples=NUM_SAMPLES_KDE)
+            predictions, kernel = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan,
+                                                                                          num_samples=NUM_SAMPLES_KDE)
             preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
             preference_prob_density = kernel(preference_possible_values)
             if not np.min(preference_prob_density) == np.max(preference_prob_density):
@@ -1395,7 +1395,7 @@ class Manager:
                 if temp_tuple_feature in self.POSSIBLE_features:
                     encoded_plan[self.RBUS_indexing.index(temp_tuple_feature)] = 1
             #end for loop
-            predictions,kernel = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+            predictions,kernel = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
             preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
             preference_prob_density = kernel(preference_possible_values)
             if not np.min(preference_prob_density) == np.max(preference_prob_density):

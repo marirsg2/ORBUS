@@ -171,7 +171,7 @@ class bayesian_linear_model:
 
     # ========================================================================
 
-    def get_outputs_and_kernelDensityEstimate(self,input_encoded_plan, num_samples = 500):
+    def get_outputs_from_distribution(self, input_encoded_plan, num_samples = 500):
         """
         :summary :
         :param input_encoded_plan:

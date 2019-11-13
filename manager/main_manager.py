@@ -230,8 +230,10 @@ class Manager:
         # self.min_rating = 1e10 #extreme starting values that will be updated after first round of feedback.
         # self.max_rating = -1e10
 
-        self.min_rating = -1.5 #extreme starting values that will be updated after first round of feedback.
-        self.max_rating = 1.5
+        self.min_rating = -1.0 #extreme starting values that will be updated after first round of feedback.
+        self.max_rating = 1.0
+        self.annotated_max = 0.0#will be updated with actually user feedback only
+        self.annotated_min = 0.0
 
         self.indices_used = set()
         self.random_seed = random_seed
@@ -336,6 +338,40 @@ class Manager:
         return prob_plan
     # ================================================================================================
 
+    def update_expected_min_and_max_values(self):
+        """
+        :return:
+        """
+        #evaluate the training set and get the min and max values
+        temp_max = self.annotated_max
+        temp_min = self.annotated_min
+        available_indices = set(range(len(self.plan_dataset)))
+        available_indices.difference_update(self.indices_used)
+        for single_plan_idx in available_indices:
+            single_plan = self.plan_dataset[single_plan_idx]
+            encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
+            for single_feature in single_plan:
+                if single_feature in self.CONFIRMED_features:
+                    encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
+            #end for loop
+            try:
+                predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan,
+                                                                                      num_samples=NUM_SAMPLES_KDE)
+                mean_prediction = np.mean(predictions)
+                prediction_variance = np.var(predictions)
+                if mean_prediction + prediction_variance > temp_max:
+                    temp_max = mean_prediction + prediction_variance
+                if mean_prediction - prediction_variance < temp_min:
+                    temp_min = mean_prediction - prediction_variance
+            except:
+                return  #means we have no features yet to build a model
+        #end outer for loop
+        #the annotated max and min hold our existing best estimate for the max and min, then we also consider our predictions
+        self.max_rating = temp_max
+        self.min_rating = temp_min
+
+    # ================================================================================================
+
     def compute_discovery_value(self, input_set):
         """
         :param input_set:
@@ -358,9 +394,7 @@ class Manager:
         :NOTE: the overall INFORMATION FUNCTION is  (RBUS + RBUS/|confirmed features| + RBUS*prob(confirmed features in plan) ) (1 + discovery value of unseen features)
 
         """
-        sorted_plans = []  # should contain the PLAN, FEATURES, SCORE
-
-        print("RBUS RUNNING")
+        print("ORBUS RUNNING")
         # if len(self.annotated_plans) == 0:
         #     print("ERROR: no plans were annotated properly, just sending diversity sampling, cannot raise exception, show must go on")
         #     return self.sample_randomly(num_samples) #todo add diverse sampling after fixing it
@@ -369,13 +403,14 @@ class Manager:
         #     print("IMPORTANT: CHOOSING TO DO RANDOM SAMPLING over RBUS as the number of annotated plans < number of features")
         #     return self.sample_randomly(num_samples)
 
-        try:
-            if self.CONFIRMED_features_dimension != self.learning_model_bayes.beta_params.shape[1]:
-                self.relearn_model(learn_LSfit=True, num_chains=2)
-        except:  # will happen if the learning model has never been trained yet
-            self.relearn_model(learn_LSfit=True, num_chains=2)
-
+        # try:
+        #     if self.CONFIRMED_features_dimension != self.learning_model_bayes.beta_params.shape[1]:
+        #         self.relearn_model(learn_LSfit=True, num_chains=2)
+        # except:  # will happen if the learning model has never been trained yet
+        self.relearn_model(learn_LSfit=True, num_chains=2)
         num_subProcess_to_use = self.num_cores_RBUS
+        #VERY IMPORTANT, AFTER THE MODEL IS LEARNED
+        self.update_expected_min_and_max_values()
         # gain_function = RBUS_selection.get_gain_function(min_value=self.min_rating,max_value=self.max_rating)
         # TODO remove all the print statements and integral checks, will speed things up considerably
         available_indices = set(range(len(self.plan_dataset)))
@@ -751,7 +786,7 @@ class Manager:
 
         learning_model_bayes,encoded_plan, min_rating, max_rating, include_gain  = input_list
         try:
-            predictions = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,num_samples=NUM_SAMPLES_KDE)
+            predictions = learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
         except:
             return 1.0 , 1.0 #when no features have been discovered yet
         mean_preference = np.mean(predictions)
@@ -896,8 +931,13 @@ class Manager:
         max_rating = np.max(ratings)
         if min_rating < self.min_rating:
             self.min_rating = min_rating
+        if min_rating < self.annotated_min:
+            self.annotated_min = min_rating
+        #---
         if max_rating > self.max_rating:
             self.max_rating = max_rating
+        if max_rating > self.annotated_max:
+            self.annotated_max = max_rating
 
         scores = []
         for plan in self.annotated_plans:
@@ -1026,7 +1066,7 @@ class Manager:
                 MLE_target_prediction_list.append((true_value,mle_predict))
 
             try:
-                predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+                predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
                 mean_prediction = np.mean(predictions)
                 prediction_variance = np.var(predictions)
             except:
@@ -1210,8 +1250,8 @@ class Manager:
                 #the last false is for including gain, we do not care about that for output prediction
 
                 try:
-                    predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-                                                                                                  num_samples=NUM_SAMPLES_KDE)
+                    predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan,
+                                                                                          num_samples=NUM_SAMPLES_KDE)
                     mean_prediction = np.mean(predictions)
                 except:
                     mean_prediction = 0.0
@@ -1295,7 +1335,7 @@ class Manager:
 
             # ---now do the bayes model, need to get the MODE prediction
             try:
-                predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+                predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
                 mean_prediction = np.mean(predictions)
                 prediction_variance = np.var(predictions)
             except:
@@ -1360,8 +1400,8 @@ class Manager:
                     encoded_plan[self.RBUS_indexing.index(temp_tuple_feature)] = 1
             #end for loop
             try:
-                predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-                                                                                              num_samples=NUM_SAMPLES_KDE)
+                predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan,
+                                                                                      num_samples=NUM_SAMPLES_KDE)
                 mean_prediction = np.mean(predictions)
                 prediction_variance = np.var(predictions)
             except:
