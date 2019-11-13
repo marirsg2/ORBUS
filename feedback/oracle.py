@@ -4,6 +4,7 @@ import re
 import math
 from common.system_logger.general_logger import logger
 import numpy as np
+from sympy.stats import QuadraticU
 
 class oracle:
     #todo add the functionality where we can input the preference model for the human, just like before(XAIP version)
@@ -57,6 +58,14 @@ class oracle:
         elif preference_distribution_string == "gaussian":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
             self.distribution_sampled_points = np.random.normal(3*gaussian_noise_sd,gaussian_noise_sd,1000) #0.2 is the noise
+        elif preference_distribution_string == "u-quadratic":
+            rating_distribution = oracle.rating_distribution_law
+            t1 = np.random.normal(0, 0.2, 10000)
+            t1 = t1[(t1 > 0) & (t1 < 0.5)]
+            t2 = np.random.normal(1, 0.2, 10000)
+            t2 = t2[(t2 > 0.5) & (t2 < 1)]
+            t3 = list(np.concatenate([t1, t2]))
+            self.distribution_sampled_points = random.sample(t3, 1000)
         elif preference_distribution_string == "root_law":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
             power_law_samples = []
