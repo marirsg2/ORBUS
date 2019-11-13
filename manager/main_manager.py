@@ -750,9 +750,6 @@ class Manager:
         #-----end inner function get_biModal_gaussian_gain_function
 
         learning_model_bayes,encoded_plan, min_rating, max_rating, include_gain  = input_list
-        preference_possible_values = np.linspace(min_rating, max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
-        # predictions, kernel = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-        #                                                                                       num_samples=NUM_SAMPLES_KDE)
         try:
             predictions = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,num_samples=NUM_SAMPLES_KDE)
         except:
@@ -1028,9 +1025,14 @@ class Manager:
                 MLE_error_list.append(math.sqrt(current_squared_error))
                 MLE_target_prediction_list.append((true_value,mle_predict))
 
-            predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
-            mean_prediction = np.mean(predictions)
-            prediction_variance = np.var(predictions)
+            try:
+                predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+                mean_prediction = np.mean(predictions)
+                prediction_variance = np.var(predictions)
+            except:
+                mean_prediction = 0.0
+                prediction_variance = 0.0
+
             # preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
             # preference_prob_density = kernel(preference_possible_values)
             # if not np.min(preference_prob_density) == np.max(preference_prob_density):
@@ -1206,13 +1208,14 @@ class Manager:
                         encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
                 #end for loop through current plan
                 #the last false is for including gain, we do not care about that for output prediction
-                predictions, kernel = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
-                                                                                                 num_samples=NUM_SAMPLES_KDE)
-                preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
-                preference_prob_density = kernel(preference_possible_values)
-                index_mode = np.where(preference_prob_density == np.max(preference_prob_density))[0][0]
-                mode_prediction = preference_possible_values[index_mode]
-                all_results.append((single_plan_idx,mode_prediction))
+
+                try:
+                    predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
+                                                                                                  num_samples=NUM_SAMPLES_KDE)
+                    mean_prediction = np.mean(predictions)
+                except:
+                    mean_prediction = 0.0
+                all_results.append((single_plan_idx,mean_prediction))
             #end for loop through the available indices
             sorted_all_results = sorted(all_results,key= lambda x:x[1],reverse=True)
             num_results = len(sorted_all_results)
@@ -1291,9 +1294,13 @@ class Manager:
                 MLE_target_prediction_list.append((true_value,mle_predict))
 
             # ---now do the bayes model, need to get the MODE prediction
-            predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,num_samples=NUM_SAMPLES_KDE)
-            mean_prediction = np.mean(predictions)
-            prediction_variance = np.var(predictions)
+            try:
+                predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+                mean_prediction = np.mean(predictions)
+                prediction_variance = np.var(predictions)
+            except:
+                mean_prediction = 0.0
+                prediction_variance = 0.0
 
             current_squared_error = math.pow(true_value - mean_prediction, 2)
             bayes_total_squared_error += current_squared_error
@@ -1352,18 +1359,15 @@ class Manager:
                 if temp_tuple_feature in self.CONFIRMED_features:
                     encoded_plan[self.RBUS_indexing.index(temp_tuple_feature)] = 1
             #end for loop
-            predictions,kernel = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan, num_samples=NUM_SAMPLES_KDE)
-            preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
-            preference_prob_density = kernel(preference_possible_values)
-            if not np.min(preference_prob_density) == np.max(preference_prob_density):
-                normalizing_denom = np.sum(preference_prob_density)
-                mean_prediction = np.sum(preference_prob_density * preference_possible_values)/normalizing_denom #this is a HACK, not true variance, but computationally faster
-                prediction_variance = np.sum(np.square(preference_possible_values-mean_prediction)*preference_prob_density)/normalizing_denom #this is a HACK, not true variance, but computationally faster
-            else:
-                #absolute uniform distribution over all preference values, actually means we have no information,
-                # we SET the alpha to be fixed, so no variations in the output.
+            try:
+                predictions = self.learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
+                                                                                              num_samples=NUM_SAMPLES_KDE)
+                mean_prediction = np.mean(predictions)
+                prediction_variance = np.var(predictions)
+            except:
                 mean_prediction = 0.0
                 prediction_variance = 0.0
+
             #todo NOTE USING MEAN PREDICTION, makes more sense with using variance for decisions
             predictions_list.append( (single_formatted_plan_idx,(mean_prediction,prediction_variance)) )
 
