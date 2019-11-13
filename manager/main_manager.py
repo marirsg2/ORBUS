@@ -752,7 +752,10 @@ class Manager:
         preference_possible_values = np.linspace(min_rating, max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
         # predictions, kernel = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,
         #                                                                                       num_samples=NUM_SAMPLES_KDE)
-        predictions = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,num_samples=NUM_SAMPLES_KDE)
+        try:
+            predictions = learning_model_bayes.get_outputs_and_kernelDensityEstimate(encoded_plan,num_samples=NUM_SAMPLES_KDE)
+        except:
+            return 1.0 , 1.0 #when no features have been discovered yet
         mean_preference = np.mean(predictions)
         preference_variance = np.sum(np.square(predictions - mean_preference) )/(len(predictions)-1)
 
