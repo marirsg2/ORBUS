@@ -973,7 +973,8 @@ class Manager:
             encoded_plans_list.append(encoded_plan)
 
         MLE_reg_model = None
-        if learn_LSfit:
+        # if learn_LSfit:
+        if False:
             from sklearn import linear_model
             # MLE_reg_model = linear_model.LinearRegression(fit_intercept=True) #NORMALIZE wont help, the input is binary. Already normalized
             # MLE_reg_model = linear_model.LinearRegression(fit_intercept=False) #NORMALIZE wont help, the input is binary. Already normalized
@@ -1014,18 +1015,22 @@ class Manager:
                     bayes_feature_dict[single_feature].append(param_stats[self.RBUS_indexing.index(single_feature)])
                 except ValueError: # for the feature not being in the list
                     pass
-            MLE_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
-            for single_feature in MLE_feature_dict:
-                try:
-                    MLE_feature_dict[single_feature].append(MLE_reg_model.coef_[self.RBUS_indexing.index(single_feature)])
-                except ValueError:  # for the feature not being in the list
-                    pass
+
+            if MLE_reg_model != None:
+                MLE_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
+                for single_feature in MLE_feature_dict:
+                    try:
+                        MLE_feature_dict[single_feature].append(MLE_reg_model.coef_[self.RBUS_indexing.index(single_feature)])
+                    except ValueError:  # for the feature not being in the list
+                        pass
+
             #todo not just mean, do MODE of features
             print("RATINGS seen are = ", summ_stats_fnc(ratings))
             print("Bayes params ","  ||  ".join([str(x) for x in bayes_feature_dict.items()]))
             print("Bayes intercept summ stats")
             print(summ_stats_fnc(self.learning_model_bayes.linear_params_values["alpha"][0:2000]))
-            print("MLE params ","  ||  ".join([str(x) for x in MLE_feature_dict.items()]))
+            if MLE_reg_model != None:
+                print("MLE params ","  ||  ".join([str(x) for x in MLE_feature_dict.items()]))
             # self.evaluate(self.test_set)
 
     #================================================================================================
@@ -1046,7 +1051,7 @@ class Manager:
 
         MLE_total_squared_error = 0.0
         MLE_error_list = []
-        bayes_total_squared_error = 0.0
+        bayes_total_error = 0.0
         bayes_error_list = []
         bayes_target_prediction_list = []
         MLE_final_error = 0.0
@@ -1075,9 +1080,9 @@ class Manager:
             #end for loop
             if self.model_MLE != None:
                 mle_predict = self.model_MLE.predict([encoded_plan])[0]
-                current_squared_error = math.pow(true_value - mle_predict, 2)
-                MLE_total_squared_error += current_squared_error
-                MLE_error_list.append(math.sqrt(current_squared_error))
+                current_abs_error = abs(true_value - mle_predict)
+                MLE_total_squared_error += current_abs_error
+                MLE_error_list.append(current_abs_error)
                 MLE_target_prediction_list.append((true_value,mle_predict))
             else:
                 MLE_total_squared_error += 0.0
@@ -1107,9 +1112,9 @@ class Manager:
             #     mean_prediction = 0.0
             #     prediction_variance = 0.0
             #todo NOTE USING MEAN PREDICTION, makes more sense with using variance for decisions
-            current_squared_error = math.pow(true_value - mean_prediction, 2)
-            bayes_total_squared_error += current_squared_error
-            bayes_error_list.append( math.sqrt(current_squared_error))
+            current_abs_error = abs(true_value - mean_prediction)
+            bayes_total_error += current_abs_error
+            bayes_error_list.append( current_abs_error)
             bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
 
 
@@ -1119,7 +1124,7 @@ class Manager:
 
         #end for loop
         if self.model_MLE != None:
-            MLE_final_error = math.sqrt(MLE_total_squared_error / count_samples)
+            MLE_final_error = MLE_total_squared_error / count_samples
             print("LINEAR MODEL The average error in ALL regions is = ", MLE_final_error)
             print("LINEAR MODEL Error Statistics of ALL regions, ", summ_stats_fnc(MLE_error_list))
             # print("LINEAR MODEL target and prediction ", MLE_target_prediction_list
@@ -1127,7 +1132,7 @@ class Manager:
             MLE_final_error = 0.0
 
         #end if
-        bayes_final_error = math.sqrt(bayes_total_squared_error / count_samples)
+        bayes_final_error = bayes_total_error / count_samples
         print("BAYES MODEL The average error in ALL regions= ", bayes_final_error)
         print("BAYES MODEL Error Statistics of ALL regions , ",summ_stats_fnc(bayes_error_list))
         # print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
@@ -1303,12 +1308,25 @@ class Manager:
         :param eval_percentile_regions:
         :return:
         """
-        true_values = []
+        test_plan_max = 0
+        test_plan_min = 0
+        for single_annot_plan_struct in annotated_test_plans:
+            rating = single_annot_plan_struct[-1]
+            if rating < test_plan_min:
+                test_plan_min = rating
+            elif rating > test_plan_min:
+                test_plan_max = rating
+        #end for loop
+
+
+
+        true_values_and_diff = []
         #TODO NOTE WE FILTER THE PLANS WITH NO FEATURES ARE RATED 0.0 (not interesting) ONLY FOR TESTING, NOT FOR TRAINING (UNKNOWN THEN)
         annotated_test_plans = [x for x in annotated_test_plans if x[-1] != 0.0]
-        bayes_total_squared_error = 0.0
+        bayes_total_error = 0.0
+        UNALTERED_bayes_total_error = 0.0
         bayes_error_list = []
-        MLE_total_squared_error = 0.0
+        MLE_total_error = 0.0
         bayes_target_prediction_list = []
         MLE_target_prediction_list = []
         MLE_error_list = []
@@ -1325,11 +1343,13 @@ class Manager:
         # ratings_range = self.max_rating - self.min_rating
         # cutoff_regions = [(self.min_rating + x[0]*ratings_range, self.min_rating + x[1]*ratings_range) for x in eval_percentile_regions]
         count_samples = 0
-
+        error_scaler = max(abs(test_plan_min),abs(test_plan_max))
         # print(
         #     "NOTE WE ASSUME A PLAN WITH NO KNOWN FEATURES IS OF VALUE 0, AND SO NOT COUNTED IN THE TEST SET EVALUATION")
         # print("ALL RATINGS are = ", sorted_ratings)
         print("Cutoffregions = ", cutoff_regions)
+        print("TEST PLAN MIN MAX ",test_plan_min, test_plan_max)
+
         for single_annot_plan_struct in annotated_test_plans:
             true_rating = single_annot_plan_struct[-1]
             region_checks = [x[0] <= true_rating and true_rating <= x[1] for x in cutoff_regions]
@@ -1337,7 +1357,6 @@ class Manager:
                 continue
             if not inside_region and True in region_checks:
                 continue
-            true_values.append(true_rating)
             count_samples += 1
             current_plan = single_annot_plan_struct[0]
             encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
@@ -1349,13 +1368,13 @@ class Manager:
             true_value = float(single_annot_plan_struct[-1])
             if self.model_MLE != None:
                 mle_predict = self.model_MLE.predict([encoded_plan])[0]
-                current_squared_error = math.pow(
-                    single_annot_plan_struct[-1] - mle_predict, 2)
-                MLE_total_squared_error += current_squared_error
-                MLE_error_list.append(math.sqrt(current_squared_error))
+                current_abs_error = abs(
+                    single_annot_plan_struct[-1] - mle_predict)
+                MLE_total_error += current_abs_error
+                MLE_error_list.append(current_abs_error)
                 MLE_target_prediction_list.append((true_value,mle_predict))
             else:
-                MLE_total_squared_error += 0.0
+                MLE_total_error += 0.0
                 MLE_error_list.append(0.0)
                 MLE_target_prediction_list.append((true_value,0.0))
 
@@ -1368,10 +1387,15 @@ class Manager:
                 mean_prediction = 0.0
                 prediction_variance = 0.0
 
-            current_squared_error = math.pow(true_value - mean_prediction, 2)
-            bayes_total_squared_error += current_squared_error
-            bayes_error_list.append( math.sqrt(current_squared_error))
+            current_abs_error = abs(true_value - mean_prediction)
+            current_abs_error = current_abs_error*abs(true_value)/error_scaler
+            UNALTERED_error = abs(true_value - mean_prediction)
+            bayes_total_error += current_abs_error
+            UNALTERED_bayes_total_error += UNALTERED_error
+
+            bayes_error_list.append( current_abs_error)
             bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
+            true_values_and_diff.append((true_rating,UNALTERED_error,prediction_variance))
 
         # end for loop
         print(" If inside INTERESTING REGION is ", inside_region)
@@ -1384,7 +1408,7 @@ class Manager:
 
         print("NUM SAMPLES = ", count_samples, " for when INTERESTING REGION IS", inside_region)
         if self.model_MLE != None:
-            MLE_final_error = math.sqrt(MLE_total_squared_error / count_samples)
+            MLE_final_error = MLE_total_error / count_samples
             print("LINEAR MODEL The average REGION error is = ", MLE_final_error, "for percentile regions ",
                   eval_percentile_regions)
             print("LINEAR MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(MLE_error_list))
@@ -1393,13 +1417,14 @@ class Manager:
             MLE_final_error = 0.0
 
         # end if
-        bayes_final_error = math.sqrt(bayes_total_squared_error / count_samples)
+        bayes_final_error = bayes_total_error / count_samples
+        UNALTERED_bayes_final_error = bayes_total_error / count_samples
         print("BAYES MODEL The average REGION error is = ", bayes_final_error, "for percentile regions ",
               eval_percentile_regions)
         print("BAYES MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(bayes_error_list))
         # print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
 
-        return bayes_final_error,MLE_final_error,true_values
+        return bayes_final_error,UNALTERED_bayes_final_error,MLE_final_error,true_values_and_diff
 
 # ================================================================================================
 
