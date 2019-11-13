@@ -108,16 +108,16 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
 
     for round_num in range(1,num_rounds+1):
         print("============ ROUND ",round_num,"====================")
-        if round_num == 1:
+        # if round_num == 1:
+        #     sampled_plans = manager.sample_randomly(num_plans_per_round)
+        # else:
+        if random_sampling_enabled:
             sampled_plans = manager.sample_randomly(num_plans_per_round)
         else:
-            if random_sampling_enabled:
-                sampled_plans = manager.sample_randomly(num_plans_per_round)
-            else:
-                sampled_plans = manager.IMPORTANT_get_plans_for_round(num_plans_per_round, use_gain_function=include_gain, \
-                                                                      include_feature_distinguishing= include_feature_distinguishing, \
-                                                                      include_discovery_term_product=include_discovery_term,
-                                                                      include_probability_term = include_prob_term)
+            sampled_plans = manager.IMPORTANT_get_plans_for_round(num_plans_per_round, use_gain_function=include_gain, \
+                                                                  include_feature_distinguishing= include_feature_distinguishing, \
+                                                                  include_discovery_term_product=include_discovery_term,
+                                                                  include_probability_term = include_prob_term)
 
         annotated_plans = manager.get_feedback(sampled_plans)
 
@@ -125,6 +125,8 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         print("SUM OF PROB OF SEEN FEATURES =", sum([manager.freq_dict[x] for x in manager.seen_features]) ," ; SEEN FEATURES = ", manager.seen_features)
         print("LIKED FEATURES ", manager.liked_features)
         print("DISLIKED FEATURES ", manager.disliked_features)
+        print("RELEVANT FEATURES PROB MASS = ",sum([manager.freq_dict[x] for x in manager.liked_features.union(manager.disliked_features)]) )
+        print("RELEVANT FEATURES PREF MASS = ",sum([abs(manager.sim_human.feature_preferences_dict[x][-1]) for x in manager.liked_features.union(manager.disliked_features)]) )
         print("UNKNOWN FEATURES ", manager.all_s1_features.difference(manager.seen_features))
         #analyze the plans sampled. For each plan print the number of s1 features, s2 features,etc WITH their associated
         # freq and score
@@ -330,7 +332,10 @@ if __name__ == "__main__":
     print("The parameter cases are ",cases)
     random.shuffle(cases)
     # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-    cases = [[True, True, True, True], [True, False, True, True], [False, True, True, True],  [True, True, False, True]]
+    special_order_cases = [[True, True, True, True], [True, False, True, True], [False, True, True, True],  [True, True, False, True]]
+    for single_case in special_order_cases:
+        cases.remove(single_case)
+    cases = special_order_cases + cases #reorders it
 
 
     # --------------------------------------------------------------

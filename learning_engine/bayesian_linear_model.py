@@ -60,7 +60,7 @@ class bayesian_linear_model:
                                     sd = 1,
                                     sampling_count=2000,
                                     num_chains = 3,
-                                    bias_preference = 0.0):
+                                    bias_preference = 0.00001):
 
         #TODO NOTE EVEN WITHOUT PRIOR WEIGHTS ARE NOT CURRENTLY USED, and works just as well
         #the encoded plans contains a list of [<encoding>,<rating>]

@@ -114,8 +114,8 @@ class oracle:
         :return:
         """
         if sentiment == "like":
-            return random.uniform(0, 1.0)
-        return -random.uniform(0, 1.0)
+            return random.uniform(0.2, 1.0)
+        return -random.uniform(0.2, 1.0)
 
     # ===============================================================================
     def rating_power_law(self, sentiment):
