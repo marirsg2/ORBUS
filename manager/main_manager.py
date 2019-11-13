@@ -344,8 +344,6 @@ class Manager:
         """
         #evaluate the training set and get the min and max values
 
-        return #for now we stick with the defaults !!
-
         temp_max = self.annotated_max
         temp_min = self.annotated_min
         available_indices = set(range(len(self.plan_dataset)))
@@ -362,10 +360,14 @@ class Manager:
                                                                                       num_samples=NUM_SAMPLES_KDE)
                 mean_prediction = np.mean(predictions)
                 prediction_variance = np.var(predictions)
-                if mean_prediction + prediction_variance > temp_max:
-                    temp_max = mean_prediction + prediction_variance
-                if mean_prediction - prediction_variance < temp_min:
-                    temp_min = mean_prediction - prediction_variance
+                # if mean_prediction + prediction_variance > temp_max:
+                #     temp_max = mean_prediction + prediction_variance
+                # if mean_prediction - prediction_variance < temp_min:
+                #     temp_min = mean_prediction - prediction_variance
+                if mean_prediction  > temp_max:
+                    temp_max = mean_prediction
+                if mean_prediction  < temp_min:
+                    temp_min = mean_prediction
             except:
                 return  #means we have no features yet to build a model
         #end outer for loop
@@ -458,25 +460,36 @@ class Manager:
         # ---NOW we have to select top n plans such that every successive plan selected also considers diversity w.r.t to the previous plans selected
         # the best plan is determined by normalized gain * normalized variance
 
+        #--------TECHNIQUE 1 ---- VAR + gain_norm*VAR
         if use_gain_function:
             gain_array = np.array([x[1] for x in index_value_list])
         else:
             gain_array = np.array([1.0 for x in index_value_list])
-        gain_normalizing_denom = np.max(gain_array)
-        gain_normalizing_denom = np.var(gain_array)
+        # gain_normalizing_denom = np.var(gain_array)
+        gain_normalizing_denom = np.max(gain_array) #so variance is the key factor
         if gain_normalizing_denom == 0.0:
             gain_normalizing_denom = 1.0  # avoids "nan" problem
         norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
         variance_array = np.array([x[2] for x in index_value_list])
-        # # var_normalizing_denom = np.max(variance_array)
-        # var_normalizing_denom = np.var(variance_array)
+        #todo NOTE we multiply by the normalized gain because the defining term is the variance, not the gain.
+        # score = var + var*gain
+        base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
+
+        #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
+        # if use_gain_function:
+        #     gain_array = np.array([x[1] for x in index_value_list])
+        # else:
+        #     gain_array = np.array([1.0 for x in index_value_list])
+        # gain_normalizing_denom = np.max(gain_array) #so variance is the key factor
+        # if gain_normalizing_denom == 0.0:
+        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+        # variance_array = np.array([x[2] for x in index_value_list])
+        # var_normalizing_denom = np.max(variance_array)
         # if var_normalizing_denom == 0.0:
         #     var_normalizing_denom = 1.0  # avoids "nan" problem
         # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        # norm_gain_variance_array = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
-
-        #todo NOTE we multiply by the normalized gain because the defining term is the variance, not the gain.
-        norm_gain_variance_array = [norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
+        # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
 
 
         # now store (idx,norm_gain*norm_variance)
@@ -484,17 +497,17 @@ class Manager:
         if include_feature_distinguishing:
             # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
             # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral for a function to always above zero
-            addendum = [addendum[x] + norm_gain_variance_array[x]/(1+len(index_value_list[x][-1])) for x in range(len(index_value_list))] # we div by (1+.) to avoid divide by zero error
+            addendum = [addendum[x] + base_score[x]/(1+len(index_value_list[x][-1])) for x in range(len(index_value_list))] # we div by (1+.) to avoid divide by zero error
         if include_probability_term:
             # += score* (probabilityOF CONFIRMED FEATURES only)
-            addendum = [addendum[x] + norm_gain_variance_array[x] * self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
+            addendum = [addendum[x] + base_score[x] * self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
         if include_discovery_term_product:
             # discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
             # it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
             discovery_values = [1 + self.compute_discovery_value(self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
                 for x in range(len(index_value_list))]
 
-        index_value_list = [(index_value_list[x][0], norm_gain_variance_array[x]+addendum[x]) for x in range(len(index_value_list))]
+        index_value_list = [(index_value_list[x][0], base_score[x]+addendum[x]) for x in range(len(index_value_list))]
         # NOTE the order of ENTRIES in index value list will now be fixed
         # see the use of indices list a little further down in code.
         chosen_indices = []
@@ -524,7 +537,7 @@ class Manager:
         print("update_min max",self.min_rating,self.max_rating)
         print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
         print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
-        print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(norm_gain_variance_array+addendum))
+        print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(base_score+addendum))
         self.indices_used.update(chosen_indices)
         return [self.plan_dataset[x] for x in chosen_indices]
 
@@ -770,10 +783,10 @@ class Manager:
             :return:
             """
             range = max_value - min_value
-            lower_fifth = min_value + range * lower_percentile
-            upper_fifth = min_value + range * upper_percentile
+            # lower_fifth = min_value + range * lower_percentile
+            # upper_fifth = min_value + range * upper_percentile
             scaled_std_dev = range * 0.1
-            return get_biModal_gaussian_gain_function(lower_fifth, upper_fifth, scaled_std_dev)
+            return get_biModal_gaussian_gain_function(min_value, max_value, scaled_std_dev)
         # --------------
         def get_biModal_gaussian_gain_function(a=0.2, b=0.8, sd=0.1):
             """
@@ -1290,7 +1303,7 @@ class Manager:
         :param eval_percentile_regions:
         :return:
         """
-
+        true_values = []
         #TODO NOTE WE FILTER THE PLANS WITH NO FEATURES ARE RATED 0.0 (not interesting) ONLY FOR TESTING, NOT FOR TRAINING (UNKNOWN THEN)
         annotated_test_plans = [x for x in annotated_test_plans if x[-1] != 0.0]
         bayes_total_squared_error = 0.0
@@ -1324,6 +1337,7 @@ class Manager:
                 continue
             if not inside_region and True in region_checks:
                 continue
+            true_values.append(true_rating)
             count_samples += 1
             current_plan = single_annot_plan_struct[0]
             encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
@@ -1385,7 +1399,7 @@ class Manager:
         print("BAYES MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(bayes_error_list))
         # print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
 
-        return bayes_final_error,MLE_final_error
+        return bayes_final_error,MLE_final_error,true_values
 
 # ================================================================================================
 

@@ -172,12 +172,13 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         bayes_error, MLE_error = manager.evaluate(annotated_test_plans)
         bayes_error_list.append(bayes_error)
         MLE_error_list.append(MLE_error)
-        inRegion_bayes_error, inRegion_MLE_error = manager.region_based_evaluation(annotated_test_plans, [(0.0, 0.1), (0.9, 1.0)],
+        inRegion_bayes_error, inRegion_MLE_error,inRegion_true_values = manager.region_based_evaluation(annotated_test_plans, [(0.0, 0.1), (0.9, 1.0)],
                                         inside_region=True)  # the second parameter is percentile regions to evaluate in
         out_region_error.append(manager.region_based_evaluation(annotated_test_plans, [(0.0, 0.1), (0.9, 1.0)],
                                         inside_region=False) ) # the second parameter is percentile regions to evaluate in
         inRegion_bayes_error_list.append(inRegion_bayes_error)
         inRegion_MLE_error_list.append(inRegion_MLE_error)
+        print("INTERESTING REGION TRUE VALUES ", inRegion_true_values)
 
     #end for loop through
     #---now measure the accuracy
@@ -210,6 +211,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("============================================================")
     print("BAYES ERROR LIST ", bayes_error_list)
     print("MLE ERROR LIST ", MLE_error_list)
+    print("INTERESTING REGION TRUE VALUES ", inRegion_true_values)
     print("INTERESTING REGION BAYES ERROR LIST ", inRegion_bayes_error_list)
     print("INTERESTING REGION  MLE ERROR LIST ", inRegion_MLE_error_list)
     print("MIN,MAX",manager.min_rating,manager.max_rating)
@@ -343,7 +345,7 @@ if __name__ == "__main__":
     print("The parameter cases are ",cases)
     random.shuffle(cases)
     # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-    special_order_cases = [[True, True, True, True],[True, False, True, True], [True, True, False, True], [True, False, False, True],[True, True, True, False]]
+    special_order_cases = [[True, True, False, True], [True, False, False, True],[True, True, True, True],[True, False, True, True],[True, True, True, False]]
     for single_case in special_order_cases:
         cases.remove(single_case)
     cases = special_order_cases + cases #reorders it
@@ -379,6 +381,22 @@ if __name__ == "__main__":
                                 repetitions=num_repetitions,
                                 prob_feat_select= prob_feat_select,
                                 preference_distribution_string= preference_distribution_string)))
+        single_data_set = all_data[-1]
+        case_parameters = single_data_set[0]
+        print("============================================================")
+        print("CASE DESCRIPTIONS")
+        print("|| feature feedback = True \n || random_sampling_enabled =", case_parameters[0],
+              " || include_discovery =", case_parameters[1],
+              " || include_gain =", case_parameters[2],
+              " || include_feature_distinguishing =", case_parameters[3],
+              " || include_prob_term =", case_parameters[4])
+        for i in range(num_repetitions):
+            print("BAYES ERROR LIST ", single_data_set[1][i][0])
+            print("MLE ERROR LIST ", single_data_set[1][i][1])
+            print("INTERESTING REGION BAYES ERROR LIST ", single_data_set[1][i][2])
+            print("INTERESTING REGION  MLE ERROR LIST ", single_data_set[1][i][3])
+            print("MIN,MAX", single_data_set[1][i][4])
+            print("============================================================")
 
     random_sampling_state = True
     for i in range(NUM_RANDOM_SAMPLES-1):
@@ -401,7 +419,6 @@ if __name__ == "__main__":
     print("============================================================")
 
     for single_data_set in all_data:
-        print(single_data_set)
         case_parameters = single_data_set[0]
         print("============================================================")
         print("CASE DESCRIPTIONS")
