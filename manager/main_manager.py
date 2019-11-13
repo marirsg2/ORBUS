@@ -973,7 +973,8 @@ class Manager:
             encoded_plans_list.append(encoded_plan)
 
         MLE_reg_model = None
-        if learn_LSfit:
+        # if learn_LSfit:
+        if False:
             from sklearn import linear_model
             # MLE_reg_model = linear_model.LinearRegression(fit_intercept=True) #NORMALIZE wont help, the input is binary. Already normalized
             # MLE_reg_model = linear_model.LinearRegression(fit_intercept=False) #NORMALIZE wont help, the input is binary. Already normalized
@@ -1303,7 +1304,7 @@ class Manager:
         :param eval_percentile_regions:
         :return:
         """
-        true_values = []
+        true_values_and_diff = []
         #TODO NOTE WE FILTER THE PLANS WITH NO FEATURES ARE RATED 0.0 (not interesting) ONLY FOR TESTING, NOT FOR TRAINING (UNKNOWN THEN)
         annotated_test_plans = [x for x in annotated_test_plans if x[-1] != 0.0]
         bayes_total_squared_error = 0.0
@@ -1337,7 +1338,6 @@ class Manager:
                 continue
             if not inside_region and True in region_checks:
                 continue
-            true_values.append(true_rating)
             count_samples += 1
             current_plan = single_annot_plan_struct[0]
             encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
@@ -1372,6 +1372,7 @@ class Manager:
             bayes_total_squared_error += current_squared_error
             bayes_error_list.append( math.sqrt(current_squared_error))
             bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
+            true_values_and_diff.append((true_rating,math.sqrt(current_squared_error),prediction_variance))
 
         # end for loop
         print(" If inside INTERESTING REGION is ", inside_region)
@@ -1399,7 +1400,7 @@ class Manager:
         print("BAYES MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(bayes_error_list))
         # print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
 
-        return bayes_final_error,MLE_final_error,true_values
+        return bayes_final_error,MLE_final_error,true_values_and_diff
 
 # ================================================================================================
 
