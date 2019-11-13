@@ -14,8 +14,8 @@ MED_OCCURRENCE_COUNT = 450
 LOW_OCCURRENCE_COUNT = 150
 MIN_FEATURES = 3 #prob that the plan will end with this step
 MAX_FEATURES = 5 #prob that the plan will end with this step
-RATIO_HIGH_FREQ_FEATURES = 0.15 #this is the NUMBER of features, what constitutes as high occurrence (probability) is given by the COUNTS defined previously
-RATIO_MED_FREQ_FEATURES = 0.7 #THE REST ARE LOW FREQ
+RATIO_HIGH_FREQ_FEATURES = 0.06 #this is the NUMBER of features, what constitutes as high occurrence (probability) is given by the COUNTS defined previously
+RATIO_MED_FREQ_FEATURES = 0.88 #THE REST ARE LOW FREQ
 
 # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
 # date_time_str = date_time_str.replace(" ", "_")

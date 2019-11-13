@@ -31,7 +31,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
                                  include_gain = False, include_discovery_term=True, include_feature_distinguishing=True,
                                  include_prob_term = True,include_feature_feedback =True,
                                  random_seed = 40,
-                                 manager_pickle_file = None, input_rating_noise =0.0,
+                                 manager_pickle_file = None, input_rating_noise =0.2,
                                  prob_feat_select= 0.2, preference_distribution_string="power_law"):
 
     learn_LSfit = True
@@ -65,7 +65,8 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
             pref_list = sorted(pref_list, key=lambda x: x[0])
             manager.set_AL_params(use_feature_feedback = include_feature_feedback,random_seed=random_seed)
             print("TRUE FEATURE PREFERENCE", pref_list)
-            print("FREQ DICT", manager.freq_dict)
+            freq_info = sorted(manager.freq_dict.items(),key=lambda x:x[1])
+            print("FREQ INFO", freq_info)
             sorted_freq_pref_list = [(x[0], manager.freq_dict[x[0]], x[1]) for x in pref_list]
             sorted_freq_pref_list = sorted(sorted_freq_pref_list,key= lambda x:x[-1][-1])
             print("PREF & FREQ = ",sorted_freq_pref_list)
@@ -75,14 +76,19 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         print("RECREATE manager")
         RATING_NOISE = input_rating_noise
         manager = Manager(prob_feature_selection=prob_feat_select,use_feature_feedback = include_feature_feedback,
-                          random_seed=random_seed, preference_distribution_string=preference_distribution_string)
+                          random_seed=random_seed, preference_distribution_string=preference_distribution_string,
+                          preference_gaussian_noise_sd=input_rating_noise)
         pref_list = [x for x in manager.sim_human.feature_preferences_dict.items()]
         pref_list = sorted(pref_list, key=lambda x: x[0])
         print("TRUE FEATURE PREFERENCE", pref_list)
-        print("FREQ DICT", manager.freq_dict)
+        freq_info = sorted(manager.freq_dict.items(), key=lambda x: x[1])
+        print("FREQ INFO", freq_info)
         sorted_freq_pref_list = [(x[0], manager.freq_dict[x[0]], x[1]) for x in pref_list]
         sorted_freq_pref_list = sorted(sorted_freq_pref_list, key=lambda x: x[-1][-1])
-        print("PREF & FREQ = ", sorted_freq_pref_list)
+        print("PREF & FREQ by pref = ", sorted_freq_pref_list)
+        sorted_freq_pref_list = [(x[0], manager.freq_dict[x[0]], x[1]) for x in pref_list]
+        sorted_freq_pref_list = sorted(sorted_freq_pref_list, key=lambda x: x[1])
+        print("PREF & FREQ by freq = ", sorted_freq_pref_list)
         print("num features =", len(pref_list))
         print("Include gain is =", include_gain)
         manager.sim_human.change_rating_noise(0.0)# todo NOTE the test dataset has no noise.
@@ -251,7 +257,7 @@ def test_basic_MV_linModel(toy_data_input, toy_data_output):
     print("Intercept: %.4f" % reg.intercept_)
 
 
-def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_seed = 150, noise_value = 1.0, random_sampling_enabled = False,
+def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_seed = 150, noise_value = 0.2, random_sampling_enabled = False,
                             include_gain=True,include_discovery_term=True, include_feature_distinguishing=True, include_prob_term=True,  include_feature_feedback=True,
                             manager_pickle_file = "default_man.p",
                             prob_feat_select= 0.2, preference_distribution_string="power_law",repetitions = 1):
@@ -304,8 +310,9 @@ if __name__ == "__main__":
     parameter_indexed_values = [parameter_values] * num_parameters
     cases = itertools.product(*parameter_indexed_values)
 
+    # preference_distribution_string = "uniform"
     # preference_distribution_string = "power_law"
-    preference_distribution_string = "uniform"
+    preference_distribution_string = "gaussian"
     total_num_plans = 40
     plans_per_round = 5
     noise_value = 0.2
@@ -332,7 +339,7 @@ if __name__ == "__main__":
     print("The parameter cases are ",cases)
     random.shuffle(cases)
     # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-    special_order_cases = [[True, True, True, True], [True, False, True, True], [False, True, True, True],  [True, True, False, True]]
+    special_order_cases = [[True, True, False, True],[True, False, False, True], [True, False, True, True], [False, True, True, True],[True, True, True, True]]
     for single_case in special_order_cases:
         cases.remove(single_case)
     cases = special_order_cases + cases #reorders it

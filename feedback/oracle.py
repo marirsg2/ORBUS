@@ -12,13 +12,14 @@ class oracle:
     features present in the grid. The default implementation only has l-1 and l-2 features, but it can have more if needed.
     It is supposed to take a plan, annotate and rate it.
     """
+    POWER_LAW_VALUES_SCALING_FACTOR = 2
 
     def __init__(self,
                  all_s1_features,
                  probability_of_feat_selec = (0.75, 0.25),
                  like_probability = 0.5,
                  seed = 18,
-                 preference_distribution_string ="uniform",
+                 preference_distribution_string ="gaussian",
                  gaussian_noise_sd = 0.1,
                  freq_dict = {},
                  verbose = False):
@@ -45,15 +46,19 @@ class oracle:
         if preference_distribution_string == "uniform":
             rating_distribution = oracle.rating_default_dist
         elif preference_distribution_string == "power_law":
-            rating_distribution = oracle.rating_power_law
-            power_law_samples = 1 - np.random.power(5, 1000)
-            self.power_law_sampled_points = power_law_samples
+            rating_distribution = oracle.rating_distribution_law
+            power_law_samples = (1 - np.random.power(5, 1000))*oracle.POWER_LAW_VALUES_SCALING_FACTOR
+            self.distribution_sampled_points = power_law_samples
             # self.power_law_sampled_points = np.interp(power_law_samples,
             #                                           (power_law_samples.min(),
             #                                            power_law_samples.max()),
             #                                           (0, 0.4)) + 0.1
+
+        elif preference_distribution_string == "gaussian":
+            rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
+            self.distribution_sampled_points = np.random.normal(3*gaussian_noise_sd,gaussian_noise_sd,1000) #0.2 is the noise
         elif preference_distribution_string == "root_law":
-            rating_distribution = oracle.rating_power_law #same approach as power law function, sample from list
+            rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
             power_law_samples = []
             start =0.05
             next = start
@@ -67,7 +72,7 @@ class oracle:
                 next = math.pow(next,nth_root)
                 next_ratio = next_ratio/2
 
-            self.power_law_sampled_points = power_law_samples
+            self.distribution_sampled_points = power_law_samples
 
 
         self.s1_features = all_s1_features
@@ -118,10 +123,10 @@ class oracle:
         return -random.uniform(0.2, 1.0)
 
     # ===============================================================================
-    def rating_power_law(self, sentiment):
+    def rating_distribution_law(self, sentiment):
         if sentiment == "like":
-            return random.choice(self.power_law_sampled_points)
-        return -random.choice(self.power_law_sampled_points)
+            return random.choice(self.distribution_sampled_points)
+        return -random.choice(self.distribution_sampled_points)
 
     #===============================================================================
     def get_feedback(self, plans):

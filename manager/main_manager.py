@@ -206,7 +206,8 @@ class Manager:
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
                  relevant_features_prior_weights = (0.1, -0.1),
-                 preference_distribution_string="power_law",
+                 preference_distribution_string="gaussian",
+                 preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
         """
         creates the domain, plan_generator, and the oracle.
@@ -280,11 +281,11 @@ class Manager:
         self.compute_freq_dict(self.plan_dataset,self.all_s1_features)
         #todo INDEX 1: cleaned up till here
         if with_simulated_human:
-            gaussian_noise_sd = 0.0 #start with this and then set it later as needed
+
             #todo change this sim human to only use s1 features, those are all the features.
-            print("SIMULATED HUMAN has probabilities", prob_feature_selection, " AND gaussian noise sd = ", gaussian_noise_sd, "AND priors =" ,relevant_features_prior_weights)
+            print("SIMULATED HUMAN has probabilities", prob_feature_selection, " AND gaussian noise sd = ", preference_gaussian_noise_sd, "AND priors =" ,relevant_features_prior_weights)
             self.sim_human = oracle(self.all_s1_features, probability_of_feat_selec=prob_feature_selection,
-                                    gaussian_noise_sd=gaussian_noise_sd, seed=random_seed, freq_dict=self.freq_dict,
+                                    gaussian_noise_sd=preference_gaussian_noise_sd, seed=random_seed, freq_dict=self.freq_dict,
                                     preference_distribution_string=preference_distribution_string)
 
         self.test_set = None# Do not extract test set here !! wait until you have a trained model and then pull interesting plans to test
