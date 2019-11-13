@@ -1395,7 +1395,7 @@ class Manager:
 
             bayes_error_list.append( current_abs_error)
             bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
-            true_values_and_diff.append((true_rating,current_abs_error,prediction_variance))
+            true_values_and_diff.append((true_rating,UNALTERED_error,prediction_variance))
 
         # end for loop
         print(" If inside INTERESTING REGION is ", inside_region)
