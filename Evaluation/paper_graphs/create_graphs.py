@@ -1,7 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import re
-import pprint as pp
 
 # define all the global variables here
 # feature feedback, random_sampling_enabled, include_discovery, include_gain, include_feature_distinguishing, include_prob_term
@@ -11,7 +10,7 @@ required_graph_settings = [
     [1, 0, 1, 0, 1, 1],
 ]
 
-file_name = "RBUS_output_results_12_09AM_on_November_12__2019 .txt"
+file_name = "RBUS_output_results_04_28PM_on_November_12__2019.txt"
 
 case_settings = [
     "feature feedback",
