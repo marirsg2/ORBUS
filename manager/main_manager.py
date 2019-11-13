@@ -360,10 +360,14 @@ class Manager:
                                                                                       num_samples=NUM_SAMPLES_KDE)
                 mean_prediction = np.mean(predictions)
                 prediction_variance = np.var(predictions)
-                if mean_prediction + prediction_variance > temp_max:
-                    temp_max = mean_prediction + prediction_variance
-                if mean_prediction - prediction_variance < temp_min:
-                    temp_min = mean_prediction - prediction_variance
+                # if mean_prediction + prediction_variance > temp_max:
+                #     temp_max = mean_prediction + prediction_variance
+                # if mean_prediction - prediction_variance < temp_min:
+                #     temp_min = mean_prediction - prediction_variance
+                if mean_prediction  > temp_max:
+                    temp_max = mean_prediction
+                if mean_prediction  < temp_min:
+                    temp_min = mean_prediction
             except:
                 return  #means we have no features yet to build a model
         #end outer for loop
