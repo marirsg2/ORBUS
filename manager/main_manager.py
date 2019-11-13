@@ -1308,10 +1308,23 @@ class Manager:
         :param eval_percentile_regions:
         :return:
         """
+        test_plan_max = 0
+        test_plan_min = 0
+        for single_annot_plan_struct in annotated_test_plans:
+            rating = single_annot_plan_struct[-1]
+            if rating < test_plan_min:
+                test_plan_min = rating
+            elif rating > test_plan_min:
+                test_plan_max = rating
+        #end for loop
+
+
+
         true_values_and_diff = []
         #TODO NOTE WE FILTER THE PLANS WITH NO FEATURES ARE RATED 0.0 (not interesting) ONLY FOR TESTING, NOT FOR TRAINING (UNKNOWN THEN)
         annotated_test_plans = [x for x in annotated_test_plans if x[-1] != 0.0]
         bayes_total_error = 0.0
+        UNALTERED_bayes_total_error = 0.0
         bayes_error_list = []
         MLE_total_error = 0.0
         bayes_target_prediction_list = []
@@ -1330,11 +1343,13 @@ class Manager:
         # ratings_range = self.max_rating - self.min_rating
         # cutoff_regions = [(self.min_rating + x[0]*ratings_range, self.min_rating + x[1]*ratings_range) for x in eval_percentile_regions]
         count_samples = 0
-        error_scaler = max(abs(self.min_rating),abs(self.max_rating))
+        error_scaler = max(abs(test_plan_min),abs(test_plan_max))
         # print(
         #     "NOTE WE ASSUME A PLAN WITH NO KNOWN FEATURES IS OF VALUE 0, AND SO NOT COUNTED IN THE TEST SET EVALUATION")
         # print("ALL RATINGS are = ", sorted_ratings)
         print("Cutoffregions = ", cutoff_regions)
+        print("TEST PLAN MIN MAX ",test_plan_min, test_plan_max)
+
         for single_annot_plan_struct in annotated_test_plans:
             true_rating = single_annot_plan_struct[-1]
             region_checks = [x[0] <= true_rating and true_rating <= x[1] for x in cutoff_regions]
@@ -1374,7 +1389,10 @@ class Manager:
 
             current_abs_error = abs(true_value - mean_prediction)
             current_abs_error = current_abs_error*abs(true_value)/error_scaler
+            UNALTERED_error = abs(true_value - mean_prediction)
             bayes_total_error += current_abs_error
+            UNALTERED_bayes_total_error += UNALTERED_error
+
             bayes_error_list.append( current_abs_error)
             bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
             true_values_and_diff.append((true_rating,current_abs_error,prediction_variance))
@@ -1400,12 +1418,13 @@ class Manager:
 
         # end if
         bayes_final_error = bayes_total_error / count_samples
+        UNALTERED_bayes_final_error = bayes_total_error / count_samples
         print("BAYES MODEL The average REGION error is = ", bayes_final_error, "for percentile regions ",
               eval_percentile_regions)
         print("BAYES MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(bayes_error_list))
         # print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
 
-        return bayes_final_error,MLE_final_error,true_values_and_diff
+        return bayes_final_error,UNALTERED_bayes_final_error,MLE_final_error,true_values_and_diff
 
 # ================================================================================================
 

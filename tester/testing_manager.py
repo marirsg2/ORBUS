@@ -50,6 +50,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     bayes_error_list = []
     MLE_error_list = []
     inRegion_bayes_error_list = []
+    UNALTERED_inRegion_bayes_error_list = []
     inRegion_MLE_error_list = []
     annotated_test_plans = []
 
@@ -172,11 +173,12 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         bayes_error, MLE_error = manager.evaluate(annotated_test_plans)
         bayes_error_list.append(bayes_error)
         MLE_error_list.append(MLE_error)
-        inRegion_bayes_error, inRegion_MLE_error,inRegion_true_values_and_diff = manager.region_based_evaluation(annotated_test_plans, [(0.0, 0.1), (0.9, 1.0)],
+        inRegion_bayes_error,UNALTERED_inRegion_bayes_error, inRegion_MLE_error,inRegion_true_values_and_diff = manager.region_based_evaluation(annotated_test_plans, [(0.0, 0.1), (0.9, 1.0)],
                                         inside_region=True)  # the second parameter is percentile regions to evaluate in
         out_region_error.append(manager.region_based_evaluation(annotated_test_plans, [(0.0, 0.1), (0.9, 1.0)],
                                         inside_region=False) ) # the second parameter is percentile regions to evaluate in
         inRegion_bayes_error_list.append(inRegion_bayes_error)
+        UNALTERED_inRegion_bayes_error_list.append(UNALTERED_inRegion_bayes_error)
         inRegion_MLE_error_list.append(inRegion_MLE_error)
         print("INTERESTING REGION TRUE VALUES ", inRegion_true_values_and_diff)
 
@@ -213,7 +215,8 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("MLE ERROR LIST ", MLE_error_list)
     print("INTERESTING REGION TRUE VALUES ", inRegion_true_values_and_diff)
     print("INTERESTING REGION BAYES ERROR LIST ", inRegion_bayes_error_list)
-    print("INTERESTING REGION  MLE ERROR LIST ", inRegion_MLE_error_list)
+    print("---UNALTERED  INTERESTING REGION BAYES ERROR LIST ", UNALTERED_inRegion_bayes_error_list)
+    # print("INTERESTING REGION  MLE ERROR LIST ", inRegion_MLE_error_list)
     print("MIN,MAX",manager.min_rating,manager.max_rating)
     print("ANNOTATED MIN,MAX",manager.annotated_min,manager.annotated_max)
 
