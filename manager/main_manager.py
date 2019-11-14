@@ -823,7 +823,7 @@ class Manager:
             mean_gain_value = np.mean(gain_values)
         # print("TEMP PRINT: The composite_func_integral of the prob*gain over the outputs is =", composite_func_integral)
         # this composite_func_integral is the Expected gain from taking this sample
-        return mean_gain_value, preference_variance,mean_preference
+        return mean_gain_value, preference_variance
 
 
     # ================================================================================================

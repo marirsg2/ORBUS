@@ -335,7 +335,9 @@ if __name__ == "__main__":
     print('test')
 
     manager_pickle_file = "man_02_n06.p"
-    random_seed = 666 #-1 means do not fix randomness. handled in code later
+    # random_seed = 666 #-1 means do not fix randomness. handled in code later
+
+
     try:
         os.remove(manager_pickle_file)
         print("Manager File Removed at start , to recreate manager!")
@@ -343,103 +345,112 @@ if __name__ == "__main__":
         pass #file was already deleted
     cases = [list(x) for x in cases]
     print("The parameter cases are ",cases)
-    random.shuffle(cases)
-    # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-    special_order_cases = [[True, True, True, True],[True, False, True, True],[True, True, False, True], [True, False, False, True],[True, True, True, False]]
-    for single_case in special_order_cases:
-        cases.remove(single_case)
-    cases = special_order_cases + cases #reorders it
 
 
-    # --------------------------------------------------------------
-    # random_sampling_state = True
-    # for i in range(1):
-    #     all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-    #                             random_sampling_enabled =  random_sampling_state,
-    #                             include_feature_feedback= True,
-    #                             include_discovery_term = False,
-    #                             include_gain= False,
-    #                             include_feature_distinguishing= False,
-    #                             include_prob_term = False,
-    #                             manager_pickle_file = manager_pickle_file,
-    #                             repetitions=num_repetitions,
-    #                             prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
+    for i in range(5):
+        random_seed = int(random.randint(1,1000))
+        date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
+        date_time_str = date_time_str.replace(" ", "_")
+        date_time_str = date_time_str.replace("/", "_")
+        date_time_str = date_time_str.replace(",", "_")
+        date_time_str = date_time_str.replace(":", "_")
+        print("date and time:", date_time_str)
+        output_file_name = 'RBUS_output_results' + "_" + date_time_str + "_CASE_"+str(i)
+        sys.stdout = open(output_file_name + '.txt', 'w')
+        print('test')
+        # random.shuffle(cases)
+        # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
+        special_order_cases = [[True, True, True, True],[True, False, True, True],[True, True, False, True], [True, False, False, True]]
+        cases = special_order_cases #reorders it
+        # cases = special_order_cases + cases #reorders it
+        # for single_case in special_order_cases:
+        #     cases.remove(single_case)
 
 
-    #--------------------------------------------------------------
+        # --------------------------------------------------------------
+        # random_sampling_state = True
+        # for i in range(1):
+        #     all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+        #                             random_sampling_enabled =  random_sampling_state,
+        #                             include_feature_feedback= True,
+        #                             include_discovery_term = False,
+        #                             include_gain= False,
+        #                             include_feature_distinguishing= False,
+        #                             include_prob_term = False,
+        #                             manager_pickle_file = manager_pickle_file,
+        #                             repetitions=num_repetitions,
+        #                             prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
 
-    random_sampling_state = False
-    for case_parameters in cases:
-        all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-                                random_sampling_enabled =  random_sampling_state,
-                                include_feature_feedback= True,
-                                include_discovery_term = case_parameters[0],
-                                include_gain= case_parameters[1],
-                                include_feature_distinguishing= case_parameters[2],
-                                include_prob_term = case_parameters[3],
-                                manager_pickle_file = manager_pickle_file,
-                                repetitions=num_repetitions,
-                                prob_feat_select= prob_feat_select,
-                                preference_distribution_string= preference_distribution_string)))
-        single_data_set = all_data[-1]
-        case_parameters = single_data_set[0]
-        print("============================================================")
-        print("CASE DESCRIPTIONS")
-        print("|| feature feedback = True \n || random_sampling_enabled =", case_parameters[0],
-              " || include_discovery =", case_parameters[1],
-              " || include_gain =", case_parameters[2],
-              " || include_feature_distinguishing =", case_parameters[3],
-              " || include_prob_term =", case_parameters[4])
-        for i in range(num_repetitions):
-            print("BAYES ERROR LIST ", single_data_set[1][i][0])
-            print("MLE ERROR LIST ", single_data_set[1][i][1])
-            print("INTERESTING REGION BAYES ERROR LIST ", single_data_set[1][i][2])
-            print("INTERESTING REGION  MLE ERROR LIST ", single_data_set[1][i][3])
-            print("MIN,MAX", single_data_set[1][i][4])
+
+        #--------------------------------------------------------------
+
+        random_sampling_state = False
+        for case_parameters in cases:
+            all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+                                    random_sampling_enabled =  random_sampling_state,
+                                    include_feature_feedback= True,
+                                    include_discovery_term = case_parameters[0],
+                                    include_gain= case_parameters[1],
+                                    include_feature_distinguishing= case_parameters[2],
+                                    include_prob_term = case_parameters[3],
+                                    manager_pickle_file = manager_pickle_file,
+                                    repetitions=num_repetitions,
+                                    prob_feat_select= prob_feat_select,
+                                    preference_distribution_string= preference_distribution_string)))
+            single_data_set = all_data[-1]
+            case_parameters = single_data_set[0]
             print("============================================================")
+            print("CASE DESCRIPTIONS")
+            print("|| feature feedback = True \n || random_sampling_enabled =", case_parameters[0],
+                  " || include_discovery =", case_parameters[1],
+                  " || include_gain =", case_parameters[2],
+                  " || include_feature_distinguishing =", case_parameters[3],
+                  " || include_prob_term =", case_parameters[4])
+            for i in range(num_repetitions):
+                print("BAYES ERROR LIST ", single_data_set[1][i][0])
+                print("MLE ERROR LIST ", single_data_set[1][i][1])
+                print("INTERESTING REGION BAYES ERROR LIST ", single_data_set[1][i][2])
+                print("INTERESTING REGION  MLE ERROR LIST ", single_data_set[1][i][3])
+                print("MIN,MAX", single_data_set[1][i][4])
+                print("============================================================")
 
-    random_sampling_state = True
-    for i in range(NUM_RANDOM_SAMPLES-1):
-        all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-                                random_sampling_enabled =  random_sampling_state,
-                                include_feature_feedback= True,
-                                include_discovery_term = False,
-                                include_gain= False,
-                                include_feature_distinguishing= False,
-                                include_prob_term = False,
-                                manager_pickle_file = manager_pickle_file,
-                                repetitions=num_repetitions,
-                                prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
+        # random_sampling_state = True
+        # for i in range(NUM_RANDOM_SAMPLES-1):
+        #     all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+        #                             random_sampling_enabled =  random_sampling_state,
+        #                             include_feature_feedback= True,
+        #                             include_discovery_term = False,
+        #                             include_gain= False,
+        #                             include_feature_distinguishing= False,
+        #                             include_prob_term = False,
+        #                             manager_pickle_file = manager_pickle_file,
+        #                             repetitions=num_repetitions,
+        #                             prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
+        #
+        #
 
-
-
-    #end for loop through the cases and collecting data
-    print("============================================================")
-    print(all_data)
-    print("============================================================")
-
-    for single_data_set in all_data:
-        case_parameters = single_data_set[0]
+        #end for loop through the cases and collecting data
         print("============================================================")
-        print("CASE DESCRIPTIONS")
-        print( "|| feature feedback = True \n || random_sampling_enabled =", case_parameters[0],
-                " || include_discovery =", case_parameters[1],
-                " || include_gain =", case_parameters[2],
-                " || include_feature_distinguishing =", case_parameters[3],
-                " || include_prob_term =", case_parameters[4])
-        for i in range(num_repetitions):
-            print("BAYES ERROR LIST ", single_data_set[1][i][0])
-            print("MLE ERROR LIST ", single_data_set[1][i][1])
-            print("INTERESTING REGION BAYES ERROR LIST ", single_data_set[1][i][2])
-            print("INTERESTING REGION  MLE ERROR LIST ", single_data_set[1][i][3])
-            print("MIN,MAX", single_data_set[1][i][4])
-            print("============================================================")
-    #END FOR LOOP through printing the data
-        # all_data.append(Active_Learning_Testing(total_num_plans = 210, plans_per_round = 30, random_seed = 150, noise_value = 0.2,
-        #                         random_sampling_enabled = True,
-        #                         include_feature_feedback=True,
-        #                         include_gain=True,
-        #                         include_feature_distinguishing=True,include_prob_term =True,
-        #                         manager_pickle_file = "man_02_n06.p",
-        #                         prob_feat_select= 0.2, preference_distribution_string="power_law"))
+        print(all_data)
+        print("============================================================")
 
+        for single_data_set in all_data:
+            case_parameters = single_data_set[0]
+            print("============================================================")
+            print("CASE DESCRIPTIONS")
+            print( "|| feature feedback = True \n || random_sampling_enabled =", case_parameters[0],
+                    " || include_discovery =", case_parameters[1],
+                    " || include_gain =", case_parameters[2],
+                    " || include_feature_distinguishing =", case_parameters[3],
+                    " || include_prob_term =", case_parameters[4])
+            for i in range(num_repetitions):
+                print("BAYES ERROR LIST ", single_data_set[1][i][0])
+                print("MLE ERROR LIST ", single_data_set[1][i][1])
+                print("INTERESTING REGION BAYES ERROR LIST ", single_data_set[1][i][2])
+                print("INTERESTING REGION  MLE ERROR LIST ", single_data_set[1][i][3])
+                print("MIN,MAX", single_data_set[1][i][4])
+                print("============================================================")
+
+        #END FOR LOOP through printing the data
+        sys.stdout.flush()
+    #END for loop through repeating
