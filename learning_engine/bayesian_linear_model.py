@@ -10,6 +10,9 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 IMPORTANT NOTES:
 1) The variance of the parameters was previously samples from a half normal. This made is slower and harder to see convergence
 INSTEAD, when fixing sigma /sd = 0.5, the convergence was faster and better.
+
+EITHER update the prior from the previous data, or have a weak prior, with large std. dev for like and dislike
+
 """
 
 
@@ -60,7 +63,8 @@ class bayesian_linear_model:
                                     sd = 1,
                                     sampling_count=2000,
                                     num_chains = 3,
-                                    bias_preference = 0):
+                                    bias_preference = 0,
+                                    uninformative_prior_sd = 5.0):
 
         #TODO NOTE EVEN WITHOUT PRIOR WEIGHTS ARE NOT CURRENTLY USED, and works just as well
         #the encoded plans contains a list of [<encoding>,<rating>]

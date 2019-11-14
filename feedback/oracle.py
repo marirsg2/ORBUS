@@ -46,9 +46,9 @@ class oracle:
         if preference_distribution_string == "uniform":
             rating_distribution = oracle.rating_default_dist
         if preference_distribution_string == "gumbel":
-            rating_distribution = oracle.rating_default_dist
-            tailedness_beta = 4.0
-            self.distribution_sampled_points = np.random.gumbel(2*gaussian_noise_sd,tailedness_beta)
+            rating_distribution = oracle.rating_distribution_law
+            tailedness_beta = 1.5
+            self.distribution_sampled_points = np.random.gumbel(2*gaussian_noise_sd,tailedness_beta,1000)
         elif preference_distribution_string == "power_law":
             rating_distribution = oracle.rating_distribution_law
             power_law_samples = (1 - np.random.power(5, 1000))*oracle.POWER_LAW_VALUES_SCALING_FACTOR

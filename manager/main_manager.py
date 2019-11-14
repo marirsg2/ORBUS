@@ -205,7 +205,7 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_weights = (0.1, -0.1),
+                 relevant_features_prior_weights = (1, -1.0),
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -372,8 +372,8 @@ class Manager:
                 return  #means we have no features yet to build a model
         #end outer for loop
         #the annotated max and min hold our existing best estimate for the max and min, then we also consider our predictions
-        self.max_rating = temp_max
-        self.min_rating = temp_min
+        self.max_rating = temp_min + (temp_max-temp_min)*1.2 #expecting slightly larger preferences.
+        self.min_rating = temp_min - (temp_max-temp_min)*0.2
 
     # ================================================================================================
 
@@ -538,7 +538,7 @@ class Manager:
         #     #end for
         #     index_value_list = temp
         # #end if use_gain_function
-
+        chosen_plan_stats = []
         while len(chosen_indices) < num_plans:
             if include_discovery_term_product:
                 index_value_list = [
@@ -548,6 +548,8 @@ class Manager:
             a_idx = index_value_list.index(a)
             chosen_indices.append(a[0])
             chosen_scores.append(a[1])
+            feat_value = [(x,self.sim_human.feature_preferences_dict[x]) for x in self.plan_dataset[a[0]]]
+            chosen_plan_stats.append((a[1], UNSCALED_index_value_list[a_idx][1], feat_value))
             del index_value_list[a_idx]
             del UNSCALED_index_value_list[a_idx]
             self.seen_features.update(self.plan_dataset[a[0]])
@@ -564,6 +566,7 @@ class Manager:
         print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
         print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
         print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(base_score+addendum))
+        print("ROUND's chosen plan stats =",chosen_plan_stats)
         self.indices_used.update(chosen_indices)
         return [self.plan_dataset[x] for x in chosen_indices]
 
