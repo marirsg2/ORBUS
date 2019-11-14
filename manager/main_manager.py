@@ -823,7 +823,7 @@ class Manager:
             mean_gain_value = np.mean(gain_values)
         # print("TEMP PRINT: The composite_func_integral of the prob*gain over the outputs is =", composite_func_integral)
         # this composite_func_integral is the Expected gain from taking this sample
-        return mean_gain_value, preference_variance
+        return mean_gain_value, preference_variance,mean_preference
 
 
     # ================================================================================================
@@ -1397,7 +1397,7 @@ class Manager:
 
             bayes_error_list.append( current_abs_error)
             bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
-            true_values_and_diff.append((true_value,UNALTERED_error,prediction_variance))
+            true_values_and_diff.append((true_value,true_value - mean_prediction,prediction_variance))#the error with sign is passed on
 
         # end for loop
         print(" If inside INTERESTING REGION is ", inside_region)
