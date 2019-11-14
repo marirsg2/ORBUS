@@ -35,24 +35,28 @@ class bayesian_linear_model:
         :param list_np_arrays:
         :return:
         """
-        if num_last_samples == None:
-            np_2d_array = self.full_param_trace["betas"]
-        else:
-            total_num_samples = self.full_param_trace["betas"].shape[0]
-            single_chain_size = int(total_num_samples/num_chains)
-            np_2d_array = self.full_param_trace["betas"][0:single_chain_size,:]
-            for i in range(2,num_chains+1):
-                np_2d_array = np.vstack((np_2d_array,self.full_param_trace["betas"][(i-1)*single_chain_size:i*single_chain_size,:]))
-        #end else
-        #todo RAM: justify sampling from mvnormal here, when you already have the sampled parameters
-        mean = np.mean(np_2d_array, axis=0)
-        variance = np.var(np_2d_array, axis=0)
-        cov_matx = np.diag(variance)
-        self.beta_params = np.random.multivariate_normal(mean, cov_matx, self.param_samples)
-        np_1d_array = self.full_param_trace["alpha"]
-        mean = np.mean(np_1d_array)
-        sd_dev = np.std(np_1d_array)
-        self.alpha_param = np.random.normal(mean, sd_dev, self.param_samples)
+
+        self.beta_params = self.full_param_trace["betas"]
+        self.alpha_param = self.full_param_trace["alpha"]
+
+        # if num_last_samples == None:
+        #     np_2d_array = self.full_param_trace["betas"]
+        # else:
+        #     total_num_samples = self.full_param_trace["betas"].shape[0]
+        #     single_chain_size = int(total_num_samples/num_chains)
+        #     np_2d_array = self.full_param_trace["betas"][0:single_chain_size,:]
+        #     for i in range(2,num_chains+1):
+        #         np_2d_array = np.vstack((np_2d_array,self.full_param_trace["betas"][(i-1)*single_chain_size:i*single_chain_size,:]))
+        # #end else
+        # #todo RAM: justify sampling from mvnormal here, when you already have the sampled parameters
+        # mean = np.mean(np_2d_array, axis=0)
+        # variance = np.var(np_2d_array, axis=0)
+        # cov_matx = np.diag(variance)
+        # self.beta_params = np.random.multivariate_normal(mean, cov_matx, self.param_samples)
+        # np_1d_array = self.full_param_trace["alpha"]
+        # mean = np.mean(np_1d_array)
+        # sd_dev = np.std(np_1d_array)
+        # self.alpha_param = np.random.normal(mean, sd_dev, self.param_samples)
 
     #===================================================================
 
@@ -78,11 +82,11 @@ class bayesian_linear_model:
             # Intercept
             # alpha = pm.Normal('alpha', mu=0.0, sd=sd)
             alpha = pm.Deterministic('alpha', bias_preference)
-            cov = np.diag(np.full((number_of_dimensions,), sd)) #for both mu and beta (slope)
+            uninformative_prior_sd = np.diag(np.full((number_of_dimensions,), uninformative_prior_sd)) #for both mu and beta (slope)
             #todo add support to have the covariance of unknown features to be much larger ? SD = 1.0 is enough !!
             # Slope
             # prior_weights = np.random.rand(number_of_dimensions)
-            betas = pm.MvNormal('betas', mu=prior_weights, cov=cov, shape=(number_of_dimensions,))
+            betas = pm.MvNormal('betas', mu=prior_weights, cov=uninformative_prior_sd, shape=(number_of_dimensions,))
             # Standard deviation
             sigma = pm.HalfNormal('sigma', sd=sd)
             # sigma = sd #unfair knowledge

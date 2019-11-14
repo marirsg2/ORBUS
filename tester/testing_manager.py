@@ -74,7 +74,6 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
             print("-=-=-=-= USING PICKLED FILE-=-=-=-=-=-")
     except :
         print("RECREATE manager")
-        RATING_NOISE = input_rating_noise
         manager = Manager(prob_feature_selection=prob_feat_select,use_feature_feedback = include_feature_feedback,
                           random_seed=random_seed, preference_distribution_string=preference_distribution_string,
                           preference_gaussian_noise_sd=input_rating_noise)
@@ -323,7 +322,7 @@ if __name__ == "__main__":
     total_num_plans = 40
     plans_per_round = 4
     noise_value = 0.2
-    prob_feat_select = 0.4
+    prob_feat_select = 0.15
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")

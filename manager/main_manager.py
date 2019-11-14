@@ -205,7 +205,7 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_weights = (1, -1.0),
+                 relevant_features_prior_weights = (3, -3.0),
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -1054,6 +1054,24 @@ class Manager:
 
             param_stats = [self.learning_model_bayes.linear_params_values["betas"][0:2000, x] for x in
                            range(self.CONFIRMED_features_dimension)]
+
+
+            # continue from here to update params
+            #TODO UPDATE PRIORS
+            # param_means = np.array([np.mean(x) for x in param_stats])
+            # param_sign = param_means/param_means
+            # param_abs =
+            # param_vars = [np.var(x) for x in param_stats]
+            #ALSO UPDATE THE PRIORS FOR THE NEXT ROUND. WE AGGRESSIVELY UPDATE THEM TOWARDS ZERO.
+            # self.RBUS_prior_weights = np.zeros(len(self.CONFIRMED_features))
+            # for single_feature in self.CONFIRMED_features:
+            #     if single_feature in self.liked_features:
+            #         self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
+            #             self.like_dislike_prior_weights[0]
+            #     else:
+            #         self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
+            #             self.like_dislike_prior_weights[1]
+
             param_stats = [summ_stats_fnc(x) for x in param_stats]
             bayes_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
             for single_feature in bayes_feature_dict:
@@ -1069,6 +1087,7 @@ class Manager:
                         MLE_feature_dict[single_feature].append(MLE_reg_model.coef_[self.RBUS_indexing.index(single_feature)])
                     except ValueError:  # for the feature not being in the list
                         pass
+
 
             #todo not just mean, do MODE of features
             print("RATINGS seen are = ", summ_stats_fnc(ratings))
@@ -1157,6 +1176,7 @@ class Manager:
             #     mode_prediction = 0.0
             #     mean_prediction = 0.0
             #     prediction_variance = 0.0
+
             #todo NOTE USING MEAN PREDICTION, makes more sense with using variance for decisions
             current_abs_error = abs(true_value - mean_prediction)
             bayes_total_error += current_abs_error
