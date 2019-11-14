@@ -486,6 +486,7 @@ class Manager:
         else:
             gain_array = np.array([1.0 for x in index_value_list])
         # gain_normalizing_denom = np.max(gain_array)
+
         gain_normalizing_denom =  np.max(gain_array)
         if gain_normalizing_denom == 0.0:
             gain_normalizing_denom = 1.0  # avoids "nan" problem
@@ -497,7 +498,9 @@ class Manager:
             var_normalizing_denom = 1.0  # avoids "nan" problem
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
         base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
-
+        unaltered_gain_array = list(copy.deepcopy(gain_array))
+        unaltered_variance_array = list(copy.deepcopy(variance_array))
+        unaltered_basescore_array = list(copy.deepcopy(variance_array))
         # # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
         # variance_array = np.array([x[2] for x in index_value_list])
         # base_score =  variance_array
@@ -548,10 +551,19 @@ class Manager:
             a_idx = index_value_list.index(a)
             chosen_indices.append(a[0])
             chosen_scores.append(a[1])
-            feat_value = [(x,self.sim_human.feature_preferences_dict[x]) for x in self.plan_dataset[a[0]]]
-            chosen_plan_stats.append((a[1], UNSCALED_index_value_list[a_idx][1], feat_value))
+            feat_value = []
+            for feat in self.plan_dataset[a[0]]:
+                try:
+                    feat_value.append((feat,self.sim_human.feature_preferences_dict[feat]))
+                except:
+                    pass #feature not relevant
+            chosen_plan_stats.append((feat_value,a[1], UNSCALED_index_value_list[a_idx][1],unaltered_gain_array[a_idx],\
+                                      unaltered_variance_array[a_idx],unaltered_basescore_array[a_idx] ))
             del index_value_list[a_idx]
             del UNSCALED_index_value_list[a_idx]
+            del unaltered_gain_array[a_idx]
+            del unaltered_variance_array[a_idx]
+            del unaltered_basescore_array[a_idx]
             self.seen_features.update(self.plan_dataset[a[0]])
             if include_discovery_term_product:
                 del discovery_values[a_idx]
