@@ -2,12 +2,27 @@ import numpy as np
 from matplotlib import pyplot as plt
 import re
 import pprint as pp
+import copy
 
 # define all the global variables here
 # feature feedback, random_sampling_enabled, include_discovery, include_gain, include_feature_distinguishing, include_prob_term
 required_graph_settings = [
     [1, 0, 1, 1, 1, 1],
     [1, 0, 1, 0, 1, 1],
+    [1, 0, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 1]
+]
+
+legends = copy.deepcopy(required_graph_settings)
+
+color_array = [
+    'b',
+    'g',
+    'r',
+    'c',
+    'm',
+    'y',
+    'k',
 ]
 
 file_name = "RBUS_output_results_01_52PM_on_November_13__2019.txt"
@@ -58,6 +73,7 @@ class create_graphs:
 
                 if given_case_settings in required_graph_settings:
                     self.graph_data.append(case_data)
+                    required_graph_settings.remove(given_case_settings)
 
     def create_graphs(self):
         # save_file_name = "basic.png"
@@ -65,9 +81,9 @@ class create_graphs:
         x = np.arange(len(self.graph_data[0]))
 
         plt.figure()
-        for data in self.graph_data:
-            plt.plot(x, data)
-            plt.legend(required_graph_settings, loc='upper right')
+        for idx, data in enumerate(self.graph_data):
+            plt.plot(x, data, color=color_array[idx])
+            plt.legend(legends, loc='upper right')
         plt.show()
         # plt.savefig(folder + "mle_" + save_file_name)
 

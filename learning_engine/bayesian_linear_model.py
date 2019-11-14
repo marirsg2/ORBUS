@@ -41,7 +41,7 @@ class bayesian_linear_model:
             for i in range(2,num_chains+1):
                 np_2d_array = np.vstack((np_2d_array,self.full_param_trace["betas"][(i-1)*single_chain_size:i*single_chain_size,:]))
         #end else
-
+        #todo RAM: justify sampling from mvnormal here, when you already have the sampled parameters
         mean = np.mean(np_2d_array, axis=0)
         variance = np.var(np_2d_array, axis=0)
         cov_matx = np.diag(variance)

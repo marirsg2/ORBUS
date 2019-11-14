@@ -347,7 +347,7 @@ if __name__ == "__main__":
     print("The parameter cases are ",cases)
 
 
-    for i in range(5):
+    for i in range(10):
         random_seed = int(random.randint(1,1000))
         date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
         date_time_str = date_time_str.replace(" ", "_")
