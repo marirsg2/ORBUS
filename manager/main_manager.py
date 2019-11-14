@@ -205,7 +205,7 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_weights = (0.1, -0.1),
+                 relevant_features_prior_weights = (1, -1.0),
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -372,8 +372,8 @@ class Manager:
                 return  #means we have no features yet to build a model
         #end outer for loop
         #the annotated max and min hold our existing best estimate for the max and min, then we also consider our predictions
-        self.max_rating = temp_max
-        self.min_rating = temp_min
+        self.max_rating = temp_min + (temp_max-temp_min)*1.2 #expecting slightly larger preferences.
+        self.min_rating = temp_min - (temp_max-temp_min)*0.2
 
     # ================================================================================================
 
@@ -481,26 +481,30 @@ class Manager:
         # base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
 
         #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
-        # if use_gain_function:
-        #     gain_array = np.array([x[1] for x in index_value_list])
-        # else:
-        #     gain_array = np.array([1.0 for x in index_value_list])
-        # # gain_normalizing_denom = np.max(gain_array)
-        # gain_normalizing_denom =  np.max(gain_array)
-        # if gain_normalizing_denom == 0.0:
-        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-        # variance_array = np.array([x[2] for x in index_value_list])
-        # var_normalizing_denom = np.max(variance_array)
-        # # var_normalizing_denom = 1.0 #Let variance be the defining factor
-        # if var_normalizing_denom == 0.0:
-        #     var_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        if use_gain_function:
+            gain_array = np.array([x[1] for x in index_value_list])
+        else:
+            gain_array = np.array([1.0 for x in index_value_list])
+        # gain_normalizing_denom = np.max(gain_array)
 
-        # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
+        gain_normalizing_denom =  np.max(gain_array)
+        if gain_normalizing_denom == 0.0:
+            gain_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
         variance_array = np.array([x[2] for x in index_value_list])
-        base_score =  variance_array
+        var_normalizing_denom = np.max(variance_array)
+        # var_normalizing_denom = 1.0 #Let variance be the defining factor
+        if var_normalizing_denom == 0.0:
+            var_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        unaltered_gain_array = list(copy.deepcopy(gain_array))
+        unaltered_variance_array = list(copy.deepcopy(variance_array))
+        unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        # # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
+        # variance_array = np.array([x[2] for x in index_value_list])
+        # base_score =  variance_array
+        #-----------------------------
 
         # now store (idx,norm_gain*norm_variance)
         addendum = [0.0]*len(index_value_list)
@@ -523,20 +527,21 @@ class Manager:
         # see the use of indices list a little further down in code.
         chosen_indices = []
         chosen_scores = []
-        if use_gain_function: #BY TECHNIQUE 3, just sample in this extreme regions only
-            UNSCALED_index_value_list = []#copy.deepcopy(index_value_list)
-            temp = []
-            range_pref_values = max_mean_pref-min_mean_pref
-            cutoffs = [0.2*range_pref_values+min_mean_pref,0.8*range_pref_values+min_mean_pref]
-            for i in range(len(index_value_list)):
-                curr_pref = index_value_list[i][2]
-                if not (cutoffs[0] < curr_pref and curr_pref < cutoffs[1]):
-                    temp.append(index_value_list[i])
-                    UNSCALED_index_value_list.append(index_value_list[i])
-            #end for
-            index_value_list = temp
-        #end if use_gain_function
 
+        # if use_gain_function: #BY TECHNIQUE 3, just sample in this extreme regions only
+        #     UNSCALED_index_value_list = []#copy.deepcopy(index_value_list)
+        #     temp = []
+        #     range_pref_values = max_mean_pref-min_mean_pref
+        #     cutoffs = [0.2*range_pref_values+min_mean_pref,0.8*range_pref_values+min_mean_pref]
+        #     for i in range(len(index_value_list)):
+        #         curr_pref = index_value_list[i][2]
+        #         if not (cutoffs[0] < curr_pref and curr_pref < cutoffs[1]):
+        #             temp.append(index_value_list[i])
+        #             UNSCALED_index_value_list.append(index_value_list[i])
+        #     #end for
+        #     index_value_list = temp
+        # #end if use_gain_function
+        chosen_plan_stats = []
         while len(chosen_indices) < num_plans:
             if include_discovery_term_product:
                 index_value_list = [
@@ -546,8 +551,19 @@ class Manager:
             a_idx = index_value_list.index(a)
             chosen_indices.append(a[0])
             chosen_scores.append(a[1])
+            feat_value = []
+            for feat in self.plan_dataset[a[0]]:
+                try:
+                    feat_value.append((feat,self.sim_human.feature_preferences_dict[feat]))
+                except:
+                    pass #feature not relevant
+            chosen_plan_stats.append((feat_value,a[1], UNSCALED_index_value_list[a_idx][1],unaltered_gain_array[a_idx],\
+                                      unaltered_variance_array[a_idx],unaltered_basescore_array[a_idx] ))
             del index_value_list[a_idx]
             del UNSCALED_index_value_list[a_idx]
+            del unaltered_gain_array[a_idx]
+            del unaltered_variance_array[a_idx]
+            del unaltered_basescore_array[a_idx]
             self.seen_features.update(self.plan_dataset[a[0]])
             if include_discovery_term_product:
                 del discovery_values[a_idx]
@@ -562,6 +578,7 @@ class Manager:
         print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
         print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
         print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(base_score+addendum))
+        print("ROUND's chosen plan stats =",chosen_plan_stats)
         self.indices_used.update(chosen_indices)
         return [self.plan_dataset[x] for x in chosen_indices]
 
@@ -831,7 +848,7 @@ class Manager:
         try:
             predictions = learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
         except:
-            return 1.0 , 1.0, 1.0 #when no features have been discovered yet
+            return 1.0 , 1.0,1.0 #when no features have been discovered yet
         mean_preference = np.mean(predictions)
         preference_variance = np.sum(np.square(predictions - mean_preference) )/(len(predictions)-1)
 

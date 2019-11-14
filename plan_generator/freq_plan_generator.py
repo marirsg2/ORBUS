@@ -9,6 +9,8 @@ import datetime
 #--------------------------------
 NUM_PLANS_NEEDED = 10000
 NUM_FEATURES = 100
+NUM_GROUPS = 1
+NUM_FEATURES = int(NUM_FEATURES/NUM_GROUPS)
 HIGH_OCCURRENCE_COUNT = 150 #these counts are used as weights for generating plans
 MED_OCCURRENCE_COUNT = 150
 LOW_OCCURRENCE_COUNT = 150
@@ -53,9 +55,10 @@ for single_feat in med_freq_features:
 while len(all_plans) < NUM_PLANS_NEEDED:
     plan_feature_num = random.randint(MIN_FEATURES, MAX_FEATURES) #includes max length
     curr_plan = set()
+    plan_group_num = random.randint(1, NUM_GROUPS)
     while len(curr_plan) < plan_feature_num:
         choice = random.choices(s1_features,weights = s1_counts,k=1)
-        curr_plan.add(choice[0])
+        curr_plan.add("g"+str(plan_group_num)+"_"+ choice[0])
     # curr_plan = {x:1 for x in curr_plan}
     all_plans.add(tuple(curr_plan))
 #end while
