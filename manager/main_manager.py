@@ -449,12 +449,17 @@ class Manager:
             results = p.map(self.parallel_variance_computation,
                             all_parallel_params)  # Note the last parameter is a LIST, each entry is for a new process
             # results = [self.parallel_variance_computation(x) for x in all_parallel_params]
-
+            max_mean_pref = 0
+            min_mean_pref = 0
             for single_idx_and_result in zip(available_indices, results):
                 single_plan_idx = single_idx_and_result[0]
                 single_result = single_idx_and_result[1]
-                composite_func_integral, preference_variance = single_result
-                index_value_list.append((single_plan_idx, composite_func_integral, preference_variance,self.plan_dataset[single_plan_idx].intersection(self.CONFIRMED_features)))
+                composite_func_integral, preference_variance,preference_mean = single_result
+                if preference_mean > max_mean_pref:
+                    max_mean_pref = preference_mean
+                if preference_mean < min_mean_pref:
+                    min_mean_pref = preference_mean
+                index_value_list.append((single_plan_idx, composite_func_integral, preference_variance,preference_mean,self.plan_dataset[single_plan_idx].intersection(self.CONFIRMED_features)))
             #now for those plans that did not have any known relevant features
         # end codetimer profiling section
         # ---NOW we have to select top n plans such that every successive plan selected also considers diversity w.r.t to the previous plans selected
@@ -476,23 +481,26 @@ class Manager:
         # base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
 
         #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
-        if use_gain_function:
-            gain_array = np.array([x[1] for x in index_value_list])
-        else:
-            gain_array = np.array([1.0 for x in index_value_list])
-        # gain_normalizing_denom = np.max(gain_array)
-        gain_normalizing_denom =  np.max(gain_array)
-        if gain_normalizing_denom == 0.0:
-            gain_normalizing_denom = 1.0  # avoids "nan" problem
-        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-        variance_array = np.array([x[2] for x in index_value_list])
-        var_normalizing_denom = np.max(variance_array)
-        # var_normalizing_denom = 1.0 #Let variance be the defining factor
-        if var_normalizing_denom == 0.0:
-            var_normalizing_denom = 1.0  # avoids "nan" problem
-        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        # if use_gain_function:
+        #     gain_array = np.array([x[1] for x in index_value_list])
+        # else:
+        #     gain_array = np.array([1.0 for x in index_value_list])
+        # # gain_normalizing_denom = np.max(gain_array)
+        # gain_normalizing_denom =  np.max(gain_array)
+        # if gain_normalizing_denom == 0.0:
+        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+        # variance_array = np.array([x[2] for x in index_value_list])
+        # var_normalizing_denom = np.max(variance_array)
+        # # var_normalizing_denom = 1.0 #Let variance be the defining factor
+        # if var_normalizing_denom == 0.0:
+        #     var_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
 
+        # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
+        variance_array = np.array([x[2] for x in index_value_list])
+        base_score =  variance_array
 
         # now store (idx,norm_gain*norm_variance)
         addendum = [0.0]*len(index_value_list)
@@ -509,12 +517,26 @@ class Manager:
             discovery_values = [1 + self.compute_discovery_value(self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
                 for x in range(len(index_value_list))]
 
-        index_value_list = [(index_value_list[x][0], base_score[x]+addendum[x]) for x in range(len(index_value_list))]
+        index_value_list = [(index_value_list[x][0], base_score[x]+addendum[x],index_value_list[x][3]) for x in range(len(index_value_list))]
+        UNSCALED_index_value_list = copy.deepcopy(index_value_list)
         # NOTE the order of ENTRIES in index value list will now be fixed
         # see the use of indices list a little further down in code.
         chosen_indices = []
         chosen_scores = []
-        UNSCALED_index_value_list = copy.deepcopy(index_value_list)
+        if use_gain_function: #BY TECHNIQUE 3, just sample in this extreme regions only
+            UNSCALED_index_value_list = []#copy.deepcopy(index_value_list)
+            temp = []
+            range_pref_values = max_mean_pref-min_mean_pref
+            cutoffs = [0.2*range_pref_values+min_mean_pref,0.8*range_pref_values+min_mean_pref]
+            for i in range(len(index_value_list)):
+                curr_pref = index_value_list[i][3]
+                if not (cutoffs[0] < curr_pref and curr_pref < cutoffs[1]):
+                    temp.append(index_value_list[i])
+                    UNSCALED_index_value_list.append(index_value_list[i])
+            #end for
+            index_value_list = temp
+        #end if use_gain_function
+
         while len(chosen_indices) < num_plans:
             if include_discovery_term_product:
                 index_value_list = [
@@ -823,7 +845,7 @@ class Manager:
             mean_gain_value = np.mean(gain_values)
         # print("TEMP PRINT: The composite_func_integral of the prob*gain over the outputs is =", composite_func_integral)
         # this composite_func_integral is the Expected gain from taking this sample
-        return mean_gain_value, preference_variance,mean_preference
+        return mean_gain_value, preference_variance, mean_preference
 
 
     # ================================================================================================
