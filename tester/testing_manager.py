@@ -360,7 +360,7 @@ if __name__ == "__main__":
         print('test')
         # random.shuffle(cases)
         # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-        special_order_cases = [[True, True, True, True],[True, False, True, True],[True, True, False, True], [True, False, False, True]]
+        special_order_cases = [[True, True, False, True], [True, False, False, True],[True, True, True, True],[True, False, True, True]]
         cases = special_order_cases #reorders it
         # cases = special_order_cases + cases #reorders it
         # for single_case in special_order_cases:

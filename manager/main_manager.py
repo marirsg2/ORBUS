@@ -529,7 +529,7 @@ class Manager:
             range_pref_values = max_mean_pref-min_mean_pref
             cutoffs = [0.2*range_pref_values+min_mean_pref,0.8*range_pref_values+min_mean_pref]
             for i in range(len(index_value_list)):
-                curr_pref = index_value_list[i][3]
+                curr_pref = index_value_list[i][2]
                 if not (cutoffs[0] < curr_pref and curr_pref < cutoffs[1]):
                     temp.append(index_value_list[i])
                     UNSCALED_index_value_list.append(index_value_list[i])
@@ -831,7 +831,7 @@ class Manager:
         try:
             predictions = learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
         except:
-            return 1.0 , 1.0 #when no features have been discovered yet
+            return 1.0 , 1.0,1.0 #when no features have been discovered yet
         mean_preference = np.mean(predictions)
         preference_variance = np.sum(np.square(predictions - mean_preference) )/(len(predictions)-1)
 

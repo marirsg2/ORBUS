@@ -8,6 +8,8 @@ import pprint as pp
 required_graph_settings = [
     [1, 0, 1, 1, 1, 1],
     [1, 0, 1, 0, 1, 1],
+    [1, 0, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 1],
 ]
 
 file_name = "RBUS_output_results_01_52PM_on_November_13__2019.txt"
