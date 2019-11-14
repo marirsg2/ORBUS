@@ -16,7 +16,7 @@ class oracle:
 
     def __init__(self,
                  all_s1_features,
-                 probability_of_feat_selec = (0.75, 0.25),
+                 probability_of_feat_selec = 0.25,
                  like_probability = 0.5,
                  seed = 18,
                  preference_distribution_string ="gaussian",
@@ -45,6 +45,10 @@ class oracle:
         print("The ratings distribution is ", preference_distribution_string)
         if preference_distribution_string == "uniform":
             rating_distribution = oracle.rating_default_dist
+        if preference_distribution_string == "gumbel":
+            rating_distribution = oracle.rating_default_dist
+            tailedness_beta = 4.0
+            self.distribution_sampled_points = np.random.gumbel(2*gaussian_noise_sd,tailedness_beta)
         elif preference_distribution_string == "power_law":
             rating_distribution = oracle.rating_distribution_law
             power_law_samples = (1 - np.random.power(5, 1000))*oracle.POWER_LAW_VALUES_SCALING_FACTOR
@@ -56,7 +60,8 @@ class oracle:
 
         elif preference_distribution_string == "gaussian":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
-            self.distribution_sampled_points = np.random.normal(5*gaussian_noise_sd,gaussian_noise_sd,1000) #0.2 is the noise
+            self.distribution_sampled_points = np.random.normal(7*gaussian_noise_sd,2*gaussian_noise_sd,1000) #0.2 is the noise
+            self.distribution_sampled_points = np.sort(self.distribution_sampled_points)
         elif preference_distribution_string == "root_law":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
             power_law_samples = []
@@ -83,24 +88,39 @@ class oracle:
         if preference_distribution_string != "freq_law":
             for single_feature in self.s1_features:
                 r1 = random.random()
-                if r1 <= probability_of_feat_selec:
-                    # so this feature is relevant
-                    r2 = random.random()
-                    if r2 <= like_probability:
-                        # so the user likes the feature
-                        self.feature_preferences_dict[single_feature] = ["like",
-                                                                        rating_distribution(self, "like")]
-                    else:
-                        self.feature_preferences_dict[single_feature] = ["dislike",
-                                                         rating_distribution(self, "dislike")]
-        else: #we rate according to the freq dict passed in
-            for single_feature in freq_dict.keys():
-                r1 = random.random()
                 try:
                     relevance_probability = probability_of_feat_selec
                 except:
                     continue
-                if r1 <= relevance_probability:
+                select_prob = relevance_probability
+                local_like_probability = like_probability
+                biased = False
+
+                #this was for having some groups of features always liked or disliked
+                # if single_feature.startswith("g1"):
+                #     biased = True
+                #     select_prob = 1.0
+                #     local_like_probability = 1.0
+                # if single_feature.startswith("g2"):
+                #     biased = True
+                #     select_prob = 1.0
+                #     local_like_probability = 0.0
+
+                if r1 <= select_prob:
+                    # so this feature is relevant
+                    r2 = random.random()
+                    if r2 <= local_like_probability:
+                        # so the user likes the feature
+                        self.feature_preferences_dict[single_feature] = ["like",
+                                                                        rating_distribution(self, "like",biased)]
+                    else:
+                        self.feature_preferences_dict[single_feature] = ["dislike",
+                                                         rating_distribution(self, "dislike",biased)]
+        else: #we rate according to the freq dict passed in
+            for single_feature in freq_dict.keys():
+
+                r1 = random.random()
+                if r1 <= probability_of_feat_selec:
                     # so this feature is relevant
                     rating_magnitude = math.pow((1-freq_dict[single_feature]),3)/2 # = (1-freq)^3/2. Max is 0.5
                     r2 = random.random()
@@ -123,10 +143,15 @@ class oracle:
         return -random.uniform(0.2, 1.0)
 
     # ===============================================================================
-    def rating_distribution_law(self, sentiment):
-        if sentiment == "like":
-            return abs(random.choice(self.distribution_sampled_points))
-        return -abs(random.choice(self.distribution_sampled_points))
+    def rating_distribution_law(self, sentiment,bias=False):
+        if bias == True:
+            if sentiment == "like":
+                return abs(random.choice(self.distribution_sampled_points[-int(len(self.distribution_sampled_points)/2):]))
+            return -abs(random.choice(self.distribution_sampled_points[-int(len(self.distribution_sampled_points)/2):]))
+        else:
+            if sentiment == "like":
+                return abs(random.choice(self.distribution_sampled_points))
+            return -abs(random.choice(self.distribution_sampled_points))
 
     #===============================================================================
     def get_feedback(self, plans):

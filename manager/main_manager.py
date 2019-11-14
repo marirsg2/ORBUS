@@ -481,26 +481,27 @@ class Manager:
         # base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
 
         #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
-        # if use_gain_function:
-        #     gain_array = np.array([x[1] for x in index_value_list])
-        # else:
-        #     gain_array = np.array([1.0 for x in index_value_list])
-        # # gain_normalizing_denom = np.max(gain_array)
-        # gain_normalizing_denom =  np.max(gain_array)
-        # if gain_normalizing_denom == 0.0:
-        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-        # variance_array = np.array([x[2] for x in index_value_list])
-        # var_normalizing_denom = np.max(variance_array)
-        # # var_normalizing_denom = 1.0 #Let variance be the defining factor
-        # if var_normalizing_denom == 0.0:
-        #     var_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
-
-        # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
+        if use_gain_function:
+            gain_array = np.array([x[1] for x in index_value_list])
+        else:
+            gain_array = np.array([1.0 for x in index_value_list])
+        # gain_normalizing_denom = np.max(gain_array)
+        gain_normalizing_denom =  np.max(gain_array)
+        if gain_normalizing_denom == 0.0:
+            gain_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
         variance_array = np.array([x[2] for x in index_value_list])
-        base_score =  variance_array
+        var_normalizing_denom = np.max(variance_array)
+        # var_normalizing_denom = 1.0 #Let variance be the defining factor
+        if var_normalizing_denom == 0.0:
+            var_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+
+        # # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
+        # variance_array = np.array([x[2] for x in index_value_list])
+        # base_score =  variance_array
+        #-----------------------------
 
         # now store (idx,norm_gain*norm_variance)
         addendum = [0.0]*len(index_value_list)
@@ -523,19 +524,20 @@ class Manager:
         # see the use of indices list a little further down in code.
         chosen_indices = []
         chosen_scores = []
-        if use_gain_function: #BY TECHNIQUE 3, just sample in this extreme regions only
-            UNSCALED_index_value_list = []#copy.deepcopy(index_value_list)
-            temp = []
-            range_pref_values = max_mean_pref-min_mean_pref
-            cutoffs = [0.2*range_pref_values+min_mean_pref,0.8*range_pref_values+min_mean_pref]
-            for i in range(len(index_value_list)):
-                curr_pref = index_value_list[i][2]
-                if not (cutoffs[0] < curr_pref and curr_pref < cutoffs[1]):
-                    temp.append(index_value_list[i])
-                    UNSCALED_index_value_list.append(index_value_list[i])
-            #end for
-            index_value_list = temp
-        #end if use_gain_function
+
+        # if use_gain_function: #BY TECHNIQUE 3, just sample in this extreme regions only
+        #     UNSCALED_index_value_list = []#copy.deepcopy(index_value_list)
+        #     temp = []
+        #     range_pref_values = max_mean_pref-min_mean_pref
+        #     cutoffs = [0.2*range_pref_values+min_mean_pref,0.8*range_pref_values+min_mean_pref]
+        #     for i in range(len(index_value_list)):
+        #         curr_pref = index_value_list[i][2]
+        #         if not (cutoffs[0] < curr_pref and curr_pref < cutoffs[1]):
+        #             temp.append(index_value_list[i])
+        #             UNSCALED_index_value_list.append(index_value_list[i])
+        #     #end for
+        #     index_value_list = temp
+        # #end if use_gain_function
 
         while len(chosen_indices) < num_plans:
             if include_discovery_term_product:

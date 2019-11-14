@@ -318,36 +318,38 @@ if __name__ == "__main__":
 
     # preference_distribution_string = "uniform"
     # preference_distribution_string = "power_law"
-    preference_distribution_string = "gaussian"
+    # preference_distribution_string = "gaussian"
+    preference_distribution_string = "gumbel"
     total_num_plans = 40
     plans_per_round = 4
     noise_value = 0.2
     prob_feat_select = 0.4
 
-    date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
-    date_time_str = date_time_str.replace(" ", "_")
-    date_time_str = date_time_str.replace("/", "_")
-    date_time_str = date_time_str.replace(",", "_")
-    date_time_str = date_time_str.replace(":", "_")
-    print("date and time:", date_time_str)
-    output_file_name = 'RBUS_output_results' + "_" + date_time_str
-    sys.stdout = open(output_file_name + '.txt', 'w')
-    print('test')
+    # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
+    # date_time_str = date_time_str.replace(" ", "_")
+    # date_time_str = date_time_str.replace("/", "_")
+    # date_time_str = date_time_str.replace(",", "_")
+    # date_time_str = date_time_str.replace(":", "_")
+    # print("date and time:", date_time_str)
+    # output_file_name = 'RBUS_output_results' + "_" + date_time_str
+    # sys.stdout = open(output_file_name + '.txt', 'w')
+    # print('test')
 
     manager_pickle_file = "man_02_n06.p"
     # random_seed = 666 #-1 means do not fix randomness. handled in code later
 
 
-    try:
-        os.remove(manager_pickle_file)
-        print("Manager File Removed at start , to recreate manager!")
-    except FileNotFoundError:
-        pass #file was already deleted
-    cases = [list(x) for x in cases]
-    print("The parameter cases are ",cases)
+    # cases = [list(x) for x in cases]
+    # print("The parameter cases are ",cases)
 
 
     for i in range(5):
+        try:
+            os.remove(manager_pickle_file)
+            print("Manager File Removed at start , to recreate manager!")
+        except FileNotFoundError:
+            pass  # file was already deleted
+
         random_seed = int(random.randint(1,1000))
         date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
         date_time_str = date_time_str.replace(" ", "_")
@@ -360,7 +362,7 @@ if __name__ == "__main__":
         print('test')
         # random.shuffle(cases)
         # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-        special_order_cases = [[True, True, False, True], [True, False, False, True],[True, True, True, True],[True, False, True, True]]
+        special_order_cases = [[True, True, False, True], [True, False, False, True],[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases #reorders it
         # cases = special_order_cases + cases #reorders it
         # for single_case in special_order_cases:
