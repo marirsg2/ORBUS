@@ -461,35 +461,37 @@ class Manager:
         # the best plan is determined by normalized gain * normalized variance
 
         #--------TECHNIQUE 1 ---- VAR + gain_norm*VAR
-        if use_gain_function:
-            gain_array = np.array([x[1] for x in index_value_list])
-        else:
-            gain_array = np.array([1.0 for x in index_value_list])
-        # gain_normalizing_denom = np.var(gain_array)
-        gain_normalizing_denom = np.max(gain_array) #so variance is the key factor
-        if gain_normalizing_denom == 0.0:
-            gain_normalizing_denom = 1.0  # avoids "nan" problem
-        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-        variance_array = np.array([x[2] for x in index_value_list])
-        #todo NOTE we multiply by the normalized gain because the defining term is the variance, not the gain.
-        # score = var + var*gain
-        base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
-
-        #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
         # if use_gain_function:
         #     gain_array = np.array([x[1] for x in index_value_list])
         # else:
         #     gain_array = np.array([1.0 for x in index_value_list])
+        # # gain_normalizing_denom = np.var(gain_array)
         # gain_normalizing_denom = np.max(gain_array) #so variance is the key factor
         # if gain_normalizing_denom == 0.0:
         #     gain_normalizing_denom = 1.0  # avoids "nan" problem
         # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
         # variance_array = np.array([x[2] for x in index_value_list])
-        # var_normalizing_denom = np.max(variance_array)
-        # if var_normalizing_denom == 0.0:
-        #     var_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        # #todo NOTE we multiply by the normalized gain because the defining term is the variance, not the gain.
+        # # score = var + var*gain
+        # base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
+
+        #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
+        if use_gain_function:
+            gain_array = np.array([x[1] for x in index_value_list])
+        else:
+            gain_array = np.array([1.0 for x in index_value_list])
+        # gain_normalizing_denom = np.max(gain_array)
+        gain_normalizing_denom =  np.max(gain_array)
+        if gain_normalizing_denom == 0.0:
+            gain_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+        variance_array = np.array([x[2] for x in index_value_list])
+        var_normalizing_denom = np.max(variance_array)
+        # var_normalizing_denom = 1.0 #Let variance be the defining factor
+        if var_normalizing_denom == 0.0:
+            var_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
 
 
         # now store (idx,norm_gain*norm_variance)
@@ -915,7 +917,8 @@ class Manager:
         newly_annot_plans = self.sim_human.get_feedback(all_plans)
         annot_plans += newly_annot_plans
         sorted_annot_plans = sorted(annot_plans, key = lambda x:x[-1])
-        print("FEEDBACK GIVEN WAS =", sorted_annot_plans)
+        if len(sorted_annot_plans)>100:
+            print("ONLY SOME !! of the feedback given was =", random.sample(sorted_annot_plans,100))
 
         return annot_plans
     #================================================================================================
@@ -930,7 +933,7 @@ class Manager:
 
 
     # ================================================================================================
-    def relearn_model(self, learn_LSfit = False, num_chains=2):
+    def relearn_model(self, learn_LSfit = False, num_chains=1):
         """
         since we have the relevant features and some annotated plans(<plans, rating>, we learn a liner regression model
         by Bayesian Learning. The manager will connect to the learning engine to learn and update the model
@@ -1300,12 +1303,12 @@ class Manager:
 
 
 #=============================================================================
-    def region_based_evaluation(self, annotated_test_plans, eval_percentile_regions=[(0.0, 0.1), (0.9, 1.0)],
+    def region_based_evaluation(self, annotated_test_plans, eval_output_regions=[0.2,0.8],
                                 inside_region=True):
         """
 
         :param annotated_test_plans:
-        :param eval_percentile_regions:
+        :param eval_output_regions:
         :return:
         """
         test_plan_max = 0
@@ -1314,7 +1317,7 @@ class Manager:
             rating = single_annot_plan_struct[-1]
             if rating < test_plan_min:
                 test_plan_min = rating
-            elif rating > test_plan_min:
+            elif rating > test_plan_max:
                 test_plan_max = rating
         #end for loop
 
@@ -1333,30 +1336,30 @@ class Manager:
         # convert the percentiles to actual regions
         sorted_ratings = sorted([x[-1] for x in annotated_test_plans])
         num_plans = len(annotated_test_plans)
-        cutoff_regions = []
-        for single_region in eval_percentile_regions:
-            bound_indices = [int(x * num_plans) for x in single_region]
-            if num_plans in bound_indices:
-                bound_indices[bound_indices.index(num_plans)] = num_plans - 1
-            cutoff_regions.append([sorted_ratings[x] for x in bound_indices])
+        range_of_values = test_plan_max-test_plan_min
+        cutoff_regions = [range_of_values*(eval_output_regions[0])+test_plan_min , range_of_values*(eval_output_regions[1])+test_plan_min]
+        # for single_region in eval_percentile_regions:
+        #     bound_indices = [int(x * num_plans) for x in single_region]
+        #     if num_plans in bound_indices:
+        #         bound_indices[bound_indices.index(num_plans)] = num_plans - 1
+        #     cutoff_regions.append([sorted_ratings[x] for x in bound_indices])
 
         # ratings_range = self.max_rating - self.min_rating
         # cutoff_regions = [(self.min_rating + x[0]*ratings_range, self.min_rating + x[1]*ratings_range) for x in eval_percentile_regions]
         count_samples = 0
-        error_scaler = max(abs(test_plan_min),abs(test_plan_max))
+        error_scaler = 1 # MAKES NO DIFFERENCE, Just scales values, max(abs(test_plan_min),abs(test_plan_max))
         # print(
         #     "NOTE WE ASSUME A PLAN WITH NO KNOWN FEATURES IS OF VALUE 0, AND SO NOT COUNTED IN THE TEST SET EVALUATION")
         # print("ALL RATINGS are = ", sorted_ratings)
         print("Cutoffregions = ", cutoff_regions)
         print("TEST PLAN MIN MAX ",test_plan_min, test_plan_max)
 
-        for single_annot_plan_struct in annotated_test_plans:
-            true_rating = single_annot_plan_struct[-1]
-            region_checks = [x[0] <= true_rating and true_rating <= x[1] for x in cutoff_regions]
-            if inside_region and not True in region_checks:
-                continue
-            if not inside_region and True in region_checks:
-                continue
+        filtered_plans = [x for x in annotated_test_plans if not(cutoff_regions[0] < x[-1] and x[-1] < cutoff_regions[1])]
+
+        for single_annot_plan_struct in filtered_plans:
+            true_value = float(single_annot_plan_struct[-1])
+            # if cutoff_regions[0] < true_value and true_value < cutoff_regions[1] : # we are inside the range, then not an extreme point
+            #     continue
             count_samples += 1
             current_plan = single_annot_plan_struct[0]
             encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
@@ -1365,7 +1368,6 @@ class Manager:
                     encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
             # ---first do the simple MLE model, easier
 
-            true_value = float(single_annot_plan_struct[-1])
             if self.model_MLE != None:
                 mle_predict = self.model_MLE.predict([encoded_plan])[0]
                 current_abs_error = abs(
@@ -1395,7 +1397,7 @@ class Manager:
 
             bayes_error_list.append( current_abs_error)
             bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
-            true_values_and_diff.append((true_rating,UNALTERED_error,prediction_variance))
+            true_values_and_diff.append((true_value,UNALTERED_error,prediction_variance))
 
         # end for loop
         print(" If inside INTERESTING REGION is ", inside_region)
@@ -1410,7 +1412,7 @@ class Manager:
         if self.model_MLE != None:
             MLE_final_error = MLE_total_error / count_samples
             print("LINEAR MODEL The average REGION error is = ", MLE_final_error, "for percentile regions ",
-                  eval_percentile_regions)
+                  eval_output_regions)
             print("LINEAR MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(MLE_error_list))
             # print("LINEAR MODEL target and prediction ", MLE_target_prediction_list)
         else:
@@ -1418,9 +1420,9 @@ class Manager:
 
         # end if
         bayes_final_error = bayes_total_error / count_samples
-        UNALTERED_bayes_final_error = bayes_total_error / count_samples
+        UNALTERED_bayes_final_error = UNALTERED_bayes_total_error / count_samples
         print("BAYES MODEL The average REGION error is = ", bayes_final_error, "for percentile regions ",
-              eval_percentile_regions)
+              eval_output_regions)
         print("BAYES MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(bayes_error_list))
         # print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
 

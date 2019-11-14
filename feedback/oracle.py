@@ -56,7 +56,7 @@ class oracle:
 
         elif preference_distribution_string == "gaussian":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
-            self.distribution_sampled_points = np.random.normal(3*gaussian_noise_sd,gaussian_noise_sd,1000) #0.2 is the noise
+            self.distribution_sampled_points = np.random.normal(5*gaussian_noise_sd,gaussian_noise_sd,1000) #0.2 is the noise
         elif preference_distribution_string == "root_law":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
             power_law_samples = []
