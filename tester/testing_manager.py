@@ -126,7 +126,6 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
                                                                   include_probability_term = include_prob_term)
 
         annotated_plans = manager.get_feedback(sampled_plans)
-
         print("FEEDBACK AND QUERIES FOR ROUND ", round_num, " are \n", annotated_plans)
         print("SUM OF PROB OF SEEN FEATURES =", sum([manager.freq_dict[x] for x in manager.seen_features]) ," ; SEEN FEATURES = ", manager.seen_features)
         print("LIKED FEATURES ", manager.liked_features)
@@ -164,8 +163,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
             learn_LSfit = True
         #end if
         manager.update_indices(annotated_plans)
-
-        manager.relearn_model(learn_LSfit, num_chains=2) # here is where we first train the model
+        manager.relearn_model(learn_LSfit, num_chains=1) # here is where we first train the model
         #todo REMOVE THIS and maybe move it to replace the test set
         # manager.select_best_and_worst(30)
         bayes_error, MLE_error = manager.evaluate(annotated_test_plans)
@@ -178,7 +176,6 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         inRegion_MLE_error_list.append(inRegion_MLE_error)
         inRegion_true_values_and_diff = sorted(inRegion_true_values_and_diff,key=lambda x:x[0])
         print("INTERESTING REGION TRUE VALUES ", inRegion_true_values_and_diff)
-
     #end for loop through
     #---now measure the accuracy
 
@@ -322,7 +319,7 @@ if __name__ == "__main__":
     total_num_plans = 40
     plans_per_round = 4
     noise_value = 0.2
-    prob_feat_select = 0.15
+    prob_feat_select = 1.0
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")

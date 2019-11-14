@@ -107,6 +107,7 @@ class bayesian_linear_model:
         #end with
         # todo look into the aplha values that were sampled, because they didn't appear in the plot
         self.full_param_trace = linear_params_trace # we only take the last 2000, and assume it is after sufficient mixing and good values.
+        #TODO THIS IS ONLY FROM ONE CHAIN, there is a function called trace.getValues, that lets you get values from each chain. Then we mix it.
         self.linear_params_values = linear_params_trace[-2000:] # we only take the last 2000, and assume it is after sufficient mixing and good values.
         self.set_normal_distr_params(num_chains=num_chains,num_last_samples=None)
     #---end function learn_linear_model

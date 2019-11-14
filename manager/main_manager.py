@@ -408,11 +408,9 @@ class Manager:
         #     print("IMPORTANT: CHOOSING TO DO RANDOM SAMPLING over RBUS as the number of annotated plans < number of features")
         #     return self.sample_randomly(num_samples)
 
-        # try:
-        #     if self.CONFIRMED_features_dimension != self.learning_model_bayes.beta_params.shape[1]:
-        #         self.relearn_model(learn_LSfit=True, num_chains=2)
-        # except:  # will happen if the learning model has never been trained yet
-        self.relearn_model(learn_LSfit=True, num_chains=2)
+        #todo NOTE IMPORTANT that the model must be relearned after the data is input, not here
+
+
         num_subProcess_to_use = self.num_cores_RBUS
         #VERY IMPORTANT, AFTER THE MODEL IS LEARNED
         self.update_expected_min_and_max_values()
@@ -933,17 +931,27 @@ class Manager:
             # self.RBUS_indexing = sorted(list(self.POSSIBLE_features))
             # self.RBUS_prior_weights = np.zeros(self.CONFIRMED_features_dimension)
 
+            prev_round_rbus_indexing = self.RBUS_indexing
+            prev_round_rbus_prior_weights = self.RBUS_prior_weights
             self.RBUS_indexing = sorted(list(self.CONFIRMED_features))
             self.RBUS_prior_weights = np.zeros(len(self.CONFIRMED_features))
 
 
             for single_feature in self.CONFIRMED_features:
                 if single_feature in self.liked_features:
-                    self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
-                        self.like_dislike_prior_weights[0]
+                    prior_value = self.like_dislike_prior_weights[0]
+                    try:
+                        prior_value = prev_round_rbus_prior_weights[prev_round_rbus_indexing.index(single_feature)]
+                    except:
+                        pass
+                    self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = prior_value
                 else:
-                    self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
-                        self.like_dislike_prior_weights[1]
+                    prior_value = self.like_dislike_prior_weights[1]
+                    try:
+                        prior_value = prev_round_rbus_prior_weights[prev_round_rbus_indexing.index(single_feature)]
+                    except:
+                        pass
+                    self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = prior_value
         #end if self.use_feature_feedback:
 
     #================================================================================================
@@ -1003,13 +1011,9 @@ class Manager:
             self.max_rating = max_rating
         if max_rating > self.annotated_max:
             self.annotated_max = max_rating
-
         scores = []
         for plan in self.annotated_plans:
             scores.append(plan[-1])
-
-
-
         encoded_plans_list = []
         for single_plan in rescaled_plans:
             encoded_plan = [np.zeros(self.CONFIRMED_features_dimension), single_plan[3]]
@@ -1049,34 +1053,39 @@ class Manager:
                                                               num_chains=num_chains)
                                                               # num_chains=num_chains)
 
+        # ALSO UPDATE THE PRIORS FOR THE NEXT ROUND. WE START OPTIMISITC AND UPDATE THEM TOWARDS THEIR TRUE VALUES
+        param_stats = [self.learning_model_bayes.linear_params_values["betas"][0:2000, x] for x in
+                       range(self.CONFIRMED_features_dimension)]
+        param_means = np.array([np.mean(x) for x in param_stats])
+        # param_sign = param_means/param_means
+        # param_abs = np.abs(param_means)
+        # param_vars = [np.var(x) for x in param_stats]
+        self.RBUS_prior_weights = np.zeros(len(self.CONFIRMED_features))
+        for single_feature in self.CONFIRMED_features:
+            if single_feature in self.liked_features:
+                self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
+                    param_means[self.RBUS_indexing.index(single_feature)]
+                # todo note, this was the other option, to agressively update the prior towards zero by mean-std_dev
+                # instead we assume just the mean, as it is a more conservative update. Aggressive update maybe good too. never tested
+                # param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
+                #     param_vars[self.RBUS_indexing.index(single_feature)])
+            else:
+                self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
+                    param_means[self.RBUS_indexing.index(single_feature)]
+                # todo note, this was the other option, to agressively update the prior towards zero by mean-std_dev
+                # -1*param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
+                #     param_vars[self.RBUS_indexing.index(single_feature)])
+            # end else
+        #end for loop through confirmed features
 
         if self.sim_human != None:  #i.e. we are in simulated testing
-
-            param_stats = [self.learning_model_bayes.linear_params_values["betas"][0:2000, x] for x in
-                           range(self.CONFIRMED_features_dimension)]
-
-
             # continue from here to update params
-            #TODO UPDATE PRIORS
-            # param_means = np.array([np.mean(x) for x in param_stats])
-            # param_sign = param_means/param_means
-            # param_abs =
-            # param_vars = [np.var(x) for x in param_stats]
-            #ALSO UPDATE THE PRIORS FOR THE NEXT ROUND. WE AGGRESSIVELY UPDATE THEM TOWARDS ZERO.
-            # self.RBUS_prior_weights = np.zeros(len(self.CONFIRMED_features))
-            # for single_feature in self.CONFIRMED_features:
-            #     if single_feature in self.liked_features:
-            #         self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
-            #             self.like_dislike_prior_weights[0]
-            #     else:
-            #         self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
-            #             self.like_dislike_prior_weights[1]
-
-            param_stats = [summ_stats_fnc(x) for x in param_stats]
+            #end for updating confirmed features.
+            param_summ_stats = [summ_stats_fnc(x) for x in param_stats]
             bayes_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
             for single_feature in bayes_feature_dict:
                 try:
-                    bayes_feature_dict[single_feature].append(param_stats[self.RBUS_indexing.index(single_feature)])
+                    bayes_feature_dict[single_feature].append(param_summ_stats[self.RBUS_indexing.index(single_feature)])
                 except ValueError: # for the feature not being in the list
                     pass
 
