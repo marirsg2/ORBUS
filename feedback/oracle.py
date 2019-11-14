@@ -97,14 +97,14 @@ class oracle:
                 biased = False
 
                 #this was for having some groups of features always liked or disliked
-                # if single_feature.startswith("g1"):
-                #     biased = True
-                #     select_prob = 1.0
-                #     local_like_probability = 1.0
-                # if single_feature.startswith("g2"):
-                #     biased = True
-                #     select_prob = 1.0
-                #     local_like_probability = 0.0
+                if single_feature.startswith("g1"):
+                    biased = True
+                    select_prob = 1.0
+                    local_like_probability = 1.0
+                if single_feature.startswith("g2"):
+                    biased = True
+                    select_prob = 1.0
+                    local_like_probability = 0.0
 
                 if r1 <= select_prob:
                     # so this feature is relevant

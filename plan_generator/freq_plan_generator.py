@@ -8,8 +8,8 @@ import datetime
 
 #--------------------------------
 NUM_PLANS_NEEDED = 10000
-NUM_FEATURES = 100
-NUM_GROUPS = 1
+NUM_FEATURES = 60
+NUM_GROUPS = 4
 NUM_FEATURES = int(NUM_FEATURES/NUM_GROUPS)
 HIGH_OCCURRENCE_COUNT = 150 #these counts are used as weights for generating plans
 MED_OCCURRENCE_COUNT = 150

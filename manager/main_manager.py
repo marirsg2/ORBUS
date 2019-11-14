@@ -501,6 +501,7 @@ class Manager:
         unaltered_gain_array = list(copy.deepcopy(gain_array))
         unaltered_variance_array = list(copy.deepcopy(variance_array))
         unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        unaltered_meanPref_array = [x[3] for x in index_value_list]
         # # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
         # variance_array = np.array([x[2] for x in index_value_list])
         # base_score =  variance_array
@@ -552,16 +553,19 @@ class Manager:
             chosen_indices.append(a[0])
             chosen_scores.append(a[1])
             feat_value = []
+            sum_score = 0.0
             for feat in self.plan_dataset[a[0]]:
                 try:
                     feat_value.append((feat,self.sim_human.feature_preferences_dict[feat]))
+                    sum_score += self.sim_human.feature_preferences_dict[feat]
                 except:
                     pass #feature not relevant
-            chosen_plan_stats.append((feat_value,a[1], UNSCALED_index_value_list[a_idx][1],unaltered_gain_array[a_idx],\
+            chosen_plan_stats.append((feat_value,sum_score,unaltered_meanPref_array[a_idx], a[1], UNSCALED_index_value_list[a_idx][1],unaltered_gain_array[a_idx],\
                                       unaltered_variance_array[a_idx],unaltered_basescore_array[a_idx] ))
             del index_value_list[a_idx]
             del UNSCALED_index_value_list[a_idx]
             del unaltered_gain_array[a_idx]
+            del unaltered_meanPref_array[a_idx]
             del unaltered_variance_array[a_idx]
             del unaltered_basescore_array[a_idx]
             self.seen_features.update(self.plan_dataset[a[0]])
