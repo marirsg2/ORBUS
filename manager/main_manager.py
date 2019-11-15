@@ -11,6 +11,8 @@ self.relevant_features_dimension should NOT be set to feature set size EVEN if w
                     and save as global var.
                     THEN SCALE BOTH THE INTEGRAL AND THE VARIANCE
 
+#todo FIND SUBSETS of features to complete. does div /|F| implicitly do that !!! ??
+#there may NOT exist a subset of plans that neatly wraps up the parameters seen
 
 """
 from itertools import combinations
@@ -205,8 +207,8 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_mean = (10.0, -10.0),
-                 relevant_features_prior_var = (5.0, -5.0),
+                 relevant_features_prior_mean = (6.0, -6.0),
+                 relevant_features_prior_var = (5.0, 5.0),# TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -218,6 +220,8 @@ class Manager:
         :param relevant_features_prior_var: prior weights set up for liked and disliked features, first element for the
         liked feature
         """
+
+        print("Experiment running with disitribution, mean and priors as ", preference_distribution_string, relevant_features_prior_mean, relevant_features_prior_var)
         self.completed = False
         self.plans_per_round = plans_per_round #plans_per_roud used for the web interface
         self.num_backlog_plans = num_dataset_plans
@@ -467,6 +471,7 @@ class Manager:
         # the best plan is determined by normalized gain * normalized variance
 
         #--------TECHNIQUE 1 ---- VAR + gain_norm*VAR
+        # print("Using TECHNIQUE 1 ")
         #TERRIBLE AVOID
         # if use_gain_function:
         #     gain_array = np.array([x[1] for x in index_value_list])
@@ -490,12 +495,45 @@ class Manager:
         #TODO try THIS for tech 2. The sqrt is taken so gain is not such a dominating factor. Variance is important, more important. The gain is just to bias it
         # norm_gain_array = np.sqrt(norm_gain_array)
         #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
+        # print("Using TECHNIQUE 2 ")
+        # #todo UNCOMMENT THE PROB AND FEATURE TERMS FURTHER BELOW
+        # if use_gain_function:
+        #     gain_array = np.array([x[1] for x in index_value_list])
+        # else:
+        #     gain_array = np.array([1.0 for x in index_value_list])
+        # # gain_normalizing_denom = np.max(gain_array)
+        # gain_normalizing_denom =  np.max(gain_array)
+        # if gain_normalizing_denom == 0.0:
+        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+        #
+        # variance_array = np.array([x[2] for x in index_value_list])
+        # var_normalizing_denom = np.max(variance_array)
+        # # var_normalizing_denom = 1.0 #Let variance be the defining factor
+        # if var_normalizing_denom == 0.0:
+        #     var_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        # unaltered_gain_array = list(copy.deepcopy(gain_array))
+        # unaltered_variance_array = list(copy.deepcopy(variance_array))
+        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        # unaltered_meanPref_array = [x[3] for x in index_value_list]
+
+        # ---- TECHNIQUE 2_v2---- norm_var * norm_gain, max_norm
+        print("Using TECHNIQUE 2 v2 ")
         if use_gain_function:
             gain_array = np.array([x[1] for x in index_value_list])
         else:
             gain_array = np.array([1.0 for x in index_value_list])
-        # gain_normalizing_denom = np.max(gain_array)
-        gain_normalizing_denom =  np.max(gain_array)
+        if include_feature_distinguishing:
+            # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
+            for x in range(len(index_value_list)):
+                if len(index_value_list[x][-1]) > 0: #there are features in this plan, some plans have no discovered relevant features. This check avoids div by 0
+                    gain_array[x] = gain_array[x] / (len(index_value_list[x][-1]))
+        if include_probability_term:
+            # += score* (probabilityOF CONFIRMED FEATURES only)
+            gain_array = [gain_array[x] *  self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
+        gain_normalizing_denom = np.max(gain_array)
         if gain_normalizing_denom == 0.0:
             gain_normalizing_denom = 1.0  # avoids "nan" problem
         norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
@@ -512,6 +550,7 @@ class Manager:
         unaltered_basescore_array = list(copy.deepcopy(variance_array))
         unaltered_meanPref_array = [x[3] for x in index_value_list]
 
+
         # # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
         # variance_array = np.array([x[2] for x in index_value_list])
         # base_score =  variance_array
@@ -519,20 +558,27 @@ class Manager:
 
         # now store (idx,norm_gain*norm_variance)
         addendum = [0.0]*len(index_value_list)
-        if include_feature_distinguishing:
-            # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
-            # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral for a function to always above zero
-            addendum = [addendum[x] + base_score[x]/(1+len(index_value_list[x][-1])) for x in range(len(index_value_list))] # we div by (1+.) to avoid divide by zero error
-        if include_probability_term:
-            # += score* (probabilityOF CONFIRMED FEATURES only)
-            addendum = [addendum[x] + base_score[x] * self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
+        # if include_feature_distinguishing:
+        #     # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
+        #     for x in range(len(index_value_list)):
+        #         if len(index_value_list[x][-1]) > 0: #there are features in this plan, some plans have no discovered relevant features. This check avoids div by 0
+        #             addendum[x] = addendum[x] + base_score[x] / (len(index_value_list[x][-1]))
+
+        ## if include_feature_distinguishing:
+        ## DO NOT USE THIS METHOD, IT PENALIZES A PLAN WITH ONE FEAUTRE AS 2 FEATURES SINCE YOU +1
+        ##     # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
+        ##     # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral for a function to always above zero
+        ##     addendum = [addendum[x] + base_score[x]/(1+len(index_value_list[x][-1])) for x in range(len(index_value_list))] # we div by (1+.) to avoid divide by zero error
+        # if include_probability_term:
+        #     # += score* (probabilityOF CONFIRMED FEATURES only)
+        #     addendum = [addendum[x] + base_score[x] * self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
         if include_discovery_term_product:
             # discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
             # it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
             discovery_values = [1 + self.compute_discovery_value(self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
                 for x in range(len(index_value_list))]
+        index_value_list = [(index_value_list[x][0], base_score[x]+addendum[x]) for x in range(len(index_value_list))]
 
-        index_value_list = [(index_value_list[x][0], base_score[x]+addendum[x],index_value_list[x][3]) for x in range(len(index_value_list))]
         UNSCALED_index_value_list = copy.deepcopy(index_value_list)
         # NOTE the order of ENTRIES in index value list will now be fixed
         # see the use of indices list a little further down in code.

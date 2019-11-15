@@ -4,6 +4,15 @@ Small batch size
 ?? weights larger than noise. 0.5 >0.2
 gain calculation and sampling is bad.
 
+TODO NOTES:
+    Do not test on those points for which you have high variance !!! means you are not confident, so do not predict
+    or you can BET on points with your variance. Scored by how many you get right, and the error on them. Count matters.
+    Betting score.
+
+    After your variance update was fixed, i think FEATURE DISTINGUISHING. div/F is good !
+    the gain should become gain*prob/F or just gain*prob AND THEN NORMALIZE, before multiplying with variance. !!
+    The gain is the expected gain or benefit, which is determined by how often it occurs, and /F because of how much
+    information you can glean from it. Fewer features is better.
 
 """
 
@@ -359,12 +368,14 @@ if __name__ == "__main__":
         print('test')
         # random.shuffle(cases)
         # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-        special_order_cases = [[True, True, False, True], [True, False, False, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
+        special_order_cases = [[True, True, False, True], [True, False, False, True], [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases #reorders it
         # cases = special_order_cases + cases #reorders it
         # for single_case in special_order_cases:
         #     cases.remove(single_case)
 
+        print(" ALWAYS CHECK THE FOLLOWING PARAMETERS ")
+        print(" What technique , priors, distribution, dataset")
 
         # --------------------------------------------------------------
         # random_sampling_state = True
