@@ -828,7 +828,7 @@ class Manager:
             range = max_value - min_value
             # lower_fifth = min_value + range * lower_percentile
             # upper_fifth = min_value + range * upper_percentile
-            scaled_std_dev = range * 0.1
+            scaled_std_dev = range * 0.1 #20% of the extreme ratings. 10% on either side
             return get_biModal_gaussian_gain_function(min_value, max_value, scaled_std_dev)
         # --------------
         def get_biModal_gaussian_gain_function(a=0.2, b=0.8, sd=0.1):

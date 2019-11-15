@@ -319,7 +319,7 @@ if __name__ == "__main__":
     total_num_plans = 40
     plans_per_round = 4
     noise_value = 0.2
-    prob_feat_select = 1.0
+    prob_feat_select = 0.2
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
