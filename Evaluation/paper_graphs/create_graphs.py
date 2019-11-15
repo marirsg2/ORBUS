@@ -6,10 +6,11 @@ import pprint as pp
 # define all the global variables here
 # feature feedback, random_sampling_enabled, include_discovery, include_gain, include_feature_distinguishing, include_prob_term
 required_graph_settings = [
-    [1, 0, 1, 1, 1, 1],
-    [1, 0, 1, 0, 1, 1],
     [1, 0, 1, 1, 0, 1],
     [1, 0, 1, 0, 0, 1],
+    [1, 0, 1, 1, 1, 1],
+    [1, 0, 1, 0, 1, 1],
+    [1, 0, 1, 1, 0, 0],
 ]
 
 file_name = "RBUS_output_results_01_52PM_on_November_13__2019.txt"

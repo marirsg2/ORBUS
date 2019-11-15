@@ -68,7 +68,7 @@ class bayesian_linear_model:
                                     sampling_count=2000,
                                     num_chains = 3,
                                     bias_preference = 0,
-                                    uninformative_prior_sd = 5.0):
+                                    uninformative_prior_sd = None):
 
         #TODO NOTE EVEN WITHOUT PRIOR WEIGHTS ARE NOT CURRENTLY USED, and works just as well
         #the encoded plans contains a list of [<encoding>,<rating>]
@@ -82,7 +82,6 @@ class bayesian_linear_model:
             # Intercept
             # alpha = pm.Normal('alpha', mu=0.0, sd=sd)
             alpha = pm.Deterministic('alpha', bias_preference)
-            uninformative_prior_sd = np.diag(np.full((number_of_dimensions,), uninformative_prior_sd)) #for both mu and beta (slope)
             #todo add support to have the covariance of unknown features to be much larger ? SD = 1.0 is enough !!
             # Slope
             # prior_weights = np.random.rand(number_of_dimensions)

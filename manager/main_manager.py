@@ -197,7 +197,7 @@ class Manager:
                  num_dataset_plans = 10000,
                  with_simulated_human = True,
                  max_feature_size = 5,
-                 feature_freq_dict = None, #use this later when there are more involved PGM to compute prob of plan
+                 feature_freq_dict = None,  #use this later when there are more involved PGM to compute prob of plan
                  test_set_size=1000,
                  plans_per_round = 30,
                  include_feature_distinguishing=True,
@@ -205,7 +205,8 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_weights = (3, -3.0),
+                 relevant_features_prior_mean = (10.0, -10.0),
+                 relevant_features_prior_var = (5.0, -5.0),
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -214,7 +215,7 @@ class Manager:
         :param num_rounds: for AL
         :param num_dataset_plans: number of backlog plans
         :param with_simulated_human: Or real human(for later use)
-        :param relevant_features_prior_weights: prior weights set up for liked and disliked features, first element for the
+        :param relevant_features_prior_var: prior weights set up for liked and disliked features, first element for the
         liked feature
         """
         self.completed = False
@@ -226,7 +227,8 @@ class Manager:
         self.learning_model_bayes = bayesian_linear_model()
         self.model_MLE = None # will be set later
         self.use_feature_feedback = use_feature_feedback
-        self.like_dislike_prior_weights = relevant_features_prior_weights
+        self.like_dislike_prior_mean = relevant_features_prior_mean
+        self.like_dislike_prior_var = relevant_features_prior_var
         # self.min_rating = 1e10 #extreme starting values that will be updated after first round of feedback.
         # self.max_rating = -1e10
 
@@ -275,7 +277,8 @@ class Manager:
         # self.RBUS_prior_weights = [0.0]*self.CONFIRMED_features_dimension
 
         self.RBUS_indexing = []
-        self.RBUS_prior_weights = []
+        self.RBUS_prior_mean = []
+        self.RBUS_prior_var = []
         self.num_cores_RBUS = 5
 
         self.tried_indices = set()
@@ -285,7 +288,7 @@ class Manager:
         if with_simulated_human:
 
             #todo change this sim human to only use s1 features, those are all the features.
-            print("SIMULATED HUMAN has probabilities", prob_feature_selection, " AND gaussian noise sd = ", preference_gaussian_noise_sd, "AND priors =" ,relevant_features_prior_weights)
+            print("SIMULATED HUMAN has probabilities", prob_feature_selection, " AND gaussian noise sd = ", preference_gaussian_noise_sd, "AND priors =", relevant_features_prior_mean)
             self.sim_human = oracle(self.all_s1_features, probability_of_feat_selec=prob_feature_selection,
                                     gaussian_noise_sd=preference_gaussian_noise_sd, seed=random_seed, freq_dict=self.freq_dict,
                                     preference_distribution_string=preference_distribution_string)
@@ -464,6 +467,7 @@ class Manager:
         # the best plan is determined by normalized gain * normalized variance
 
         #--------TECHNIQUE 1 ---- VAR + gain_norm*VAR
+        #TERRIBLE AVOID
         # if use_gain_function:
         #     gain_array = np.array([x[1] for x in index_value_list])
         # else:
@@ -477,18 +481,25 @@ class Manager:
         # #todo NOTE we multiply by the normalized gain because the defining term is the variance, not the gain.
         # # score = var + var*gain
         # base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
+        # unaltered_gain_array = list(copy.deepcopy(gain_array))
+        # unaltered_variance_array = list(copy.deepcopy(variance_array))
+        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        # unaltered_meanPref_array = [x[3] for x in index_value_list]
 
+
+        #TODO try THIS for tech 2. The sqrt is taken so gain is not such a dominating factor. Variance is important, more important. The gain is just to bias it
+        # norm_gain_array = np.sqrt(norm_gain_array)
         #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
         if use_gain_function:
             gain_array = np.array([x[1] for x in index_value_list])
         else:
             gain_array = np.array([1.0 for x in index_value_list])
         # gain_normalizing_denom = np.max(gain_array)
-
         gain_normalizing_denom =  np.max(gain_array)
         if gain_normalizing_denom == 0.0:
             gain_normalizing_denom = 1.0  # avoids "nan" problem
         norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+
         variance_array = np.array([x[2] for x in index_value_list])
         var_normalizing_denom = np.max(variance_array)
         # var_normalizing_denom = 1.0 #Let variance be the defining factor
@@ -500,6 +511,7 @@ class Manager:
         unaltered_variance_array = list(copy.deepcopy(variance_array))
         unaltered_basescore_array = list(copy.deepcopy(variance_array))
         unaltered_meanPref_array = [x[3] for x in index_value_list]
+
         # # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
         # variance_array = np.array([x[2] for x in index_value_list])
         # base_score =  variance_array
@@ -555,7 +567,7 @@ class Manager:
             for feat in self.plan_dataset[a[0]]:
                 try:
                     feat_value.append((feat,self.sim_human.feature_preferences_dict[feat]))
-                    sum_score += self.sim_human.feature_preferences_dict[feat]
+                    sum_score += self.sim_human.feature_preferences_dict[feat][0]
                 except:
                     pass #feature not relevant
             chosen_plan_stats.append((feat_value,sum_score,unaltered_meanPref_array[a_idx], a[1], UNSCALED_index_value_list[a_idx][1],unaltered_gain_array[a_idx],\
@@ -580,7 +592,7 @@ class Manager:
         print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
         print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
         print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(base_score+addendum))
-        print("ROUND's chosen plan stats =",chosen_plan_stats)
+        print("ROUND chosen plan stats =",chosen_plan_stats)
         self.indices_used.update(chosen_indices)
         return [self.plan_dataset[x] for x in chosen_indices]
 
@@ -932,26 +944,35 @@ class Manager:
             # self.RBUS_prior_weights = np.zeros(self.CONFIRMED_features_dimension)
 
             prev_round_rbus_indexing = self.RBUS_indexing
-            prev_round_rbus_prior_weights = self.RBUS_prior_weights
+            prev_round_rbus_prior_mean = self.RBUS_prior_mean
+            prev_round_rbus_prior_var = self.RBUS_prior_var
             self.RBUS_indexing = sorted(list(self.CONFIRMED_features))
-            self.RBUS_prior_weights = np.zeros(len(self.CONFIRMED_features))
+            self.RBUS_prior_mean = np.zeros(len(self.CONFIRMED_features))
+            self.RBUS_prior_var = np.zeros(len(self.CONFIRMED_features))
 
 
             for single_feature in self.CONFIRMED_features:
                 if single_feature in self.liked_features:
-                    prior_value = self.like_dislike_prior_weights[0]
+                    prior_mean = self.like_dislike_prior_mean[0]
+                    prior_var = self.like_dislike_prior_var[0]
                     try:
-                        prior_value = prev_round_rbus_prior_weights[prev_round_rbus_indexing.index(single_feature)]
+                        prior_mean = prev_round_rbus_prior_mean[prev_round_rbus_indexing.index(single_feature)]
+                        prior_var = prev_round_rbus_prior_var[prev_round_rbus_indexing.index(single_feature)]
                     except:
                         pass
-                    self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = prior_value
+                    self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = prior_mean
+                    self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = prior_var
+
                 else:
-                    prior_value = self.like_dislike_prior_weights[1]
+                    prior_mean = self.like_dislike_prior_mean[1]
+                    prior_var = self.like_dislike_prior_var[0]
                     try:
-                        prior_value = prev_round_rbus_prior_weights[prev_round_rbus_indexing.index(single_feature)]
+                        prior_mean = prev_round_rbus_prior_var[prev_round_rbus_indexing.index(single_feature)]
+                        prior_var = prev_round_rbus_prior_var[prev_round_rbus_indexing.index(single_feature)]
                     except:
                         pass
-                    self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = prior_value
+                    self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = prior_mean
+                    self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = prior_var
         #end if self.use_feature_feedback:
 
     #================================================================================================
@@ -1046,32 +1067,37 @@ class Manager:
         #end if learn_LSfit
 
         self.learning_model_bayes.learn_bayesian_linear_model(encoded_plans_list,
-                                                              np.array(self.RBUS_prior_weights),
+                                                              np.array(self.RBUS_prior_mean),
                                                               self.CONFIRMED_features_dimension,
                                                               sd= EXPECTED_NOISE_VARIANCE,
                                                               sampling_count=2000,
-                                                              num_chains=num_chains)
+                                                              num_chains=num_chains,
+                                                              uninformative_prior_sd = np.diag(self.RBUS_prior_var))
                                                               # num_chains=num_chains)
 
         # ALSO UPDATE THE PRIORS FOR THE NEXT ROUND. WE START OPTIMISITC AND UPDATE THEM TOWARDS THEIR TRUE VALUES
         param_stats = [self.learning_model_bayes.linear_params_values["betas"][0:2000, x] for x in
                        range(self.CONFIRMED_features_dimension)]
         param_means = np.array([np.mean(x) for x in param_stats])
-        # param_sign = param_means/param_means
-        # param_abs = np.abs(param_means)
-        # param_vars = [np.var(x) for x in param_stats]
-        self.RBUS_prior_weights = np.zeros(len(self.CONFIRMED_features))
+        param_var = [np.var(x) for x in param_stats]
+        self.RBUS_prior_mean = np.zeros(len(self.CONFIRMED_features))
+        self.RBUS_prior_var = np.zeros(len(self.CONFIRMED_features))
+
         for single_feature in self.CONFIRMED_features:
             if single_feature in self.liked_features:
-                self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
+                self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
                     param_means[self.RBUS_indexing.index(single_feature)]
+                self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \
+                    param_var[self.RBUS_indexing.index(single_feature)]
                 # todo note, this was the other option, to agressively update the prior towards zero by mean-std_dev
                 # instead we assume just the mean, as it is a more conservative update. Aggressive update maybe good too. never tested
                 # param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
                 #     param_vars[self.RBUS_indexing.index(single_feature)])
             else:
-                self.RBUS_prior_weights[self.RBUS_indexing.index(single_feature)] = \
+                self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
                     param_means[self.RBUS_indexing.index(single_feature)]
+                self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \
+                    param_var[self.RBUS_indexing.index(single_feature)]
                 # todo note, this was the other option, to agressively update the prior towards zero by mean-std_dev
                 # -1*param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
                 #     param_vars[self.RBUS_indexing.index(single_feature)])
