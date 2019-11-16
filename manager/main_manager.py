@@ -515,12 +515,14 @@ class Manager:
         norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
 
         variance_array = np.array([x[2] for x in index_value_list])
-        # var_normalizing_denom = np.max(variance_array)
         var_normalizing_denom = np.var(variance_array)
         # var_normalizing_denom = 1.0 #Let variance be the defining factor
+        var_normalizing_denom = np.max(variance_array)
+        exponent = 1/3
         if var_normalizing_denom == 0.0:
             var_normalizing_denom = 1.0  # avoids "nan" problem
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        np.exp(norm_variance_array,exponent)
         base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
         unaltered_gain_array = list(copy.deepcopy(gain_array))
         unaltered_variance_array = list(copy.deepcopy(variance_array))
