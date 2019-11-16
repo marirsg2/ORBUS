@@ -47,7 +47,7 @@ class oracle:
             rating_distribution = oracle.rating_default_dist
         if preference_distribution_string == "gumbel":
             rating_distribution = oracle.rating_distribution_law
-            tailedness_beta = 1.5
+            tailedness_beta = 1.0
             self.distribution_sampled_points = np.random.gumbel(2*gaussian_noise_sd,tailedness_beta,1000)
         elif preference_distribution_string == "power_law":
             rating_distribution = oracle.rating_distribution_law
@@ -60,7 +60,7 @@ class oracle:
 
         elif preference_distribution_string == "gaussian":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
-            self.distribution_sampled_points = np.random.normal(7*gaussian_noise_sd,2*gaussian_noise_sd,1000) #0.2 is the noise
+            self.distribution_sampled_points = np.random.normal(3*gaussian_noise_sd,2*gaussian_noise_sd,1000) #0.2 is the noise
             self.distribution_sampled_points = np.sort(self.distribution_sampled_points)
         elif preference_distribution_string == "root_law":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list

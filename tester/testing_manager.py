@@ -14,6 +14,16 @@ TODO NOTES:
     The gain is the expected gain or benefit, which is determined by how often it occurs, and /F because of how much
     information you can glean from it. Fewer features is better.
 
+TODO NOTE:
+    If there are no clean subsets of equations, then uncertainty sampling will win sometimes. Since once the system is constrained
+    it will drop. PUT A LOT OF NOISE, AND THEN SEE HOW IT PERFORMS
+
+todo note:
+    have a validation set that tells you when to stop, sometimes, getting MORE data can increase error, since noise from other ratings
+    makes it worse ? NONSENSE !! YOUR VALIDATION DATA MAY HAVE NOISE TOO AND THIS IS ACTIVE LEARNING, NO GOLDEN SET OF DATA.
+
+
+
 """
 
 import numpy as np
@@ -329,7 +339,7 @@ if __name__ == "__main__":
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 4
     noise_value = 0.2
-    prob_feat_select = 0.4
+    prob_feat_select = 0.10
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
@@ -343,6 +353,12 @@ if __name__ == "__main__":
 
     manager_pickle_file = "man_02_n06.p"
     # random_seed = 666 #-1 means do not fix randomness. handled in code later
+
+
+CHECK THAT THE MAX VARIANCE IS IN QUERIES WHERE THE SUM OF INDIVIDUAL VARIANCE IS MAX.
+
+ALSO THERE ARE DUPLICATES !! BECAUSE OF IRRELEVANT FEATURES. DO PRUNING !! AFTER FINDING IRRELEVANT FEATURES.
+DROP THEM FROM THE DATA, AND MAKE IT A SET AGAIN.
 
 
     # cases = [list(x) for x in cases]

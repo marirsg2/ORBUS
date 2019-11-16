@@ -3,16 +3,22 @@
 search for "todo index"
 that is where code changes are noted
 
-PRIOR OUGHT TO BE UNIFORM PROBABILITY, but for simplicity, the prior is gaussian for blm
+#todo compare technique 2 and 2_v2. Search for keyword "technique"
 
-self.relevant_features_dimension should NOT be set to feature set size EVEN if we assume all are known to be relevant.
-
-@ NEED TO COMPUTE THE UNKNOWN FEATURE CONSTANT which is the gain function x uniform distribution. Do in separate function at start
-                    and save as global var.
-                    THEN SCALE BOTH THE INTEGRAL AND THE VARIANCE
-
-#todo FIND SUBSETS of features to complete. does div /|F| implicitly do that !!! ??
+#todo note: this maybe a shit bad idea, and too complex to do elegantly. very specific and hackish.
+# FIND SUBSETS of features to complete. does div /|F| implicitly do that !!! ??
 #there may NOT exist a subset of plans that neatly wraps up the parameters seen
+
+
+
+TODO CURRENT SETTING:, MOVE THESE PARAMETERS TO THE TESTER.
+    SEE TESTING MANAGER PARAMS
+    mean 10, var 5
+    g^*var^. norm by div by sigma !! NOT BY MAX
+
+
+ALWAYS START WITH SIMPLE CASE OF ALL RELEVANT AND KNOWN FEATURES.
+HARD CODE ALL S1 FEATUERS AS CONFIRMED, AND SET PROB OF RELEVANCE AS 1.0
 
 """
 from itertools import combinations
@@ -207,8 +213,8 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_mean = (6.0, -6.0),
-                 relevant_features_prior_var = (5.0, 5.0),# TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
+                 relevant_features_prior_mean = (10.0, -10.0),
+                 relevant_features_prior_var = (16.0, 16.0),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -495,14 +501,47 @@ class Manager:
         #TODO try THIS for tech 2. The sqrt is taken so gain is not such a dominating factor. Variance is important, more important. The gain is just to bias it
         # norm_gain_array = np.sqrt(norm_gain_array)
         #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
-        # print("Using TECHNIQUE 2 ")
-        # #todo UNCOMMENT THE PROB AND FEATURE TERMS FURTHER BELOW
+        print("Using TECHNIQUE 2 ")
+        #todo UNCOMMENT THE PROB AND FEATURE TERMS FURTHER BELOW
+        if use_gain_function:
+            gain_array = np.array([x[1] for x in index_value_list])
+        else:
+            gain_array = np.array([1.0 for x in index_value_list])
+        # gain_normalizing_denom = np.max(gain_array)
+        # gain_normalizing_denom =  np.max(gain_array)
+        gain_normalizing_denom =  np.var(gain_array)
+        if gain_normalizing_denom == 0.0:
+            gain_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+
+        variance_array = np.array([x[2] for x in index_value_list])
+        # var_normalizing_denom = np.max(variance_array)
+        var_normalizing_denom = np.var(variance_array)
+        # var_normalizing_denom = 1.0 #Let variance be the defining factor
+        if var_normalizing_denom == 0.0:
+            var_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        unaltered_gain_array = list(copy.deepcopy(gain_array))
+        unaltered_variance_array = list(copy.deepcopy(variance_array))
+        unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        unaltered_meanPref_array = [x[3] for x in index_value_list]
+
+        # ---- TECHNIQUE 2_v2---- norm_var * norm_gain, max_norm
+        # print("Using TECHNIQUE 2 v2 ")
         # if use_gain_function:
         #     gain_array = np.array([x[1] for x in index_value_list])
         # else:
         #     gain_array = np.array([1.0 for x in index_value_list])
-        # # gain_normalizing_denom = np.max(gain_array)
-        # gain_normalizing_denom =  np.max(gain_array)
+        # if include_feature_distinguishing:
+        #     # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
+        #     for x in range(len(index_value_list)):
+        #         if len(index_value_list[x][-1]) > 0: #there are features in this plan, some plans have no discovered relevant features. This check avoids div by 0
+        #             gain_array[x] = gain_array[x] / (len(index_value_list[x][-1]))
+        # if include_probability_term:
+        #     # += score* (probabilityOF CONFIRMED FEATURES only)
+        #     gain_array = [gain_array[x] *  self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
+        # gain_normalizing_denom = np.max(gain_array)
         # if gain_normalizing_denom == 0.0:
         #     gain_normalizing_denom = 1.0  # avoids "nan" problem
         # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
@@ -519,37 +558,6 @@ class Manager:
         # unaltered_basescore_array = list(copy.deepcopy(variance_array))
         # unaltered_meanPref_array = [x[3] for x in index_value_list]
 
-        # ---- TECHNIQUE 2_v2---- norm_var * norm_gain, max_norm
-        print("Using TECHNIQUE 2 v2 ")
-        if use_gain_function:
-            gain_array = np.array([x[1] for x in index_value_list])
-        else:
-            gain_array = np.array([1.0 for x in index_value_list])
-        if include_feature_distinguishing:
-            # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
-            for x in range(len(index_value_list)):
-                if len(index_value_list[x][-1]) > 0: #there are features in this plan, some plans have no discovered relevant features. This check avoids div by 0
-                    gain_array[x] = gain_array[x] / (len(index_value_list[x][-1]))
-        if include_probability_term:
-            # += score* (probabilityOF CONFIRMED FEATURES only)
-            gain_array = [gain_array[x] *  self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
-        gain_normalizing_denom = np.max(gain_array)
-        if gain_normalizing_denom == 0.0:
-            gain_normalizing_denom = 1.0  # avoids "nan" problem
-        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-
-        variance_array = np.array([x[2] for x in index_value_list])
-        var_normalizing_denom = np.max(variance_array)
-        # var_normalizing_denom = 1.0 #Let variance be the defining factor
-        if var_normalizing_denom == 0.0:
-            var_normalizing_denom = 1.0  # avoids "nan" problem
-        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
-        unaltered_gain_array = list(copy.deepcopy(gain_array))
-        unaltered_variance_array = list(copy.deepcopy(variance_array))
-        unaltered_basescore_array = list(copy.deepcopy(variance_array))
-        unaltered_meanPref_array = [x[3] for x in index_value_list]
-
 
         # # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
         # variance_array = np.array([x[2] for x in index_value_list])
@@ -558,20 +566,20 @@ class Manager:
 
         # now store (idx,norm_gain*norm_variance)
         addendum = [0.0]*len(index_value_list)
-        # if include_feature_distinguishing:
-        #     # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
-        #     for x in range(len(index_value_list)):
-        #         if len(index_value_list[x][-1]) > 0: #there are features in this plan, some plans have no discovered relevant features. This check avoids div by 0
-        #             addendum[x] = addendum[x] + base_score[x] / (len(index_value_list[x][-1]))
-
+        if include_feature_distinguishing:
+            # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
+            for x in range(len(index_value_list)):
+                if len(index_value_list[x][-1]) > 0: #there are features in this plan, some plans have no discovered relevant features. This check avoids div by 0
+                    addendum[x] = addendum[x] + base_score[x] / (len(index_value_list[x][-1]))
+        if include_probability_term:
+            # += score* (probabilityOF CONFIRMED FEATURES only)
+            addendum = [addendum[x] + base_score[x] * self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
         ## if include_feature_distinguishing:
         ## DO NOT USE THIS METHOD, IT PENALIZES A PLAN WITH ONE FEAUTRE AS 2 FEATURES SINCE YOU +1
         ##     # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
         ##     # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral for a function to always above zero
         ##     addendum = [addendum[x] + base_score[x]/(1+len(index_value_list[x][-1])) for x in range(len(index_value_list))] # we div by (1+.) to avoid divide by zero error
-        # if include_probability_term:
-        #     # += score* (probabilityOF CONFIRMED FEATURES only)
-        #     addendum = [addendum[x] + base_score[x] * self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
+
         if include_discovery_term_product:
             # discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
             # it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
@@ -975,6 +983,16 @@ class Manager:
                 continue #disregard this plan
             self.annotated_plans.append(single_plan)
         #end for loop through annotated plans
+
+        #IMPORTANT remove plan duplicates THAT COULD OCCUR because irrelevant features dont count.
+        #IT WOULD BE THE SAME DATAPOINT, and thus reduce the number of effective samples
+        temp_plan_dataset = set()
+        for plan in self.plan_dataset:
+            temp_plan = tuple(set(plan).difference(self.IRrelevant_features))
+            temp_plan_dataset.add(temp_plan)
+        #end for
+        self.plan_dataset = temp_plan_dataset
+
         #NOTE this is incase there were some discrepancies or errors in the annotation.
         #todo INDEX 4: This will turn off learning about liked, disliked, and irrelevant features
         if self.use_feature_feedback:
