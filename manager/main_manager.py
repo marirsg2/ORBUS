@@ -501,33 +501,34 @@ class Manager:
         #TODO try THIS for tech 2. The sqrt is taken so gain is not such a dominating factor. Variance is important, more important. The gain is just to bias it
         # norm_gain_array = np.sqrt(norm_gain_array)
         #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
-        print("Using TECHNIQUE 2 ")
-        #todo UNCOMMENT THE PROB AND FEATURE TERMS FURTHER BELOW
-        if use_gain_function:
-            gain_array = np.array([x[1] for x in index_value_list])
-        else:
-            gain_array = np.array([1.0 for x in index_value_list])
-        # gain_normalizing_denom = np.max(gain_array)
-        # gain_normalizing_denom =  np.max(gain_array)
-        gain_normalizing_denom =  np.var(gain_array)
-        if gain_normalizing_denom == 0.0:
-            gain_normalizing_denom = 1.0  # avoids "nan" problem
-        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-
-        variance_array = np.array([x[2] for x in index_value_list])
-        var_normalizing_denom = np.var(variance_array)
-        # var_normalizing_denom = 1.0 #Let variance be the defining factor
-        # var_normalizing_denom = np.max(variance_array)
-        # exponent = 1/3
-        if var_normalizing_denom == 0.0:
-            var_normalizing_denom = 1.0  # avoids "nan" problem
-        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        # np.exp(norm_variance_array,exponent)
-        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
-        unaltered_gain_array = list(copy.deepcopy(gain_array))
-        unaltered_variance_array = list(copy.deepcopy(variance_array))
-        unaltered_basescore_array = list(copy.deepcopy(variance_array))
-        unaltered_meanPref_array = [x[3] for x in index_value_list]
+        # print("Using TECHNIQUE 2 ")
+        # #todo UNCOMMENT THE PROB AND FEATURE TERMS FURTHER BELOW
+        # if use_gain_function:
+        #     gain_array = np.array([x[1] for x in index_value_list])
+        # else:
+        #     gain_array = np.array([1.0 for x in index_value_list])
+        # # gain_normalizing_denom = np.max(gain_array)
+        # # gain_normalizing_denom =  np.max(gain_array)
+        # # gain_normalizing_denom =  np.var(gain_array)
+        # gain_normalizing_denom =  1.0#makes no difference to rel values if you divide by the same constant
+        # # if gain_normalizing_denom == 0.0:
+        # #     gain_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+        #
+        # variance_array = np.array([x[2] for x in index_value_list])
+        # var_normalizing_denom = 1.0 #makes no difference to rel values if you divide by the same constant
+        # # var_normalizing_denom = 1.0 #Let variance be the defining factor
+        # # var_normalizing_denom = np.max(variance_array)
+        # # exponent = 1/3
+        # # if var_normalizing_denom == 0.0:
+        # #     var_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        # # np.exp(norm_variance_array,exponent)
+        # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        # unaltered_gain_array = list(copy.deepcopy(gain_array))
+        # unaltered_variance_array = list(copy.deepcopy(variance_array))
+        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        # unaltered_meanPref_array = [x[3] for x in index_value_list]
 
         # ---- TECHNIQUE 2_v2---- norm_var * norm_gain, max_norm
         # print("Using TECHNIQUE 2 v2 ")
@@ -565,6 +566,35 @@ class Manager:
         # variance_array = np.array([x[2] for x in index_value_list])
         # base_score =  variance_array
         #-----------------------------
+
+        print("Using TECHNIQUE 4, gain is the mean value ")
+        if use_gain_function:
+            #todo note here the gain is just the mean value
+            gain_array = np.array([x[3] for x in index_value_list])
+        else:
+            gain_array = np.array([1.0 for x in index_value_list])
+        # gain_normalizing_denom = np.max(gain_array)
+        # gain_normalizing_denom =  np.max(gain_array)
+        # gain_normalizing_denom =  np.var(gain_array)
+        gain_normalizing_denom = 1.0  # makes no difference to rel values if you divide by the same constant
+        # if gain_normalizing_denom == 0.0:
+        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+
+        variance_array = np.array([x[2] for x in index_value_list])
+        var_normalizing_denom = 1.0  # makes no difference to rel values if you divide by the same constant
+        # var_normalizing_denom = 1.0 #Let variance be the defining factor
+        # var_normalizing_denom = np.max(variance_array)
+        # exponent = 1/3
+        # if var_normalizing_denom == 0.0:
+        #     var_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        # np.exp(norm_variance_array,exponent)
+        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        unaltered_gain_array = list(copy.deepcopy(gain_array))
+        unaltered_variance_array = list(copy.deepcopy(variance_array))
+        unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        unaltered_meanPref_array = [x[3] for x in index_value_list]
 
         # now store (idx,norm_gain*norm_variance)
         addendum = [0.0]*len(index_value_list)
@@ -1144,7 +1174,7 @@ class Manager:
                                                               sd= EXPECTED_NOISE_VARIANCE,
                                                               sampling_count=2000,
                                                               num_chains=num_chains,
-                                                              uninformative_prior_sd = np.diag(self.RBUS_prior_var))
+                                                              uninformative_prior_var= np.diag(self.RBUS_prior_var))
                                                               # num_chains=num_chains)
 
         # ALSO UPDATE THE PRIORS FOR THE NEXT ROUND. WE START OPTIMISITC AND UPDATE THEM TOWARDS THEIR TRUE VALUES
