@@ -3,7 +3,13 @@
 search for "todo index"
 that is where code changes are noted
 
-#todo compare technique 2 and 2_v2. Search for keyword "technique"
+#see keyword technique
+
+# todo NOTE: mu*var + mu*var*prob is the way to go because even if the prob is low, we care about the HIGH value regions.
+#  that being said, we want to be right in MORE high value regions, that is why the correction term is there.
+
+
+
 
 #todo note: this maybe a shit bad idea, and too complex to do elegantly. very specific and hackish.
 # FIND SUBSETS of features to complete. does div /|F| implicitly do that !!! ??

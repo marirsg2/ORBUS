@@ -4,6 +4,20 @@ Small batch size
 ?? weights larger than noise. 0.5 >0.2
 gain calculation and sampling is bad.
 
+
+TODO :
+    there seems to be a lowest point, and then it goes back up some and stabilizes. maybe YOU CAN CATCH the low point
+    using the annotated data as a catch set. How well do you predict the annotated data. self training error.
+    Then choose the setting when the training error was minimal.
+    THIS MAYBE BECAUSE OF HOW BLM WORKS !! and how the sampling takes longer and is harder above a certain number of data points
+    TRY RUNNING LONGER AND MORE CHAINS !!!
+
+TODO NOTES: mu*var seems to work better WITHOUT the probability term !! which is very confusing.
+    MORE RESULTS NEEDED. POINT IS PAY ATTENTION TO THAT
+    *************wwaaait the true error is actually LOWER with prob term, which makes sense. I gues if the high value terms are rare, then
+    removing the prob term helps !!
+    ALSO KEEP IN MIND THE EFFECT OF FEATURE DISCOVERY. So need to average over many trials !! and perhaps SEPARATE & FOCUS on the experiments with all features known
+
 TODO NOTES:
     Do not test on those points for which you have high variance !!! means you are not confident, so do not predict
     or you can BET on points with your variance. Scored by how many you get right, and the error on them. Count matters.
@@ -278,6 +292,11 @@ def test_basic_MV_linModel(toy_data_input, toy_data_output):
     print("Intercept: %.4f" % reg.intercept_)
 
 
+
+IS PRIOR DESCENT WHY IT WORKS !!??
+
+ALSO REMOVING PROBABILITY TERM SEEMS TO HELP WITH THE ERROR IN THE INTERESTING REGIONS, MAYBE BECAUSE THEY ARE NOT FREQUENT !!
+
 def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_seed = 150, noise_value = 0.2, random_sampling_enabled = False,
                             include_gain=True,include_discovery_term=True, include_feature_distinguishing=True, include_prob_term=True,  include_feature_feedback=True,
                             manager_pickle_file = "default_man.p",
@@ -323,7 +342,6 @@ if __name__ == "__main__":
 
 
 
-    all_data = []
     num_repetitions = 1
     NUM_RANDOM_SAMPLES = 5
     num_parameters = 4
@@ -339,7 +357,7 @@ if __name__ == "__main__":
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 4
     noise_value = 0.2
-    prob_feat_select = 1.0
+    prob_feat_select = 0.3
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
@@ -363,6 +381,7 @@ if __name__ == "__main__":
 
 
     for i in range(5):
+        all_data = []
         try:
             os.remove(manager_pickle_file)
             print("Manager File Removed at start , to recreate manager!")
@@ -381,7 +400,7 @@ if __name__ == "__main__":
         print('test')
         # random.shuffle(cases)
         # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-        special_order_cases = [[True, True, False, True], [True, False, False, True], [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
+        special_order_cases = [[True, True, False, True], [True, False, False, True],[True, True, False, False]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases #reorders it
         # cases = special_order_cases + cases #reorders it
         # for single_case in special_order_cases:
@@ -389,23 +408,6 @@ if __name__ == "__main__":
 
         print(" ALWAYS CHECK THE FOLLOWING PARAMETERS ")
         print(" What technique , priors, distribution, dataset")
-
-        # --------------------------------------------------------------
-        # random_sampling_state = True
-        # for i in range(1):
-        #     all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-        #                             random_sampling_enabled =  random_sampling_state,
-        #                             include_feature_feedback= True,
-        #                             include_discovery_term = False,
-        #                             include_gain= False,
-        #                             include_feature_distinguishing= False,
-        #                             include_prob_term = False,
-        #                             manager_pickle_file = manager_pickle_file,
-        #                             repetitions=num_repetitions,
-        #                             prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
-
-
-        #--------------------------------------------------------------
 
         random_sampling_state = False
         for case_parameters in cases:
@@ -437,21 +439,9 @@ if __name__ == "__main__":
                 print("MIN,MAX", single_data_set[1][i][4])
                 print("============================================================")
 
-        # random_sampling_state = True
-        # for i in range(NUM_RANDOM_SAMPLES-1):
-        #     all_data.append(([random_sampling_state]+case_parameters, Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-        #                             random_sampling_enabled =  random_sampling_state,
-        #                             include_feature_feedback= True,
-        #                             include_discovery_term = False,
-        #                             include_gain= False,
-        #                             include_feature_distinguishing= False,
-        #                             include_prob_term = False,
-        #                             manager_pickle_file = manager_pickle_file,
-        #                             repetitions=num_repetitions,
-        #                             prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
-        #end for loop through the cases and collecting data
         print("============================================================")
         print(all_data)
+        print("*************NOW PRINTING SUMMARY OF RESULTS***********************************")
         print("============================================================")
 
         for single_data_set in all_data:
