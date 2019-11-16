@@ -517,12 +517,12 @@ class Manager:
         variance_array = np.array([x[2] for x in index_value_list])
         var_normalizing_denom = np.var(variance_array)
         # var_normalizing_denom = 1.0 #Let variance be the defining factor
-        var_normalizing_denom = np.max(variance_array)
-        exponent = 1/3
+        # var_normalizing_denom = np.max(variance_array)
+        # exponent = 1/3
         if var_normalizing_denom == 0.0:
             var_normalizing_denom = 1.0  # avoids "nan" problem
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        np.exp(norm_variance_array,exponent)
+        # np.exp(norm_variance_array,exponent)
         base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
         unaltered_gain_array = list(copy.deepcopy(gain_array))
         unaltered_variance_array = list(copy.deepcopy(variance_array))
@@ -989,11 +989,19 @@ class Manager:
         #IMPORTANT remove plan duplicates THAT COULD OCCUR because irrelevant features dont count.
         #IT WOULD BE THE SAME DATAPOINT, and thus reduce the number of effective samples
         temp_plan_dataset = set()
-        for plan in self.plan_dataset:
+        for plan_idx in range(len(self.plan_dataset)):
+            #filter even if a duplicate with a plan in the used indices
+            plan = self.plan_dataset[plan_idx]
             temp_plan = tuple(set(plan).difference(self.IRrelevant_features))
-            temp_plan_dataset.add(temp_plan)
+            if temp_plan not in temp_plan_dataset:
+                temp_plan_dataset.add(temp_plan)
+            else: #this is a duplicate in terms of the not-irrelevant features
+                self.indices_used.add(plan_idx) #remove it from consideration
+            #end outer if
         #end for
-        self.plan_dataset = temp_plan_dataset
+
+        #end for
+        self.plan_dataset = list(temp_plan_dataset)
 
         #NOTE this is incase there were some discrepancies or errors in the annotation.
         #todo INDEX 4: This will turn off learning about liked, disliked, and irrelevant features

@@ -9,7 +9,7 @@ import numpy as np
 
 #--------------------------------
 NUM_PLANS_NEEDED = 10000
-NUM_FEATURES = 100
+NUM_FEATURES = 30
 NUM_GROUPS = 1
 NUM_FEATURES = int(NUM_FEATURES/NUM_GROUPS)
 distribution_samples = np.random.normal(150,50,NUM_FEATURES)
@@ -52,7 +52,8 @@ while len(all_plans) < NUM_PLANS_NEEDED:
     # curr_plan = {x:1 for x in curr_plan}
     all_plans.add(tuple(curr_plan))
 #end while
-all_plans = [set(x) for x in all_plans]
+temp_all_plans = [set(x) for x in all_plans]
+all_plans = temp_all_plans
 with open(dest_pickle_file_name, "wb") as dest:
     pickle.dump(all_plans,dest)
 print(all_plans)

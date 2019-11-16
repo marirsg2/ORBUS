@@ -339,7 +339,7 @@ if __name__ == "__main__":
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 4
     noise_value = 0.2
-    prob_feat_select = 0.10
+    prob_feat_select = 1.0
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
@@ -355,10 +355,7 @@ if __name__ == "__main__":
     # random_seed = 666 #-1 means do not fix randomness. handled in code later
 
 
-CHECK THAT THE MAX VARIANCE IS IN QUERIES WHERE THE SUM OF INDIVIDUAL VARIANCE IS MAX.
-
-ALSO THERE ARE DUPLICATES !! BECAUSE OF IRRELEVANT FEATURES. DO PRUNING !! AFTER FINDING IRRELEVANT FEATURES.
-DROP THEM FROM THE DATA, AND MAKE IT A SET AGAIN.
+    # CHECK THAT THE MAX VARIANCE IS IN QUERIES WHERE THE SUM OF INDIVIDUAL VARIANCE IS MAX.
 
 
     # cases = [list(x) for x in cases]
