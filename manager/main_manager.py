@@ -1000,8 +1000,6 @@ class Manager:
             #end outer if
         #end for
 
-        #end for
-        self.plan_dataset = list(temp_plan_dataset)
 
         #NOTE this is incase there were some discrepancies or errors in the annotation.
         #todo INDEX 4: This will turn off learning about liked, disliked, and irrelevant features
