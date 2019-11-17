@@ -291,7 +291,7 @@ def test_basic_MV_linModel(toy_data_input, toy_data_output):
     print("Coefficients's values ", reg.coef_)
     print("Intercept: %.4f" % reg.intercept_)
 
-
+YOU WERE USING VARIANCE IN MU+VAR !! SHOULD BE STD DEV !!! DUMBASS !! SO OVERALL  (MU+STD)*VARIANCE !! std dev just being pos, is enuf. Covers the negative case too as we only care about scale. 
 
 IS PRIOR DESCENT WHY IT WORKS !!??
 
