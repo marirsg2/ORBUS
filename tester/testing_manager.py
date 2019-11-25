@@ -4,6 +4,10 @@ Small batch size
 ?? weights larger than noise. 0.5 >0.2
 gain calculation and sampling is bad.
 
+TODO: NOTES
+    When all features are known , mean*std_dev is trouncing using variance alone. WAIT you tested using std dev ! which ought to be
+    the same since relative values will still hold, BUT the prob term was used and that can change relative ordering,
+    SO NEED TO TEST AGAIN.
 
 TODO :
     there seems to be a lowest point, and then it goes back up some and stabilizes. maybe YOU CAN CATCH the low point
@@ -104,6 +108,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
             sorted_freq_pref_list = sorted(sorted_freq_pref_list,key= lambda x:x[-1][-1])
             print("PREF & FREQ = ",sorted_freq_pref_list)
             print("num features =", len(pref_list))
+            print("TOTAL num features =", len(manager.all_s1_features))
             print("-=-=-=-= USING PICKLED FILE-=-=-=-=-=-")
     except :
         print("RECREATE manager")
@@ -213,6 +218,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     #---now measure the accuracy
 
 
+    #TODO NOTE: for orbus test with ALL REELEVANT FEATURES
 
 
     #TODO VERY IMPORTANT TO UPDATE INDICES AFTER THE EVALUATION, else all the weights are not correctly learned
@@ -291,11 +297,6 @@ def test_basic_MV_linModel(toy_data_input, toy_data_output):
     print("Coefficients's values ", reg.coef_)
     print("Intercept: %.4f" % reg.intercept_)
 
-YOU WERE USING VARIANCE IN MU+VAR !! SHOULD BE STD DEV !!! DUMBASS !! SO OVERALL  (MU+STD)*VARIANCE !! std dev just being pos, is enuf. Covers the negative case too as we only care about scale. 
-
-IS PRIOR DESCENT WHY IT WORKS !!??
-
-ALSO REMOVING PROBABILITY TERM SEEMS TO HELP WITH THE ERROR IN THE INTERESTING REGIONS, MAYBE BECAUSE THEY ARE NOT FREQUENT !!
 
 def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_seed = 150, noise_value = 0.2, random_sampling_enabled = False,
                             include_gain=True,include_discovery_term=True, include_feature_distinguishing=True, include_prob_term=True,  include_feature_feedback=True,
@@ -341,6 +342,11 @@ def Active_Learning_Testing(total_num_plans = 240, plans_per_round = 30, random_
 if __name__ == "__main__":
 
 
+    # currently running with std dev
+    #
+    # It maybe NORMAL to have the errors go up and down, as more and more variables are explored !!
+    # We build certainty with few, and then when learning more, that certainty is lost and the error spikes up a bit before dropping.
+    # ?? Can use training data predictions to determine which prior parameter chains to use.
 
     num_repetitions = 1
     NUM_RANDOM_SAMPLES = 5
@@ -357,7 +363,7 @@ if __name__ == "__main__":
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 4
     noise_value = 0.2
-    prob_feat_select = 0.3
+    prob_feat_select = 1.0
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
@@ -374,10 +380,24 @@ if __name__ == "__main__":
 
 
     # CHECK THAT THE MAX VARIANCE IS IN QUERIES WHERE THE SUM OF INDIVIDUAL VARIANCE IS MAX.
+    # todo
+    # YOU WERE USING VARIANCE IN MU+VAR !! SHOULD BE STD DEV !!! DUMBASS !! SO OVERALL  (MU+STD)*VARIANCE !! std dev just being pos, is enuf. Covers the negative case too as we only care about scale.
+    # IS PRIOR DESCENT WHY IT WORKS !!??
+    # ALSO REMOVING PROBABILITY TERM SEEMS TO HELP WITH THE ERROR IN THE INTERESTING REGIONS, MAYBE BECAUSE THEY ARE NOT FREQUENT !!
 
+    # todo NOTE: UCB uses variance and starts with a large variance and then whittles away at it.
+    #    yours IS VERY SIMILAR. you also set the mean to be higher (and large variance), and whittle away at it,
 
     # cases = [list(x) for x in cases]
     # print("The parameter cases are ",cases)
+
+    review the last results produced for...
+
+    todo NOTE: F2 and shift F2 to navigate between errors
+    mean = 4, var = 4
+    100 features, all relev. Gumbel
+
+    The last xp was with feature discovery off, expect worse results. sanity check . then turn off and redo
 
 
     for i in range(5):
@@ -400,7 +420,9 @@ if __name__ == "__main__":
         print('test')
         # random.shuffle(cases)
         # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
-        special_order_cases = [[True, True, False, True], [True, False, False, True],[True, True, False, False]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
+        # special_order_cases = [[True, True, False, True], [True, False, False, True],[True, True, False, False],[True, False, False, False]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
+        # todo note  discovery term is off
+        special_order_cases = [[False, True, False, True], [False, False, False, True],[False, True, False, False],[False, False, False, False]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases #reorders it
         # cases = special_order_cases + cases #reorders it
         # for single_case in special_order_cases:

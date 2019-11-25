@@ -15,6 +15,8 @@ that is where code changes are noted
 # FIND SUBSETS of features to complete. does div /|F| implicitly do that !!! ??
 #there may NOT exist a subset of plans that neatly wraps up the parameters seen
 
+todo NOTE: UCB uses variance and starts with a large variance and then whittles away at it.
+    yours IS VERY SIMILAR. you also set the mean to be higher (and large variance), and whittle away at it,
 
 
 TODO CURRENT SETTING:, MOVE THESE PARAMETERS TO THE TESTER.
@@ -219,8 +221,8 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_mean = (10.0, -10.0),
-                 relevant_features_prior_var = (16.0, 16.0),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
+                 relevant_features_prior_mean = (4.0, -4.0),
+                 relevant_features_prior_var = (2.0, 2.0),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -498,10 +500,7 @@ class Manager:
         # #todo NOTE we multiply by the normalized gain because the defining term is the variance, not the gain.
         # # score = var + var*gain
         # base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
-        # unaltered_gain_array = list(copy.deepcopy(gain_array))
-        # unaltered_variance_array = list(copy.deepcopy(variance_array))
-        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
-        # unaltered_meanPref_array = [x[3] for x in index_value_list]
+
 
 
         #TODO try THIS for tech 2. The sqrt is taken so gain is not such a dominating factor. Variance is important, more important. The gain is just to bias it
@@ -531,10 +530,7 @@ class Manager:
         # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
         # # np.exp(norm_variance_array,exponent)
         # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
-        # unaltered_gain_array = list(copy.deepcopy(gain_array))
-        # unaltered_variance_array = list(copy.deepcopy(variance_array))
-        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
-        # unaltered_meanPref_array = [x[3] for x in index_value_list]
+
 
         # ---- TECHNIQUE 2_v2---- norm_var * norm_gain, max_norm
         # print("Using TECHNIQUE 2 v2 ")
@@ -562,10 +558,7 @@ class Manager:
         #     var_normalizing_denom = 1.0  # avoids "nan" problem
         # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
         # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
-        # unaltered_gain_array = list(copy.deepcopy(gain_array))
-        # unaltered_variance_array = list(copy.deepcopy(variance_array))
-        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
-        # unaltered_meanPref_array = [x[3] for x in index_value_list]
+
 
 
         # # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
@@ -577,8 +570,13 @@ class Manager:
         if use_gain_function:
             #todo note here the gain is just the mean value
             gain_array = np.array([x[3] for x in index_value_list])
+            std_dev_array = np.array([math.sqrt(x[2]) for x in index_value_list])
         else:
             gain_array = np.array([1.0 for x in index_value_list])
+            #if no gain, then always use variance, not std dev.
+            # todo NOTE: this is now using variance in the line below
+            std_dev_array = np.array([x[2] for x in index_value_list])
+
         # gain_normalizing_denom = np.max(gain_array)
         # gain_normalizing_denom =  np.max(gain_array)
         # gain_normalizing_denom =  np.var(gain_array)
@@ -586,22 +584,21 @@ class Manager:
         # if gain_normalizing_denom == 0.0:
         #     gain_normalizing_denom = 1.0  # avoids "nan" problem
         norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-
-        variance_array = np.array([x[2] for x in index_value_list])
-        var_normalizing_denom = 1.0  # makes no difference to rel values if you divide by the same constant
+        # std_dev_array = np.array([x[2] for x in index_value_list])
+        std_dev_normalizing_denom = 1.0  # makes no difference to rel values if you divide by the same constant
         # var_normalizing_denom = 1.0 #Let variance be the defining factor
         # var_normalizing_denom = np.max(variance_array)
         # exponent = 1/3
         # if var_normalizing_denom == 0.0:
         #     var_normalizing_denom = 1.0  # avoids "nan" problem
-        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        norm_std_dev_array = std_dev_array / std_dev_normalizing_denom  # normalize it
         # np.exp(norm_variance_array,exponent)
-        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        base_score = [norm_gain_array[x] * norm_std_dev_array[x] for x in range(len(norm_gain_array))]
+        #----
         unaltered_gain_array = list(copy.deepcopy(gain_array))
-        unaltered_variance_array = list(copy.deepcopy(variance_array))
-        unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        unaltered_variance_array = list(copy.deepcopy(std_dev_array))
+        unaltered_basescore_array = list(copy.deepcopy(std_dev_array))
         unaltered_meanPref_array = [x[3] for x in index_value_list]
-
         # now store (idx,norm_gain*norm_variance)
         addendum = [0.0]*len(index_value_list)
         if include_feature_distinguishing:
