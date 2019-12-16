@@ -391,13 +391,13 @@ if __name__ == "__main__":
     # cases = [list(x) for x in cases]
     # print("The parameter cases are ",cases)
 
-    review the last results produced for...
-
-    todo NOTE: F2 and shift F2 to navigate between errors
-    mean = 4, var = 4
-    100 features, all relev. Gumbel
-
-    The last xp was with feature discovery off, expect worse results. sanity check . then turn off and redo
+    # review the last results produced for...
+    #
+    # todo NOTE: F2 and shift F2 to navigate between errors
+    # mean = 4, var = 4
+    # all relev. Gumbel
+    #
+    # The last xp was with feature discovery off, and 40 features
 
 
     for i in range(5):
