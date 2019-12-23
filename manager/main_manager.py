@@ -213,8 +213,8 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_mean = (10.0, -10.0),
-                 relevant_features_prior_var = (16.0, 16.0),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
+                 relevant_features_prior_mean = (-2, 2),
+                 relevant_features_prior_var = (4, 4),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -515,15 +515,15 @@ class Manager:
         norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
 
         variance_array = np.array([x[2] for x in index_value_list])
-        var_normalizing_denom = np.var(variance_array)
+        # var_normalizing_denom = np.var(variance_array)
         # var_normalizing_denom = 1.0 #Let variance be the defining factor
-        # var_normalizing_denom = np.max(variance_array)
-        # exponent = 1/3
+        var_normalizing_denom = np.max(variance_array)
+        exponent = 1/3
         if var_normalizing_denom == 0.0:
             var_normalizing_denom = 1.0  # avoids "nan" problem
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        # np.exp(norm_variance_array,exponent)
-        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        norm_variance_array = np.power(norm_variance_array, exponent)
+        base_score = [norm_gain_array[x]*norm_variance_array[x] for x in range(len(norm_gain_array))]
         unaltered_gain_array = list(copy.deepcopy(gain_array))
         unaltered_variance_array = list(copy.deepcopy(variance_array))
         unaltered_basescore_array = list(copy.deepcopy(variance_array))
@@ -1001,7 +1001,6 @@ class Manager:
         #end for
 
         #end for
-        self.plan_dataset = list(temp_plan_dataset)
 
         #NOTE this is incase there were some discrepancies or errors in the annotation.
         #todo INDEX 4: This will turn off learning about liked, disliked, and irrelevant features
