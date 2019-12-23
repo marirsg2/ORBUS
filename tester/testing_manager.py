@@ -400,6 +400,10 @@ if __name__ == "__main__":
     # The last xp was with feature discovery off, and 40 features
 
 
+    #TODO TEST UTKARSH MU * VAR^0.5 !! MAYBE lower variance importance helps you focus on the high scoring plans only.
+    # the variance term is downplayed because we care more about the gain value, BUT we still need variance to focus on.
+
+
     for i in range(5):
         all_data = []
         try:
@@ -421,8 +425,11 @@ if __name__ == "__main__":
         # random.shuffle(cases)
         # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
         # special_order_cases = [[True, True, False, True], [True, False, False, True],[True, True, False, False],[True, False, False, False]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
+
+
+
         # todo note  discovery term is off
-        special_order_cases = [[False, True, False, True], [False, False, False, True],[False, True, False, False],[False, False, False, False]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
+        special_order_cases = [[False, True, False, True], [False, False, False, True]] #,[False, True, False, False],[False, False, False, False]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases #reorders it
         # cases = special_order_cases + cases #reorders it
         # for single_case in special_order_cases:

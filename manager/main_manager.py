@@ -221,8 +221,9 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_mean = (4.0, -4.0),
-                 relevant_features_prior_var = (2.0, 2.0),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
+                 relevant_features_prior_mean = (8.0, -8.0),
+                 # WHEN TESTING AGAINST VARIANCE BASED SAMPLING, THE PRIOR MEAN AND VAR should be the usual. 1.0 , 0.5
+                 relevant_features_prior_var = (4.0, 4.0),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -570,7 +571,12 @@ class Manager:
         if use_gain_function:
             #todo note here the gain is just the mean value
             gain_array = np.array([x[3] for x in index_value_list])
-            std_dev_array = np.array([math.sqrt(x[2]) for x in index_value_list])
+            # std_dev_array = np.array([math.sqrt(x[2]) for x in index_value_list])
+            #todo NOTE this is utkarsh variation which seems to work very well
+            exponent = 1/3
+            exponent = exponent *1/2 # because the exponent is over the standard deviation, not the variance
+            std_dev_array = np.array([math.pow(x[2],exponent) for x in index_value_list])
+
         else:
             gain_array = np.array([1.0 for x in index_value_list])
             #if no gain, then always use variance, not std dev.
