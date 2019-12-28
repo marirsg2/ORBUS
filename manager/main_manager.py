@@ -213,8 +213,8 @@ class Manager:
                  prob_feature_selection = 0.25,  #there is ONLY ONE LEVEL, p(like/dislike)
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
-                 relevant_features_prior_mean = (-2, 2),
-                 relevant_features_prior_var = (4, 4),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
+                 relevant_features_prior_mean = (-4, 4), #TODO USE THE AVERAGE WEIGHT AND VARIANCE FOR THESE PARAMS.
+                 relevant_features_prior_var = (3, 3),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -507,18 +507,45 @@ class Manager:
             gain_array = np.array([x[1] for x in index_value_list])
         else:
             gain_array = np.array([1.0 for x in index_value_list])
-        # gain_normalizing_denom = np.max(gain_array)
+
         # gain_normalizing_denom =  np.max(gain_array)
         gain_normalizing_denom =  np.var(gain_array)
+
         if gain_normalizing_denom == 0.0:
             gain_normalizing_denom = 1.0  # avoids "nan" problem
         norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
 
-        variance_array = np.array([x[2] for x in index_value_list])
+        #TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
+        variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
+        # variance_array = np.array([x[2] for x in index_value_list])
         # var_normalizing_denom = np.var(variance_array)
         # var_normalizing_denom = 1.0 #Let variance be the defining factor
+
         var_normalizing_denom = np.max(variance_array)
-        exponent = 1/3
+        # var_normalizing_denom = np.var(variance_array)
+
+
+        # gain is var norm, std is max norm
+        # MORE NOISE !!
+        #
+        # MAYBE NEED MORE TAIL END WEIGHTS !!, AND PLANS WITH MORE LIKELIHOOD OF A HIGHER SCORE. WHEN ALL FEATURES WERE
+        # AHA !! KNOWN, THIS WAS CLEAR !!
+        #
+        # more FEATURES PER PLAN. the scores should be higher. compare to previous graphs
+        #     100 features, ~40 relevant . and 8
+        #
+        # FEATURES PER PLAN. WHY IS 20 FEATURES NOT WORKING ? GETTING A CONSISTENT ERROR
+        #
+        # THE SCORES WERE SMALLER, since fewer relevant features. EITHER NEED more features per plan, OR
+        # NEED TO HAVE larger weigts. the FORMER is EASIER, simply change the plan generator. also removes discovery problem.
+
+
+        #todo need to generate a new DISTRIBUTION Of plans AND SEE if the results persist. Or is this a quaint correlation.
+        # NEED TO SAVE THE OLD One, for comparison in case that is true
+        # TODO note: SAVE THE STYLE OF NORMALIZATION THAT WORKS BEST !! I think gain/var * std_dev/max seemed to be it. But for simplicity, divide by VAR for both
+
+
+        exponent = 1
         if var_normalizing_denom == 0.0:
             var_normalizing_denom = 1.0  # avoids "nan" problem
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
