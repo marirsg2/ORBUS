@@ -337,7 +337,7 @@ if __name__ == "__main__":
     total_num_plans = 40
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 4
-    noise_value = 0.4 #the range of actual preference values is based on the noise as well
+    noise_value = 0.2 #the range of actual preference values is based on the noise as well
     prob_feat_select = 0.4
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")

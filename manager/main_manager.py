@@ -524,20 +524,14 @@ class Manager:
         var_normalizing_denom = np.max(variance_array)
         # var_normalizing_denom = np.var(variance_array)
 
+        gain is var norm, std is max norm
+        larger beta was worse !! because the var would also find it.
+        currently SMALLER BETA = 0.5 FOR LARGER WEIGHTS AND SEE THE PERFORMANCE, THE NOISE 0.2
 
-        # gain is var norm, std is max norm
-        # MORE NOISE !!
-        #
-        # MAYBE NEED MORE TAIL END WEIGHTS !!, AND PLANS WITH MORE LIKELIHOOD OF A HIGHER SCORE. WHEN ALL FEATURES WERE
-        # AHA !! KNOWN, THIS WAS CLEAR !!
-        #
-        # more FEATURES PER PLAN. the scores should be higher. compare to previous graphs
-        #     100 features, ~40 relevant . and 8
-        #
-        # FEATURES PER PLAN. WHY IS 20 FEATURES NOT WORKING ? GETTING A CONSISTENT ERROR
-        #
-        # THE SCORES WERE SMALLER, since fewer relevant features. EITHER NEED more features per plan, OR
-        # NEED TO HAVE larger weigts. the FORMER is EASIER, simply change the plan generator. also removes discovery problem.
+        more FEATURES PER PLAN. the scores should be higher. compare to previous graphs
+            100 features, ~40 relevant . and 8
+
+        FEATURES PER PLAN. WHY IS 20 FEATURES NOT WORKING ? GETTING A CONSISTENT ERROR
 
 
         #todo need to generate a new DISTRIBUTION Of plans AND SEE if the results persist. Or is this a quaint correlation.
