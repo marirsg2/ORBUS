@@ -47,8 +47,8 @@ class oracle:
             rating_distribution = oracle.rating_default_dist
         if preference_distribution_string == "gumbel":
             rating_distribution = oracle.rating_distribution_law
-            # tailedness_beta = 1.0
-            tailedness_beta = 2.0
+            tailedness_beta = 1.0
+            # tailedness_beta = 0.5
             self.distribution_sampled_points = np.random.gumbel(2*gaussian_noise_sd,tailedness_beta,1000)
         elif preference_distribution_string == "power_law":
             rating_distribution = oracle.rating_distribution_law

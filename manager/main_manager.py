@@ -525,11 +525,11 @@ class Manager:
         # var_normalizing_denom = np.var(variance_array)
 
         gain is var norm, std is max norm
-        larger beta was worse !! because the var would also find it.
-        currently SMALLER BETA = 0.5 FOR LARGER WEIGHTS AND SEE THE PERFORMANCE, THE NOISE 0.2
+
+        currently SMALLER BETA = 1.0 FOR LARGER WEIGHTS AND SEE THE PERFORMANCE, THE NOISE 0.2
 
         more FEATURES PER PLAN. the scores should be higher. compare to previous graphs
-            100 features, ~40 relevant . and 8
+            100 features, ~80 relevant . and 8
 
         FEATURES PER PLAN. WHY IS 20 FEATURES NOT WORKING ? GETTING A CONSISTENT ERROR
 
