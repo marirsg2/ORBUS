@@ -524,14 +524,14 @@ class Manager:
         var_normalizing_denom = np.max(variance_array)
         # var_normalizing_denom = np.var(variance_array)
 
-        gain is var norm, std is max norm
-
-        currently SMALLER BETA = 1.0 FOR LARGER WEIGHTS AND SEE THE PERFORMANCE, THE NOISE 0.2
-
-        more FEATURES PER PLAN. the scores should be higher. compare to previous graphs
-            100 features, ~80 relevant . and 8
-
-        FEATURES PER PLAN. WHY IS 20 FEATURES NOT WORKING ? GETTING A CONSISTENT ERROR
+        OFCOURSE the difference will be small when you have mostly irrelevant features. The number of plans with high weight
+        is smaller, and the overall plan value is smaller in general. So the weighted loss will not be as large as when all
+        the features are relevant
+        # gain is var norm, std is max norm
+        # currently SMALLER BETA = 1.0 FOR LARGER WEIGHTS AND SEE THE PERFORMANCE, THE NOISE 0.2
+        # more FEATURES PER PLAN. the scores should be higher. compare to previous graphs
+        #     100 features, ~80 relevant . and 8
+        # FEATURES PER PLAN. WHY IS 20 FEATURES NOT WORKING ? GETTING A CONSISTENT ERROR
 
 
         #todo need to generate a new DISTRIBUTION Of plans AND SEE if the results persist. Or is this a quaint correlation.
