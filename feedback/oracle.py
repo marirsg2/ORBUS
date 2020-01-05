@@ -43,6 +43,11 @@ class oracle:
             logger.debug("NO gaussian noise in simulated human ratings ")
 
         print("The ratings distribution is ", preference_distribution_string)
+        
+        
+        #todo NOTE we generate two distributions one for high weight feature group, and one for 
+        # lower weight feature group.
+        
         if preference_distribution_string == "uniform":
             rating_distribution = oracle.rating_default_dist
         if preference_distribution_string == "gumbel":
@@ -87,6 +92,9 @@ class oracle:
         l_n_max = 1 #HARDCODED, we assume the features are already at various lengths, and types, no more sequencing to make higher features
         if preference_distribution_string != "freq_law":
             for single_feature in self.s1_features:
+                group_number = int(single_feature.split("_")[0].replace("g",""))
+                    if group_number > 2:
+                        continue
                 r1 = random.random()
                 try:
                     relevance_probability = probability_of_feat_selec
@@ -96,26 +104,17 @@ class oracle:
                 local_like_probability = like_probability
                 biased = False
 
-                #this was for having some groups of features always liked or disliked
-                # if single_feature.startswith("g1"):
-                #     biased = True
-                #     select_prob = 1.0
-                #     local_like_probability = 1.0
-                # if single_feature.startswith("g2"):
-                #     biased = True
-                #     select_prob = 1.0
-                #     local_like_probability = 0.0
-
                 if r1 <= select_prob:
                     # so this feature is relevant
                     r2 = random.random()
+                    
                     if r2 <= local_like_probability:
                         # so the user likes the feature
                         self.feature_preferences_dict[single_feature] = ["like",
-                                                                        rating_distribution(self, "like",biased)]
+                                                                        rating_distribution(self, "like",biased)/group_number]
                     else:
                         self.feature_preferences_dict[single_feature] = ["dislike",
-                                                         rating_distribution(self, "dislike",biased)]
+                                                         rating_distribution(self, "dislike",biased)/group_number]
         else: #we rate according to the freq dict passed in
             for single_feature in freq_dict.keys():
 
