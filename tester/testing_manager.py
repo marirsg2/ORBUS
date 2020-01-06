@@ -41,6 +41,7 @@ from scipy.stats import describe as summ_stats_fnc
 import matplotlib
 from matplotlib import pyplot as plt
 import random
+import numpy as np
 matplotlib.use("TkAgg")
 #====================================================
 
@@ -197,7 +198,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     #end for loop through
     #---now measure the accuracy
 
-
+    # 2 groups of 100 each. uniform 0 to 4
 
 
     #TODO VERY IMPORTANT TO UPDATE INDICES AFTER THE EVALUATION, else all the weights are not correctly learned
@@ -330,15 +331,15 @@ if __name__ == "__main__":
     parameter_indexed_values = [parameter_values] * num_parameters
     cases = itertools.product(*parameter_indexed_values)
 
-    # preference_distribution_string = "uniform"
+    preference_distribution_string = "uniform"
     # preference_distribution_string = "power_law"
     # preference_distribution_string = "gaussian"
-    preference_distribution_string = "gumbel"
+    # preference_distribution_string = "gumbel"
     total_num_plans = 40
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 4
     noise_value = 0.2 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.8
+    prob_feat_select = 0.4
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")

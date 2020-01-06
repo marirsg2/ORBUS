@@ -9,8 +9,8 @@ import numpy as np
 
 #--------------------------------
 NUM_PLANS_NEEDED = 10000
-NUM_FEATURES = 100
-NUM_GROUPS = 1
+NUM_FEATURES = 400 #will be updated if num groups > 1
+NUM_GROUPS = 4
 NUM_FEATURES = int(NUM_FEATURES/NUM_GROUPS)
 distribution_samples = np.random.normal(150,50,NUM_FEATURES)
 MIN_FEATURES = 8 #prob that the plan will end with this step

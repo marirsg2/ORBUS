@@ -524,9 +524,13 @@ class Manager:
         var_normalizing_denom = np.max(variance_array)
         # var_normalizing_denom = np.var(variance_array)
 
-        OFCOURSE the difference will be small when you have mostly irrelevant features. The number of plans with high weight
-        is smaller, and the overall plan value is smaller in general. So the weighted loss will not be as large as when all
-        the features are relevant
+        # OFCOURSE the difference will be small when you have mostly irrelevant features. The number of plans with high weight
+        # is smaller, and the overall plan value is smaller in general. So the weighted loss will not be as large as when all
+        # the features are relevant
+
+
+
+
         # gain is var norm, std is max norm
         # currently SMALLER BETA = 1.0 FOR LARGER WEIGHTS AND SEE THE PERFORMANCE, THE NOISE 0.2
         # more FEATURES PER PLAN. the scores should be higher. compare to previous graphs
@@ -1595,10 +1599,11 @@ class Manager:
         print(" If inside INTERESTING REGION is ", inside_region)
         if count_samples == 0:
             print("THERE WERE ZERO SAMPLES ACCORDING TO OUR CURRENT RATING MAX!!")
-            print("This can happen when the training set has a higher upper bound than the test set")
+            print("This can happen when the training set has a higher upper bound than the test set OR we have not found any features yet")
             # todo INSTEAD OF DOING TOP 20% BY MAX RANGE, should do upper 20% OF POINTS. BUT THIS DEFEATS THE PURPOSE, SO NO
             # WE AIM TO FIND TOP 20% AND BOTTOM 20% BY RANGE, not by points.
-            return 0.0
+            return 0.0,0.0,0.0,[]
+
 
         print("NUM SAMPLES = ", count_samples, " for when INTERESTING REGION IS", inside_region)
         if self.model_MLE != None:
