@@ -28,6 +28,7 @@ todo note:
 
 import pickle
 import datetime
+import numpy as np
 import sys
 import os
 import itertools
@@ -334,11 +335,11 @@ if __name__ == "__main__":
     # preference_distribution_string = "power_law"
     # preference_distribution_string = "gaussian"
     preference_distribution_string = "gumbel"
-    total_num_plans = 52
+    total_num_plans = 20
     #TODO FEWER PLANS PER ROUND IS BETTER
-    plans_per_round = 4
+    plans_per_round = 2
     noise_value = 0.2 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.4
+    prob_feat_select = 0.2
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
