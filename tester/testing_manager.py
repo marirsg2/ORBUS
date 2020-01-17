@@ -334,11 +334,13 @@ if __name__ == "__main__":
     # preference_distribution_string = "power_law"
     # preference_distribution_string = "gaussian"
     preference_distribution_string = "gumbel"
-    total_num_plans = 40
+    total_num_plans = 52
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 4
+
+
     noise_value = 0.2 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.8
+    prob_feat_select = 1
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
@@ -360,8 +362,9 @@ if __name__ == "__main__":
     # cases = [list(x) for x in cases]
     # print("The parameter cases are ",cases)
 
-
     for i in range(5):
+        all_data = []
+        print("iteration: %d" % (i+1))
         try:
             os.remove(manager_pickle_file)
             print("Manager File Removed at start , to recreate manager!")
@@ -391,18 +394,18 @@ if __name__ == "__main__":
         print(" What technique , priors, distribution, dataset")
 
         # --------------------------------------------------------------
-        # random_sampling_state = True
+        random_sampling_state = True
         # for i in range(1):
-        #     all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-        #                             random_sampling_enabled =  random_sampling_state,
-        #                             include_feature_feedback= True,
-        #                             include_discovery_term = False,
-        #                             include_gain= False,
-        #                             include_feature_distinguishing= False,
-        #                             include_prob_term = False,
-        #                             manager_pickle_file = manager_pickle_file,
-        #                             repetitions=num_repetitions,
-        #                             prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
+        all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+                                random_sampling_enabled =  random_sampling_state,
+                                include_feature_feedback= True,
+                                include_discovery_term = False,
+                                include_gain= False,
+                                include_feature_distinguishing= False,
+                                include_prob_term = False,
+                                manager_pickle_file = manager_pickle_file,
+                                repetitions=num_repetitions,
+                                prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
 
 
         #--------------------------------------------------------------
