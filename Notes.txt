@@ -1,0 +1,14 @@
+
+What is missing.
+
+
+
+MLE error is NOT being done correctly. The bayes error was being used. WHY ?
+I apparently said that the error was in the bayes error list
+
+BETTER FEATURE DISCOVERY:
+
+If a plan has no features, it's base score is zero ?? check.
+This makes it hard to discover features unless each plan has a lot of features. if it has 8 features per plan,
+then it would discover more of the features. Else it is likely to find plans with no undiscovered features
+

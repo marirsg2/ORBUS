@@ -335,11 +335,11 @@ if __name__ == "__main__":
     # preference_distribution_string = "power_law"
     # preference_distribution_string = "gaussian"
     preference_distribution_string = "gumbel"
-    total_num_plans = 20
+    total_num_plans = 30
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 2
     noise_value = 0.2 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.2
+    prob_feat_select = 0.4
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
@@ -362,7 +362,7 @@ if __name__ == "__main__":
     # print("The parameter cases are ",cases)
 
 
-    for i in range(5):
+    for i in range(4):
         all_data = []
         try:
             os.remove(manager_pickle_file)
@@ -383,7 +383,8 @@ if __name__ == "__main__":
         # random.shuffle(cases)
         # include_discovery_term = case_parameters[0], include_gain = case_parameters[1], include_feature_distinguishing = case_parameters[2],include_prob_term = case_parameters[3],
         # special_order_cases = [[True, True, False, True], [True, False, False, True], [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
-        special_order_cases = [[True, True, False, True], [False, True, False, True], [True, True, False, False], [False, True, False, False]]# only the gain term is kept, all else is changed. The feature distinguishing is kept to False
+        # special_order_cases = [[True, True, False, True], [False, True, False, True], [True, True, False, False], [False, True, False, False]]# only the gain term is kept, all else is changed. The feature distinguishing is kept to False
+        special_order_cases = [[True, True, False, True], [False, True, False, False]]# only the gain term is kept, all else is changed. The feature distinguishing is kept to False
         # special_order_cases = [[True, True, False, True], [True, False, False, True]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases
 

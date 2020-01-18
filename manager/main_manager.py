@@ -665,6 +665,17 @@ class Manager:
                     for x in range(len(index_value_list))]
             #now update the scores with the new discovery score.
         #end while
+
+        #todo NOTE now we add one plan that is JUST about the discovery value of it
+        if include_discovery_term_product:
+            max_discov_value = max(discovery_values)
+            max_discov_value_idx = discovery_values.index(max_discov_value)
+            plan_idx_and_value = index_value_list[max_discov_value_idx]
+            print("ADDING ONE PLAN PURELY for discovery")
+            print("Discovery plan score is =", max_discov_value-1) #we used to add 1 because we multiply the BASE score by this value. So 1+x would scale it more
+            chosen_indices.append(plan_idx_and_value[0])
+            chosen_scores.append(plan_idx_and_value[1])
+
         print("update_min max",self.min_rating,self.max_rating)
         print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
         print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
@@ -1589,7 +1600,7 @@ class Manager:
 
             bayes_error_list.append( current_abs_error)
             bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
-            true_values_and_diff.append((true_value,true_value - mean_prediction,prediction_variance))#the error with sign is passed on
+            true_values_and_diff.append((true_value, true_value - mean_prediction, prediction_variance))#the error with sign is passed on
 
         # end for loop
         print(" If inside INTERESTING REGION is ", inside_region)
