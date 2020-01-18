@@ -1150,7 +1150,7 @@ class Manager:
 
         MLE_reg_model = None
         # if learn_LSfit:
-        if False:
+        if True:
             from sklearn import linear_model
             # MLE_reg_model = linear_model.LinearRegression(fit_intercept=True) #NORMALIZE wont help, the input is binary. Already normalized
             # MLE_reg_model = linear_model.LinearRegression(fit_intercept=False) #NORMALIZE wont help, the input is binary. Already normalized
