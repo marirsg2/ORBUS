@@ -62,7 +62,7 @@ then in a future round they will not have the same encoding
 """
 #===============================================================
 
-EXPECTED_NOISE_STD_DEV = 0.2  #the mean is 0
+EXPECTED_NOISE_STD_DEV = 1.0  #the mean is 0
 NUM_SAMPLES_KDE = 500
 NUM_SAMPLES_XAXIS_SAMPLES = 100
 
@@ -1256,6 +1256,45 @@ class Manager:
             # self.evaluate(self.test_set)
 
     #================================================================================================
+
+    # ================================================================================================
+    def ESTIMATE_noise_sd(self, annotated_test_plans=None):
+        """
+
+        :param annotated_test_plans:
+        :return:
+        """
+        #ASSUME MEAN IS ZERO, AND COMPUTE std DEV over the errors
+        #get annotated plans, 0 and -1 is the plan and index
+        # the variance estimate is computed as a weighted average of the variance
+        errorSq_times_variance = 0.0 #the weight is the variance
+        variance_sum = 0.0
+        for single_annot_plan_struct in self.annotated_plans:
+            current_plan_features = single_annot_plan_struct[1] + single_annot_plan_struct[2]
+            encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
+            true_value = float(single_annot_plan_struct[-1])
+            for single_feature in current_plan_features:
+                if single_feature in self.CONFIRMED_features:
+                    encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
+            try:
+                predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+                mean_prediction = np.mean(predictions)
+                prediction_variance = np.var(predictions)
+            except:
+                mean_prediction = 0.0
+                prediction_variance = 0.0
+            errorSq_times_variance +=  prediction_variance*(true_value-mean_prediction)**2
+            variance_sum += prediction_variance
+        #end for loop
+        std_dev_est = math.sqrt(errorSq_times_variance/variance_sum)
+        return std_dev_est
+
+
+
+
+
+
+    #================================================
     def evaluate(self,annotated_test_plans=None):
         """
         :summary : we have the actual result in the annotated test plans, we see what the model

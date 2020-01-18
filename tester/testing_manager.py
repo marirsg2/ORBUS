@@ -188,13 +188,13 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         bayes_error, MLE_error = manager.evaluate(annotated_test_plans)
         bayes_error_list.append(bayes_error)
         MLE_error_list.append(MLE_error)
-        inRegion_bayes_error,UNALTERED_inRegion_bayes_error, inRegion_MLE_error,inRegion_true_values_and_diff = manager.region_based_evaluation(annotated_test_plans, [0.2,0.8],
+        inRegion_bayes_error,UNALTERED_inRegion_bayes_error, inRegion_MLE_error,inRegion_true_values_and_diff = manager.region_based_evaluation(annotated_test_plans, [0.45,0.55],
                                         inside_region=True)  # the second parameter is percentile regions to evaluate in
         inRegion_bayes_error_list.append(inRegion_bayes_error)
         UNALTERED_inRegion_bayes_error_list.append(UNALTERED_inRegion_bayes_error)
         inRegion_MLE_error_list.append(inRegion_MLE_error)
         inRegion_true_values_and_diff = sorted(inRegion_true_values_and_diff,key=lambda x:x[0])
-        print("INTERESTING REGION TRUE VALUES ", inRegion_true_values_and_diff)
+        # print("INTERESTING REGION TRUE VALUES ", inRegion_true_values_and_diff)
     #end for loop through
     #---now measure the accuracy
 
@@ -225,7 +225,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("============================================================")
     print("BAYES ERROR LIST ", bayes_error_list)
     print("MLE ERROR LIST ", MLE_error_list)
-    print("INTERESTING REGION TRUE VALUES ", inRegion_true_values_and_diff)
+    # print("INTERESTING REGION TRUE VALUES ", inRegion_true_values_and_diff)
     print("INTERESTING REGION BAYES ERROR LIST ", inRegion_bayes_error_list)
     print("---UNALTERED  INTERESTING REGION BAYES ERROR LIST ", UNALTERED_inRegion_bayes_error_list)
     # print("INTERESTING REGION  MLE ERROR LIST ", inRegion_MLE_error_list)
