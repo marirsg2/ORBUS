@@ -49,7 +49,11 @@ class oracle:
             rating_distribution = oracle.rating_distribution_law
             tailedness_beta = 1.0
             # tailedness_beta = 0.5
-            self.distribution_sampled_points = np.random.gumbel(2*gaussian_noise_sd,tailedness_beta,1000)
+            # self.distribution_sampled_points = np.random.gumbel(2*gaussian_noise_sd,tailedness_beta,1000)
+            print("NOTE THAT YOU ARE NOT USING THE TRUE GUMBEL DISTRIBUTION, RATHER A PATCHED HEAVY TAIL DISTRIBUTION")
+            temp = np.concatenate((np.random.uniform(0.8,0.99,750),np.random.uniform(1.3,1.5,250)))
+            temp = np.power(temp, 5)
+            self.distribution_sampled_points = temp
         elif preference_distribution_string == "power_law":
             rating_distribution = oracle.rating_distribution_law
             power_law_samples = (1 - np.random.power(5, 1000))*oracle.POWER_LAW_VALUES_SCALING_FACTOR

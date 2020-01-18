@@ -62,7 +62,7 @@ then in a future round they will not have the same encoding
 """
 #===============================================================
 
-EXPECTED_NOISE_VARIANCE = 1.0  #the mean is 0
+EXPECTED_NOISE_STD_DEV = 0.2  #the mean is 0
 NUM_SAMPLES_KDE = 500
 NUM_SAMPLES_XAXIS_SAMPLES = 100
 
@@ -669,12 +669,18 @@ class Manager:
         #todo NOTE now we add one plan that is JUST about the discovery value of it
         if include_discovery_term_product:
             max_discov_value = max(discovery_values)
-            max_discov_value_idx = discovery_values.index(max_discov_value)
-            plan_idx_and_value = index_value_list[max_discov_value_idx]
-            print("ADDING ONE PLAN PURELY for discovery")
-            print("Discovery plan score is =", max_discov_value-1) #we used to add 1 because we multiply the BASE score by this value. So 1+x would scale it more
-            chosen_indices.append(plan_idx_and_value[0])
-            chosen_scores.append(plan_idx_and_value[1])
+            if not max_discov_value == 1.0: #i.e. there are still features to explore
+                max_discov_value_idx = discovery_values.index(max_discov_value)
+                plan_idx_and_value = index_value_list[max_discov_value_idx]
+                print("ADDING ONE PLAN PURELY for discovery")
+                print("Discov plan", self.plan_dataset[plan_idx_and_value[0]])
+                print("Discovery plan score is =", max_discov_value-1) #we used to add 1 because we multiply the BASE score by this value. So 1+x would scale it more
+                chosen_indices.append(plan_idx_and_value[0])
+                chosen_scores.append(plan_idx_and_value[1])
+                self.seen_features.update(self.plan_dataset[plan_idx_and_value[0]])
+            else: #DO NOTHING, DO NOT ADD ANOTHER RANDOM PLAN. throws off the comparison
+                print("NO MORE FEATURES TO DISCOVER, NOT ADDING DISCOVERY PLANS")
+                pass
 
         print("update_min max",self.min_rating,self.max_rating)
         print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
@@ -1171,10 +1177,17 @@ class Manager:
             self.model_MLE = MLE_reg_model
         #end if learn_LSfit
 
+        print("RELEARINING BAYESIAN MODEL")
+        prior_dict = {}
+        for single_feature in self.CONFIRMED_features:
+            prior_dict[single_feature] = (self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)],self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] )
+        print("priors are = ", prior_dict)
+        print("NOTE that the noise is ALWAYS set to EXPECTED_NOISE_VARIANCE = 1.0, which is bad.")
+
         self.learning_model_bayes.learn_bayesian_linear_model(encoded_plans_list,
                                                               np.array(self.RBUS_prior_mean),
                                                               self.CONFIRMED_features_dimension,
-                                                              sd= EXPECTED_NOISE_VARIANCE,
+                                                              sd= EXPECTED_NOISE_STD_DEV,
                                                               sampling_count=2000,
                                                               num_chains=num_chains,
                                                               uninformative_prior_sd = np.diag(self.RBUS_prior_var))
@@ -1208,6 +1221,10 @@ class Manager:
                 #     param_vars[self.RBUS_indexing.index(single_feature)])
             # end else
         #end for loop through confirmed features
+
+        #TODO Update the noise estimate.
+        # take the variance of the error as the noise.  YES ! we just assume that we are right. Initially, this would be large, and then
+        # as we get better parameter estimates, we (in tandem) get a better estimate of the noise
 
         if self.sim_human != None:  #i.e. we are in simulated testing
             # continue from here to update params

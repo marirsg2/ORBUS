@@ -339,7 +339,7 @@ if __name__ == "__main__":
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 2
     noise_value = 0.2 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.2
+    prob_feat_select = 0.4
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
@@ -385,7 +385,7 @@ if __name__ == "__main__":
         # special_order_cases = [[True, True, False, True], [True, False, False, True], [True, True, True, True], [True, False, True, True]]#
         # special_order_cases = [[True, True, False, True], [False, True, False, True], [True, True, False, False], [False, True, False, False]]# ABLATION study only the gain term is kept, all else is changed. The feature distinguishing is kept to False
         # special_order_cases = [[True, True, False, True], [False, True, False, False]]# All vs Base
-        special_order_cases = [[True, True, False, True], [True, False, True, True]]# All vs All-gain
+        special_order_cases = [[True, True, False, True], [True, False, False, True]]# All vs All-gain
         # special_order_cases = [[True, True, False, True], [True, False, False, True]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases
 
