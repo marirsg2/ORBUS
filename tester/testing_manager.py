@@ -391,7 +391,7 @@ if __name__ == "__main__":
         #     cases.remove(single_case)
 
         print(" ALWAYS CHECK THE FOLLOWING PARAMETERS ")
-        print(" What technique , priors, distribution, dataset")
+        print(" What tec    hnique , priors, distribution, dataset")
 
         # --------------------------------------------------------------
         random_sampling_state = True

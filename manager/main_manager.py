@@ -1139,7 +1139,7 @@ class Manager:
 
         MLE_reg_model = None
         # if learn_LSfit:
-        if False:
+        if True:
             from sklearn import linear_model
             # MLE_reg_model = linear_model.LinearRegression(fit_intercept=True) #NORMALIZE wont help, the input is binary. Already normalized
             # MLE_reg_model = linear_model.LinearRegression(fit_intercept=False) #NORMALIZE wont help, the input is binary. Already normalized
@@ -1563,7 +1563,8 @@ class Manager:
             if self.model_MLE != None:
                 mle_predict = self.model_MLE.predict([encoded_plan])[0]
                 current_abs_error = abs(
-                    single_annot_plan_struct[-1] - mle_predict)
+                    true_value - mle_predict)
+                current_abs_error = current_abs_error*abs(true_value)
                 MLE_total_error += current_abs_error
                 MLE_error_list.append(current_abs_error)
                 MLE_target_prediction_list.append((true_value,mle_predict))

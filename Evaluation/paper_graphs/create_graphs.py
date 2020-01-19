@@ -6,20 +6,20 @@ import copy
 import glob
 # define all the global variables here
 # feature feedback, random_sampling_enabled, include_discovery, include_gain, include_feature_distinguishing, include_prob_term
-# required_graph_settings = [
-#     # [1, 0, 1, 1, 1, 1],
-#     # [1, 0, 1, 0, 1, 1],
-#     [1, 0, 1, 1, 0, 1],
-#     [1, 0, 1, 0, 0, 1],
-#     [1, 1, 1, 1, 0, 1]
-# ]
-
 required_graph_settings = [
-[1, 0, 1 ,1, 0 ,1] ,
-[1, 0, 0 ,1, 0 ,1],
-[1, 0, 1 ,1, 0 ,0],
-[1, 0, 0 ,1, 0 ,0]
+    # [1, 0, 1, 1, 1, 1],
+    # [1, 0, 1, 0, 1, 1],
+    [1, 0, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 1],
+    [1, 1, 1, 1, 0, 1]
 ]
+
+# required_graph_settings = [
+# [1, 0, 1 ,1, 0 ,1] ,
+# [1, 0, 0 ,1, 0 ,1],
+# [1, 0, 1 ,1, 0 ,0],
+# [1, 0, 0 ,1, 0 ,0]
+# ]
 
 legends = copy.deepcopy(required_graph_settings)
 
@@ -135,11 +135,12 @@ class create_graphs:
                     # print(given_case_settings)
 
                     # now gather the data here.
-                    pre = "REGION BAYES ERROR LIST"
-                    post = "INTERESTING"
-                    case_data = eval(re.search('%s((.|\n)*)%s' % (pre, post), single_case).groups(1)[0])
-                    # print(case_data)
-
+                    # pre = "BAYES ERROR LIST"
+                    # post = "MLE"
+                    all_cases = re.findall(r'\[(.*?)\]', single_case)
+                    required_case = 0
+                    case_data = (all_cases[required_case].split(', '))
+                    case_data = [float(i) for i in case_data]
                     if given_case_settings in temp_req_settings:
                         setting_to_data[str(given_case_settings)].append(case_data)
         self.settings_to_data = setting_to_data
