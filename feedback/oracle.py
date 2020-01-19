@@ -65,6 +65,7 @@ class oracle:
 
         elif preference_distribution_string == "gaussian":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
+            # self.distribution_sampled_points = np.random.normal(3*gaussian_noise_sd,2*gaussian_noise_sd,1000) #0.2 is the noise
             self.distribution_sampled_points = np.random.normal(3*gaussian_noise_sd,2*gaussian_noise_sd,1000) #0.2 is the noise
             self.distribution_sampled_points = np.sort(self.distribution_sampled_points)
         elif preference_distribution_string == "root_law":
@@ -111,16 +112,20 @@ class oracle:
                 #     select_prob = 1.0
                 #     local_like_probability = 0.0
 
+                scaler = 1.0
+                if single_feature.startswith("g2"):
+                    scaler = 5.0
+
                 if r1 <= select_prob:
                     # so this feature is relevant
                     r2 = random.random()
                     if r2 <= local_like_probability:
                         # so the user likes the feature
                         self.feature_preferences_dict[single_feature] = ["like",
-                                                                        rating_distribution(self, "like",biased)]
+                                                                        scaler*rating_distribution(self, "like",biased)]
                     else:
                         self.feature_preferences_dict[single_feature] = ["dislike",
-                                                         rating_distribution(self, "dislike",biased)]
+                                                         scaler*rating_distribution(self, "dislike",biased)]
         else: #we rate according to the freq dict passed in
             for single_feature in freq_dict.keys():
 
@@ -143,7 +148,7 @@ class oracle:
         :param sentiment:
         :return:
         """
-        min = 0.2
+        min = 0.1
         max = 10
         if sentiment == "like":
             return random.uniform(min,max)
