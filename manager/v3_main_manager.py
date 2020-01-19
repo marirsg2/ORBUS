@@ -872,7 +872,6 @@ class Manager:
         #     index_value_list = temp
         # #end if use_gain_function
         chosen_plan_stats = []
-        chosen_plan_list = []
         while len(chosen_indices) < num_plans:
             if include_discovery_term_product:
                 index_value_list = [
@@ -884,7 +883,6 @@ class Manager:
             chosen_scores.append(a[1])
             feat_value = []
             sum_score = 0.0
-            chosen_plan_list.append(self.plan_dataset[a[0]])
             for feat in self.plan_dataset[a[0]]:
                 try:
                     feat_value.append((feat, self.sim_human.feature_preferences_dict[feat]))
@@ -923,14 +921,14 @@ class Manager:
                 print("Discovery plan score is =",
                       max_discov_value - 1)  # we used to add 1 because we multiply the BASE score by this value. So 1+x would scale it more
                 chosen_indices.append(plan_idx_and_value[0])
+                chosen_scores.append(plan_idx_and_value[1])
                 self.seen_features.update(self.plan_dataset[plan_idx_and_value[0]])
             else:  # DO NOTHING, DO NOT ADD ANOTHER RANDOM PLAN. throws off the comparison
                 print("NO MORE FEATURES TO DISCOVER, NOT ADDING DISCOVERY PLANS")
                 pass
 
         print("update_min max", self.min_rating, self.max_rating)
-        print("chosen plans and scores = ", list(zip(chosen_plan_list,chosen_scores)))
-        print("chosen plans only = ", chosen_plan_list)
+        print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ", chosen_scores)
         print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
         print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(base_score + addendum))
         print("ROUND chosen plan stats =", chosen_plan_stats)
@@ -1450,94 +1448,95 @@ class Manager:
                     self.model_MLE = MLE_reg_model
         #end if learn_LSfit
 
-        # print("RELEARINING BAYESIAN MODEL")
-        # prior_dict = {}
-        # for single_feature in self.CONFIRMED_features:
-        #     prior_dict[single_feature] = (self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)],self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] )
-        # print("priors are = ", prior_dict)
-        # # noise_sd = self.estimate_noise_sd() #learning the noise is terrible, unless it is truly variable. If we know the range of values. Just set a noise value
-        # noise_sd = EXPECTED_NOISE_STD_DEV
-        # print("noise_estimate sd is =",noise_sd)
-        # self.learning_model_bayes.learn_bayesian_linear_model(encoded_plans_list,
-        #                                                       np.array(self.RBUS_prior_mean),
-        #                                                       self.CONFIRMED_features_dimension,
-        #                                                       sd= noise_sd,
-        #                                                       sampling_count=2000,
-        #                                                       num_chains=num_chains,
-        #                                                       feature_prior_var_matx= np.diag(self.RBUS_prior_var))
-        #                                                       # num_chains=num_chains)
-        #
-        # # ALSO UPDATE THE PRIORS FOR THE NEXT ROUND. WE START OPTIMISITC AND UPDATE THEM TOWARDS THEIR TRUE VALUES
-        # param_stats = [self.learning_model_bayes.linear_params_values["betas"][0:2000, x] for x in
-        #                range(self.CONFIRMED_features_dimension)]
-        # param_means = np.array([np.mean(x) for x in param_stats])
-        # param_var = [np.var(x) for x in param_stats]
-        # self.RBUS_prior_mean = np.zeros(len(self.CONFIRMED_features))
-        # self.RBUS_prior_var = np.zeros(len(self.CONFIRMED_features))
-        #
-        # for single_feature in self.CONFIRMED_features:
-        #     if single_feature in self.liked_features:
-        #         # code to FORCE liked as positive feature
-        #         # if param_means[self.RBUS_indexing.index(single_feature)] < 0: #it was a liked feature so should have been > 0
-        #         #     #then the BLM model failed to converge or we did not have enough information. Since we know it is liked we will default to the prior
-        #         #     param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[0]
-        #         #     param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[0]
-        #
-        #         self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
-        #             param_means[self.RBUS_indexing.index(single_feature)]
-        #         self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \
-        #             param_var[self.RBUS_indexing.index(single_feature)]
-        #         # todo note, this was the other option, to agressively update the prior towards zero by mean-std_dev
-        #         # instead we assume just the mean, as it is a more conservative update. Aggressive update maybe good too. never tested
-        #         # param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
-        #         #     param_vars[self.RBUS_indexing.index(single_feature)])
-        #     else:
-        #         #CODE to force negative mean for disliked feature over rounds
-        #         # if param_means[self.RBUS_indexing.index(single_feature)] > 0: #it was a disliked feature so should have been < 0
-        #         #     #then the BLM model failed to converge or we did not have enough information. Since we know it is dliked we will default to the prior
-        #         #     param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[1]
-        #         #     param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[0]
-        #         self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
-        #             param_means[self.RBUS_indexing.index(single_feature)]
-        #         self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \
-        #             param_var[self.RBUS_indexing.index(single_feature)]
-        #         # todo note, this was the other option, to agressively update the prior towards zero by mean-std_dev
-        #         # -1*param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
-        #         #     param_vars[self.RBUS_indexing.index(single_feature)])
-        #     # end else
-        # #end for loop through confirmed features
-        #
-        # #TODO Update the noise estimate.
-        # # take the variance of the error as the noise.  YES ! we just assume that we are right. Initially, this would be large, and then
-        # # as we get better parameter estimates, we (in tandem) get a better estimate of the noise
-        #
-        # if self.sim_human != None:  #i.e. we are in simulated testing
-        #     # continue from here to update params
-        #     #end for updating confirmed features.
-        #     param_summ_stats = [summ_stats_fnc(x) for x in param_stats]
-        #     bayes_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
-        #     for single_feature in bayes_feature_dict:
-        #         try:
-        #             bayes_feature_dict[single_feature].append(param_summ_stats[self.RBUS_indexing.index(single_feature)])
-        #         except ValueError: # for the feature not being in the list
-        #             pass
-        #
-        #     if MLE_reg_model != None:
-        #         MLE_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
-        #         for single_feature in MLE_feature_dict:
-        #             try:
-        #                 MLE_feature_dict[single_feature].append(MLE_reg_model.coef_[self.RBUS_indexing.index(single_feature)])
-        #             except ValueError:  # for the feature not being in the list
-        #                 pass
-        #
-        #
-        #     #todo not just mean, do MODE of features
-        #     print("RATINGS seen are = ", summ_stats_fnc(ratings))
-        #     print("Bayes params ","  ||  ".join([str(x) for x in bayes_feature_dict.items()]))
-        #     print("Bayes intercept summ stats")
-        #     print(summ_stats_fnc(self.learning_model_bayes.linear_params_values["alpha"][0:2000]))
+        print("RELEARINING BAYESIAN MODEL")
+        prior_dict = {}
+        for single_feature in self.CONFIRMED_features:
+            prior_dict[single_feature] = (self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)],self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] )
+        print("priors are = ", prior_dict)
+        # noise_sd = self.estimate_noise_sd() #learning the noise is terrible, unless it is truly variable. If we know the range of values. Just set a noise value
+        noise_sd = EXPECTED_NOISE_STD_DEV
+        print("noise_estimate sd is =",noise_sd)
+        self.learning_model_bayes.learn_bayesian_linear_model(encoded_plans_list,
+                                                              np.array(self.RBUS_prior_mean),
+                                                              self.CONFIRMED_features_dimension,
+                                                              sd= noise_sd,
+                                                              sampling_count=2000,
+                                                              num_chains=num_chains,
+                                                              feature_prior_var_matx= np.diag(self.RBUS_prior_var))
+                                                              # num_chains=num_chains)
+
+        # ALSO UPDATE THE PRIORS FOR THE NEXT ROUND. WE START OPTIMISITC AND UPDATE THEM TOWARDS THEIR TRUE VALUES
+        param_stats = [self.learning_model_bayes.linear_params_values["betas"][0:2000, x] for x in
+                       range(self.CONFIRMED_features_dimension)]
+        param_means = np.array([np.mean(x) for x in param_stats])
+        param_var = [np.var(x) for x in param_stats]
+        self.RBUS_prior_mean = np.zeros(len(self.CONFIRMED_features))
+        self.RBUS_prior_var = np.zeros(len(self.CONFIRMED_features))
+
+        for single_feature in self.CONFIRMED_features:
+            if single_feature in self.liked_features:
+                # code to FORCE liked as positive feature
+                # if param_means[self.RBUS_indexing.index(single_feature)] < 0: #it was a liked feature so should have been > 0
+                #     #then the BLM model failed to converge or we did not have enough information. Since we know it is liked we will default to the prior
+                #     param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[0]
+                #     param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[0]
+
+                self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
+                    param_means[self.RBUS_indexing.index(single_feature)]
+                self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \
+                    param_var[self.RBUS_indexing.index(single_feature)]
+                # todo note, this was the other option, to agressively update the prior towards zero by mean-std_dev
+                # instead we assume just the mean, as it is a more conservative update. Aggressive update maybe good too. never tested
+                # param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
+                #     param_vars[self.RBUS_indexing.index(single_feature)])
+            else:
+                #CODE to force negative mean for disliked feature over rounds
+                # if param_means[self.RBUS_indexing.index(single_feature)] > 0: #it was a disliked feature so should have been < 0
+                #     #then the BLM model failed to converge or we did not have enough information. Since we know it is dliked we will default to the prior
+                #     param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[1]
+                #     param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[0]
+                self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
+                    param_means[self.RBUS_indexing.index(single_feature)]
+                self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \
+                    param_var[self.RBUS_indexing.index(single_feature)]
+                # todo note, this was the other option, to agressively update the prior towards zero by mean-std_dev
+                # -1*param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
+                #     param_vars[self.RBUS_indexing.index(single_feature)])
+            # end else
+        #end for loop through confirmed features
+
+        #TODO Update the noise estimate.
+        # take the variance of the error as the noise.  YES ! we just assume that we are right. Initially, this would be large, and then
+        # as we get better parameter estimates, we (in tandem) get a better estimate of the noise
+
+        if self.sim_human != None:  #i.e. we are in simulated testing
+            # continue from here to update params
+            #end for updating confirmed features.
+            param_summ_stats = [summ_stats_fnc(x) for x in param_stats]
+            bayes_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
+            for single_feature in bayes_feature_dict:
+                try:
+                    bayes_feature_dict[single_feature].append(param_summ_stats[self.RBUS_indexing.index(single_feature)])
+                except ValueError: # for the feature not being in the list
+                    pass
+
+            if MLE_reg_model != None:
+                MLE_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
+                for single_feature in MLE_feature_dict:
+                    try:
+                        MLE_feature_dict[single_feature].append(MLE_reg_model.coef_[self.RBUS_indexing.index(single_feature)])
+                    except ValueError:  # for the feature not being in the list
+                        pass
 
 
+            #todo not just mean, do MODE of features
+            print("RATINGS seen are = ", summ_stats_fnc(ratings))
+            print("Bayes params ","  ||  ".join([str(x) for x in bayes_feature_dict.items()]))
+            print("Bayes intercept summ stats")
+            print(summ_stats_fnc(self.learning_model_bayes.linear_params_values["alpha"][0:2000]))
+            if MLE_reg_model != None:
+                print("MLE params ","  ||  ".join([str(x) for x in MLE_feature_dict.items()]))
+            # self.evaluate(self.test_set)
 
     #================================================================================================
 
@@ -1641,19 +1640,34 @@ class Manager:
                 MLE_error_list.append(0.0)
                 MLE_target_prediction_list.append((true_value,0.0))
 
-            # try:
-            #     predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
-            #     mean_prediction = np.mean(predictions)
-            #     prediction_variance = np.var(predictions)
-            # except:
+            try:
+                predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+                mean_prediction = np.mean(predictions)
+                prediction_variance = np.var(predictions)
+            except:
+                mean_prediction = 0.0
+                prediction_variance = 0.0
+
+            # preference_possible_values = np.linspace(self.min_rating, self.max_rating, num=NUM_SAMPLES_XAXIS_SAMPLES)
+            # preference_prob_density = kernel(preference_possible_values)
+            # if not np.min(preference_prob_density) == np.max(preference_prob_density):
+            #     index_mode= np.where(preference_prob_density == np.max(preference_prob_density))[0][0]
+            #     mode_prediction = preference_possible_values[index_mode]
+            #     normalizing_denom = np.sum(preference_prob_density)
+            #     mean_prediction = np.sum(preference_prob_density * preference_possible_values)/normalizing_denom #this is a HACK but computationally faster
+            #     prediction_variance = np.sum(np.square(preference_possible_values-mean_prediction)*preference_prob_density)/normalizing_denom #this is a HACK, not true variance, but computationally faster
+            # else:
+            #     #absolute uniform distribution over all preference values, actually means we have no information,
+            #     # we SET the alpha to be fixed, so no variations in the output.
+            #     mode_prediction = 0.0
             #     mean_prediction = 0.0
             #     prediction_variance = 0.0
-            #
-            # #todo NOTE USING MEAN PREDICTION, makes more sense with using variance for decisions
-            # current_abs_error = abs(true_value - mean_prediction)
-            # bayes_total_error += current_abs_error
-            # bayes_error_list.append( current_abs_error)
-            # bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
+
+            #todo NOTE USING MEAN PREDICTION, makes more sense with using variance for decisions
+            current_abs_error = abs(true_value - mean_prediction)
+            bayes_total_error += current_abs_error
+            bayes_error_list.append( current_abs_error)
+            bayes_target_prediction_list.append((true_value, mean_prediction, prediction_variance))
 
 
         if count_samples == 0:
@@ -1669,19 +1683,18 @@ class Manager:
         else:
             MLE_final_error = 0.0
 
-        # #end if
-        # bayes_final_error = bayes_total_error / count_samples
-        # print("BAYES MODEL The average error in ALL regions= ", bayes_final_error)
-        # print("BAYES MODEL Error Statistics of ALL regions , ",summ_stats_fnc(bayes_error_list))
-
-
+        #end if
+        bayes_final_error = bayes_total_error / count_samples
+        print("BAYES MODEL The average error in ALL regions= ", bayes_final_error)
+        print("BAYES MODEL Error Statistics of ALL regions , ",summ_stats_fnc(bayes_error_list))
+        # print("BAYES MODEL target and prediction ",bayes_target_prediction_list)
         if self.results_by_round == None:
             self.results_by_round = []
         self.results_by_round = self.results_by_round.append([bayes_final_error,MLE_final_error])
         # print("bayes error list ", bayes_error_list)
         # print("MLE error list ", MLE_error_list)
 
-        return 0,MLE_final_error
+        return bayes_final_error,MLE_final_error
 
     # ================================================================================================
 
@@ -1917,16 +1930,14 @@ class Manager:
                 MLE_target_prediction_list.append((true_value,0.0))
 
             # ---now do the bayes model, need to get the MODE prediction
-            # try:
-            #     predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
-            #     mean_prediction = np.mean(predictions)
-            #     prediction_variance = np.var(predictions)
-            # except:
-            #     mean_prediction = 0.0
-            #     prediction_variance = 0.0
+            try:
+                predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+                mean_prediction = np.mean(predictions)
+                prediction_variance = np.var(predictions)
+            except:
+                mean_prediction = 0.0
+                prediction_variance = 0.0
 
-            mean_prediction = 0.0
-            prediction_variance = 0.0
             current_abs_error = abs(true_value - mean_prediction)
             current_abs_error = current_abs_error*abs(true_value)/error_scaler
             UNALTERED_error = abs(true_value - mean_prediction)

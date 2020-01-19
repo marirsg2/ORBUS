@@ -138,14 +138,16 @@ class oracle:
                                                                          -rating_magnitude]
 
     # ===============================================================================
-    def rating_default_dist(self,sentiment):
+    def rating_default_dist(self,sentiment,biased=False):
         """
         :param sentiment:
         :return:
         """
+        min = 0.2
+        max = 10
         if sentiment == "like":
-            return random.uniform(0.2, 1.0)
-        return -random.uniform(0.2, 1.0)
+            return random.uniform(min,max)
+        return -random.uniform(min,max)
 
     # ===============================================================================
     def rating_distribution_law(self, sentiment,bias=False):

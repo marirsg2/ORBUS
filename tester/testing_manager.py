@@ -227,6 +227,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
     print("MLE ERROR LIST ", MLE_error_list)
     # print("INTERESTING REGION TRUE VALUES ", inRegion_true_values_and_diff)
     print("INTERESTING REGION BAYES ERROR LIST ", inRegion_bayes_error_list)
+    print("INTERESTING REGION MLE ERROR LIST ", inRegion_MLE_error_list)
     print("---UNALTERED  INTERESTING REGION BAYES ERROR LIST ", UNALTERED_inRegion_bayes_error_list)
     # print("INTERESTING REGION  MLE ERROR LIST ", inRegion_MLE_error_list)
     print("MIN,MAX",manager.min_rating,manager.max_rating)
@@ -331,14 +332,14 @@ if __name__ == "__main__":
     parameter_indexed_values = [parameter_values] * num_parameters
     cases = itertools.product(*parameter_indexed_values)
 
-    # preference_distribution_string = "uniform"
+    preference_distribution_string = "uniform"
     # preference_distribution_string = "power_law"
     # preference_distribution_string = "gaussian"
-    preference_distribution_string = "gumbel"
+    # preference_distribution_string = "gumbel"
     total_num_plans = 50
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 5
-    noise_value = 0.2 #the range of actual preference values is based on the noise as well
+    noise_value = 2.0 #the range of actual preference values is based on the noise as well
     prob_feat_select = 0.4
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
@@ -393,18 +394,18 @@ if __name__ == "__main__":
         print(" What technique , priors, distribution, dataset")
 
         # --------------------------------------------------------------
-        # random_sampling_state = True
-        # for i in range(1):
-        #     all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-        #                             random_sampling_enabled =  random_sampling_state,
-        #                             include_feature_feedback= True,
-        #                             include_discovery_term = False,
-        #                             include_gain= False,
-        #                             include_feature_distinguishing= False,
-        #                             include_prob_term = False,
-        #                             manager_pickle_file = manager_pickle_file,
-        #                             repetitions=num_repetitions,
-        #                             prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
+        random_sampling_state = True
+        for i in range(1):
+            all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+                                    random_sampling_enabled =  random_sampling_state,
+                                    include_feature_feedback= True,
+                                    include_discovery_term = False,
+                                    include_gain= False,
+                                    include_feature_distinguishing= False,
+                                    include_prob_term = False,
+                                    manager_pickle_file = manager_pickle_file,
+                                    repetitions=num_repetitions,
+                                    prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
 
 
         #--------------------------------------------------------------
