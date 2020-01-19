@@ -12,7 +12,8 @@ NUM_PLANS_NEEDED = 10000
 NUM_FEATURES = 50
 NUM_GROUPS = 1
 NUM_FEATURES = int(NUM_FEATURES/NUM_GROUPS)
-distribution_samples = np.random.normal(150,50,NUM_FEATURES)
+# distribution_samples = np.random.normal(150,50,NUM_FEATURES)
+distribution_samples = np.array([1]*NUM_FEATURES) #UNIFORM
 MIN_FEATURES = 4 #prob that the plan will end with this step
 MAX_FEATURES = 4 #prob that the plan will end with this step
 
@@ -47,11 +48,23 @@ while len(all_plans) < NUM_PLANS_NEEDED:
     curr_plan = set()
     plan_group_num = random.randint(1, NUM_GROUPS)
     while len(curr_plan) < plan_feature_num:
-        choice = random.choices(s1_features, weights = s1_weights, k=1)
+        choice = random.choices(s1_features)#, weights = s1_weights, k=1)
         curr_plan.add("g"+str(plan_group_num)+"_"+ choice[0])
     # curr_plan = {x:1 for x in curr_plan}
     all_plans.add(tuple(curr_plan))
 #end while
+
+
+# while len(all_plans) < NUM_PLANS_NEEDED:
+#     plan_feature_num = random.randint(MIN_FEATURES, MAX_FEATURES) #includes max length
+#     curr_plan = set()
+#     plan_group_num = random.randint(1, NUM_GROUPS)
+#     while len(curr_plan) < plan_feature_num:
+#         choice = random.choices(s1_features, weights = s1_weights, k=1)
+#         curr_plan.add("g"+str(plan_group_num)+"_"+ choice[0])
+#     # curr_plan = {x:1 for x in curr_plan}
+#     all_plans.add(tuple(curr_plan))
+# #end while
 temp_all_plans = [set(x) for x in all_plans]
 all_plans = temp_all_plans
 with open(dest_pickle_file_name, "wb") as dest:

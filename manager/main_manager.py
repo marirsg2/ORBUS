@@ -1203,6 +1203,11 @@ class Manager:
 
         for single_feature in self.CONFIRMED_features:
             if single_feature in self.liked_features:
+                if param_means[self.RBUS_indexing.index(single_feature)] < 0: #it was a liked feature so should have been > 0
+                    #then the BLM model failed to converge or we did not have enough information. Since we know it is liked we will default to the prior
+                    param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[1]
+                    param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[1]
+
                 self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
                     param_means[self.RBUS_indexing.index(single_feature)]
                 self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \
@@ -1212,6 +1217,10 @@ class Manager:
                 # param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
                 #     param_vars[self.RBUS_indexing.index(single_feature)])
             else:
+                if param_means[self.RBUS_indexing.index(single_feature)] > 0: #it was a disliked feature so should have been < 0
+                    #then the BLM model failed to converge or we did not have enough information. Since we know it is dliked we will default to the prior
+                    param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[0]
+                    param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[0]
                 self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
                     param_means[self.RBUS_indexing.index(single_feature)]
                 self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \
