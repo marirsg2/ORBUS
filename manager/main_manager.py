@@ -214,7 +214,7 @@ class Manager:
                  pickle_file_for_plans_pool = "default_plans_pool.p",
                  use_feature_feedback = True,
                  relevant_features_prior_mean = (-4, 4), #TODO USE THE AVERAGE WEIGHT AND VARIANCE FOR THESE PARAMS.
-                 relevant_features_prior_var = (3, 3),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
+                 relevant_features_prior_var = (1, 1),# NOTE THIS IS VAR, WE NEED 2*STD_DEV TO  still positive TODO NOTE DO NOT PUT PRIOR VARIANCE AS NEGATIVE
                  preference_distribution_string="gaussian",
                  preference_gaussian_noise_sd = 0.2,
                  random_seed = 18):
@@ -1190,7 +1190,7 @@ class Manager:
                                                               sd= EXPECTED_NOISE_STD_DEV,
                                                               sampling_count=2000,
                                                               num_chains=num_chains,
-                                                              uninformative_prior_sd = np.diag(self.RBUS_prior_var))
+                                                              feature_prior_var_matx= np.diag(self.RBUS_prior_var))
                                                               # num_chains=num_chains)
 
         # ALSO UPDATE THE PRIORS FOR THE NEXT ROUND. WE START OPTIMISITC AND UPDATE THEM TOWARDS THEIR TRUE VALUES
@@ -1203,10 +1203,11 @@ class Manager:
 
         for single_feature in self.CONFIRMED_features:
             if single_feature in self.liked_features:
-                if param_means[self.RBUS_indexing.index(single_feature)] < 0: #it was a liked feature so should have been > 0
-                    #then the BLM model failed to converge or we did not have enough information. Since we know it is liked we will default to the prior
-                    param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[1]
-                    param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[1]
+                # code to FORCE liked as positive feature
+                # if param_means[self.RBUS_indexing.index(single_feature)] < 0: #it was a liked feature so should have been > 0
+                #     #then the BLM model failed to converge or we did not have enough information. Since we know it is liked we will default to the prior
+                #     param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[0]
+                #     param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[0]
 
                 self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
                     param_means[self.RBUS_indexing.index(single_feature)]
@@ -1217,10 +1218,11 @@ class Manager:
                 # param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
                 #     param_vars[self.RBUS_indexing.index(single_feature)])
             else:
-                if param_means[self.RBUS_indexing.index(single_feature)] > 0: #it was a disliked feature so should have been < 0
-                    #then the BLM model failed to converge or we did not have enough information. Since we know it is dliked we will default to the prior
-                    param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[0]
-                    param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[0]
+                #CODE to force negative mean for disliked feature over rounds
+                # if param_means[self.RBUS_indexing.index(single_feature)] > 0: #it was a disliked feature so should have been < 0
+                #     #then the BLM model failed to converge or we did not have enough information. Since we know it is dliked we will default to the prior
+                #     param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[1]
+                #     param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[0]
                 self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
                     param_means[self.RBUS_indexing.index(single_feature)]
                 self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \

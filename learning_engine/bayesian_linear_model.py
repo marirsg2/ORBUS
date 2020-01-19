@@ -62,13 +62,13 @@ class bayesian_linear_model:
 
     def learn_bayesian_linear_model(self,
                                     encoded_plans,
-                                    prior_weights,
+                                    feature_prior_weights,
                                     number_of_dimensions,
                                     sd = 1,
                                     sampling_count=2000,
                                     num_chains = 3,
                                     bias_preference = 0,
-                                    uninformative_prior_sd = None):
+                                    feature_prior_var_matx = None):
 
         #TODO NOTE EVEN WITHOUT PRIOR WEIGHTS ARE NOT CURRENTLY USED, and works just as well
         #the encoded plans contains a list of [<encoding>,<rating>]
@@ -85,7 +85,7 @@ class bayesian_linear_model:
             #todo add support to have the covariance of unknown features to be much larger ? SD = 1.0 is enough !!
             # Slope
             # prior_weights = np.random.rand(number_of_dimensions)
-            betas = pm.MvNormal('betas', mu=prior_weights, cov=uninformative_prior_sd, shape=(number_of_dimensions,))
+            betas = pm.MvNormal('betas', mu=feature_prior_weights, cov=feature_prior_var_matx, shape=(number_of_dimensions,))
             # Standard deviation
             sigma = pm.HalfNormal('sigma', sd=sd)
             # sigma = sd #unfair knowledge
