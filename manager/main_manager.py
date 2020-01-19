@@ -1648,8 +1648,8 @@ class Manager:
 
             if self.model_MLE != None:
                 mle_predict = self.model_MLE.predict([encoded_plan])[0]
-                current_abs_error = abs(
-                    single_annot_plan_struct[-1] - mle_predict)
+                current_abs_error = abs(true_value - mle_predict)
+                current_abs_error = current_abs_error*abs(true_value)
                 MLE_total_error += current_abs_error
                 MLE_error_list.append(current_abs_error)
                 MLE_target_prediction_list.append((true_value,mle_predict))
