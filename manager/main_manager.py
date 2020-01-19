@@ -1183,11 +1183,12 @@ class Manager:
             prior_dict[single_feature] = (self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)],self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] )
         print("priors are = ", prior_dict)
         print("NOTE that the noise is ALWAYS set to EXPECTED_NOISE_VARIANCE = 1.0, which is bad.")
-
+        noise_sd = self.estimate_noise_sd()
+        print("noise_estimate sd is =",noise_sd)
         self.learning_model_bayes.learn_bayesian_linear_model(encoded_plans_list,
                                                               np.array(self.RBUS_prior_mean),
                                                               self.CONFIRMED_features_dimension,
-                                                              sd= EXPECTED_NOISE_STD_DEV,
+                                                              sd= noise_sd,
                                                               sampling_count=2000,
                                                               num_chains=num_chains,
                                                               feature_prior_var_matx= np.diag(self.RBUS_prior_var))
@@ -1269,36 +1270,43 @@ class Manager:
     #================================================================================================
 
     # ================================================================================================
-    def ESTIMATE_noise_sd(self, annotated_test_plans=None):
+    def estimate_noise_sd(self,):
         """
-
-        :param annotated_test_plans:
         :return:
         """
-        #ASSUME MEAN IS ZERO, AND COMPUTE std DEV over the errors
-        #get annotated plans, 0 and -1 is the plan and index
-        # the variance estimate is computed as a weighted average of the variance
-        errorSq_times_variance = 0.0 #the weight is the variance
-        variance_sum = 0.0
-        for single_annot_plan_struct in self.annotated_plans:
-            current_plan_features = single_annot_plan_struct[1] + single_annot_plan_struct[2]
-            encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
-            true_value = float(single_annot_plan_struct[-1])
-            for single_feature in current_plan_features:
-                if single_feature in self.CONFIRMED_features:
-                    encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
-            try:
-                predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
-                mean_prediction = np.mean(predictions)
-                prediction_variance = np.var(predictions)
-            except:
-                mean_prediction = 0.0
-                prediction_variance = 0.0
-            errorSq_times_variance +=  prediction_variance*(true_value-mean_prediction)**2
-            variance_sum += prediction_variance
-        #end for loop
-        std_dev_est = math.sqrt(errorSq_times_variance/variance_sum)
-        return std_dev_est
+
+        ret_value = EXPECTED_NOISE_STD_DEV
+        try:
+            ret_value = np.mean(self.learning_model_bayes.noise_sigma)
+        except:
+            pass
+        return ret_value
+
+
+        # #ASSUME MEAN IS ZERO, AND COMPUTE std DEV over the errors
+        # #get annotated plans, 0 and -1 is the plan and index
+        # # the variance estimate is computed as a weighted average of the variance
+        # errorSq_times_variance = 0.0 #the weight is the variance
+        # variance_sum = 0.0
+        # for single_annot_plan_struct in self.annotated_plans:
+        #     current_plan_features = single_annot_plan_struct[1] + single_annot_plan_struct[2]
+        #     encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
+        #     true_value = float(single_annot_plan_struct[-1])
+        #     for single_feature in current_plan_features:
+        #         if single_feature in self.CONFIRMED_features:
+        #             encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
+        #     try:
+        #         predictions = self.learning_model_bayes.get_outputs_from_distribution(encoded_plan, num_samples=NUM_SAMPLES_KDE)
+        #         mean_prediction = np.mean(predictions)
+        #         prediction_variance = np.var(predictions)
+        #     except:
+        #         mean_prediction = 0.0
+        #         prediction_variance = 0.0
+        #     errorSq_times_variance +=  prediction_variance*(true_value-mean_prediction)**2
+        #     variance_sum += prediction_variance
+        # #end for loop
+        # std_dev_est = math.sqrt(errorSq_times_variance/variance_sum)
+        # return std_dev_est
 
 
 

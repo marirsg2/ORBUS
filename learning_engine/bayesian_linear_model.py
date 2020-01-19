@@ -27,6 +27,7 @@ class bayesian_linear_model:
         self.linear_params_values = None
         self.beta_params = None
         self.alpha_param = None
+        self.noise_sigma = None
 
     #==========================================
     def set_normal_distr_params(self,num_chains=3,num_last_samples = None):
@@ -38,6 +39,7 @@ class bayesian_linear_model:
 
         self.beta_params = self.full_param_trace["betas"]
         self.alpha_param = self.full_param_trace["alpha"]
+        self.noise_sigma = self.full_param_trace["sigma"]
 
         # if num_last_samples == None:
         #     np_2d_array = self.full_param_trace["betas"]
