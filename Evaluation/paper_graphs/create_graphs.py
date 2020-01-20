@@ -7,11 +7,11 @@ import glob
 # define all the global variables here
 # feature feedback, random_sampling_enabled, include_discovery, include_gain, include_feature_distinguishing, include_prob_term
 required_graph_settings = [
-[1, 0, 1 ,1, 0 ,1] ,
-[1, 0, 1 ,0, 0 ,1]
-# [1, 0, 0 ,1, 0 ,1],
-# [1, 0, 1 ,1, 0 ,0],
-# [1, 0, 0 ,1, 0 ,0]
+    # [1, 0, 1, 1, 1, 1],
+    # [1, 0, 1, 0, 1, 1],
+    [1, 0, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 1],
+    [1, 1, 1, 1, 0, 1]
 ]
 
 # required_graph_settings = [
@@ -98,9 +98,9 @@ class create_graphs:
         graph_data = []
         legends = []
         for k, v in self.settings_to_data.items():
-            legends.append(k)
+            # legends.append(k)
             graph_data.append(np.average(v, axis=0))
-
+        legends = ["OBUS", "uncertainty", "Random"]
         x = np.arange(len(graph_data[0]))
         fig = plt.figure()
         plt.xlabel("round number")
@@ -141,7 +141,7 @@ class create_graphs:
                     if given_case_settings == [1, 1, 1, 1, 0, 1]:
                         required_case = 3
                     else:
-                        required_case = 2
+                        required_case = 3
                     case_data = (all_cases[required_case].split(', '))
                     case_data = [float(i) for i in case_data]
                     if given_case_settings in temp_req_settings:
