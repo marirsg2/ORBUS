@@ -69,6 +69,7 @@ NUM_SAMPLES_XAXIS_SAMPLES = 100
 
 INFINITESIMAL_VALUE = 1e-15
 LARGE_NUMBER = 1000
+NUM_RANDOM_SAMPLES = 5
 #===============================================================
 
 # --------------
@@ -777,8 +778,9 @@ class Manager:
             all_but_last_plans = []
             for plan_set in self.annotated_plans_by_round[:-1]:
                 all_but_last_plans += plan_set
+            all_but_last_plans += self.annotated_plans_by_round[-1][:-NUM_RANDOM_SAMPLES]
             tester_model = self.get_Ridge_model(all_but_last_plans)
-            confidence_measure_error = self.evaluate_on_subset(tester_model,self.annotated_plans_by_round[-1])
+            confidence_measure_error = self.evaluate_on_subset(tester_model,self.annotated_plans_by_round[-1][-NUM_RANDOM_SAMPLES:])
 
         #===================================================
         # now for computing the informativeness score
@@ -1000,6 +1002,50 @@ class Manager:
                     for x in range(len(index_value_list))]
             # now update the scores with the new discovery score.
         # end while
+
+        random_sample_count = 0
+        while random_sample_count < NUM_RANDOM_SAMPLES:
+            random_sample_count += 1
+            a = random.sample(index_value_list,1)[0]
+            a_idx = index_value_list.index(a)
+            feat_value = []
+            sum_score = 0.0
+            has_relevant_feature = False
+            for feat in self.plan_dataset[a[0]]:
+                try:
+                    feat_value.append((feat, self.sim_human.feature_preferences_dict[feat]))
+                    sum_score += abs(self.sim_human.feature_preferences_dict[feat][0])
+                    if feat in self.CONFIRMED_features:
+                        has_relevant_feature = True
+                except:
+                    pass  # feature not relevant
+            if not has_relevant_feature:
+                continue
+
+            chosen_plan_list.append(self.plan_dataset[a[0]])
+            chosen_indices.append(a[0])
+            chosen_scores.append(a[1])
+            chosen_plan_stats.append((feat_value, sum_score, unaltered_meanPref_array[a_idx], a[1],
+                                      UNSCALED_index_value_list[a_idx][1], unaltered_gain_array[a_idx], \
+                                      unaltered_variance_array[a_idx], unaltered_basescore_array[a_idx]))
+            del index_value_list[a_idx]
+            del UNSCALED_index_value_list[a_idx]
+            del unaltered_gain_array[a_idx]
+            del unaltered_meanPref_array[a_idx]
+            del unaltered_variance_array[a_idx]
+            del unaltered_basescore_array[a_idx]
+            self.seen_features.update(self.plan_dataset[a[0]])
+            if include_discovery_term_product:
+                del discovery_values[a_idx]
+                # discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
+                # it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
+                discovery_values = [
+                    1 + self.compute_discovery_value(
+                        self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
+                    for x in range(len(index_value_list))]
+            # now update the scores with the new discovery score.
+        # end while
+
 
 
 
