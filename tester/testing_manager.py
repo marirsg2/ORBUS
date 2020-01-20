@@ -338,7 +338,7 @@ if __name__ == "__main__":
     # preference_distribution_string = "gumbel"
     total_num_plans = 40
     #TODO FEWER PLANS PER ROUND IS BETTER
-    plans_per_round = 4
+    plans_per_round = 5
     noise_value = 4.0 #the range of actual preference values is based on the noise as well
     prob_feat_select = 0.4
 
