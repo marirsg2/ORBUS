@@ -70,7 +70,7 @@ NUM_SAMPLES_XAXIS_SAMPLES = 100
 
 INFINITESIMAL_VALUE = 1e-15
 LARGE_NUMBER = 1000
-NUM_SAMPLED_MODELS = 5
+NUM_SAMPLED_MODELS = 10
 #===============================================================
 
 # --------------
@@ -407,300 +407,7 @@ class Manager:
             prob_plan += self.freq_dict[feat]
         return prob_plan
 
-    # ================================================================================================
-    # def IMPORTANT_get_plans_for_round(self, num_plans=30, use_gain_function=True, include_feature_distinguishing= True, include_probability_term = True,
-    #                                   include_discovery_term_product = False):
-    #     """
-    #     :param self:
-    #     :return:
-    #     :NOTE: the overall INFORMATION FUNCTION is  (RBUS + RBUS/|confirmed features| + RBUS*prob(confirmed features in plan) ) (1 + discovery value of unseen features)
-    #
-    #     """
-    #     print("ORBUS RUNNING")
-    #     # if len(self.annotated_plans) == 0:
-    #     #     print("ERROR: no plans were annotated properly, just sending diversity sampling, cannot raise exception, show must go on")
-    #     #     return self.sample_randomly(num_samples) #todo add diverse sampling after fixing it
-    #     # if len(self.annotated_plans) < self.relevant_features_dimension:
-    #     #     #todo CRITICAL CHANGE THIS TO sample to find plans that have the most number of seen features
-    #     #     print("IMPORTANT: CHOOSING TO DO RANDOM SAMPLING over RBUS as the number of annotated plans < number of features")
-    #     #     return self.sample_randomly(num_samples)
-    #
-    #     #todo NOTE IMPORTANT that the model must be relearned after the data is input, not here
-    #
-    #
-    #     num_subProcess_to_use = self.num_cores_RBUS
-    #     #VERY IMPORTANT, AFTER THE MODEL IS LEARNED
-    #     self.update_expected_min_and_max_values()
-    #     # gain_function = RBUS_selection.get_gain_function(min_value=self.min_rating,max_value=self.max_rating)
-    #     # TODO remove all the print statements and integral checks, will speed things up considerably
-    #     available_indices = set(range(len(self.plan_dataset)))
-    #     available_indices.difference_update(self.indices_used)
-    #     # print("num available points = ",len(available_indices))
-    #     index_value_list = []  # a list of tuples of type (index,value)
-    #     with CodeTimer():
-    #         p = Pool(num_subProcess_to_use)
-    #         all_parallel_params = []
-    #
-    #         # check and divide here if a plan has any features seen, or all unseen.
-    #         # where available indices is used below, replace with blm_indices.
-    #         # do gain *uniform distr for the unseen features and take weighted sum.
-    #
-    #         # if self.relevant_features_dimension != 0:
-    #         for single_plan_idx in available_indices:
-    #             current_plan = self.plan_dataset[single_plan_idx]
-    #             encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
-    #             for single_feature in current_plan:
-    #                 if single_feature in self.CONFIRMED_features:
-    #                     encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
-    #             #end for through features
-    #             #special case for first round
-    #             if self.min_rating == 0 and self.max_rating == 0:
-    #                 self.min_rating = -1.0
-    #                 self.max_rating = 1.0
-    #             all_parallel_params.append(
-    #                 [self.learning_model_bayes, encoded_plan, self.min_rating, self.max_rating, use_gain_function])
-    #         # end for loop through the available indices
-    #         # Note the last parameter below is a LIST, each entry is for a new process
-    #
-    #
-    #         results = p.map(self.parallel_variance_computation,
-    #                         all_parallel_params)  # Note the last parameter is a LIST, each entry is for a new process
-    #         # results = [self.parallel_variance_computation(x) for x in all_parallel_params]
-    #         max_mean_pref = 0
-    #         min_mean_pref = 0
-    #         for single_idx_and_result in zip(available_indices, results):
-    #             single_plan_idx = single_idx_and_result[0]
-    #             single_result = single_idx_and_result[1]
-    #
-    #             composite_func_integral, preference_variance,preference_mean = single_result
-    #
-
-    #             if preference_mean > max_mean_pref:
-    #                 max_mean_pref = preference_mean
-    #             if preference_mean < min_mean_pref:
-    #                 min_mean_pref = preference_mean
-    #             index_value_list.append((single_plan_idx, composite_func_integral, preference_variance,preference_mean,self.plan_dataset[single_plan_idx].intersection(self.CONFIRMED_features)))
-    #         #now for those plans that did not have any known relevant features
-    #     # end codetimer profiling section
-    #     # ---NOW we have to select top n plans such that every successive plan selected also considers diversity w.r.t to the previous plans selected
-    #     # the best plan is determined by normalized gain * normalized variance
-    #
-    #     #--------TECHNIQUE 1 ---- VAR + gain_norm*VAR
-    #     # print("Using TECHNIQUE 1 ")
-    #     #TERRIBLE AVOID
-    #     # if use_gain_function:
-    #     #     gain_array = np.array([x[1] for x in index_value_list])
-    #     # else:
-    #     #     gain_array = np.array([1.0 for x in index_value_list])
-    #     # # gain_normalizing_denom = np.var(gain_array)
-    #     # gain_normalizing_denom = np.max(gain_array) #so variance is the key factor
-    #     # if gain_normalizing_denom == 0.0:
-    #     #     gain_normalizing_denom = 1.0  # avoids "nan" problem
-    #     # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-    #     # variance_array = np.array([x[2] for x in index_value_list])
-    #     # #todo NOTE we multiply by the normalized gain because the defining term is the variance, not the gain.
-    #     # # score = var + var*gain
-    #     # base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
-    #     # unaltered_gain_array = list(copy.deepcopy(gain_array))
-    #     # unaltered_variance_array = list(copy.deepcopy(variance_array))
-    #     # unaltered_basescore_array = list(copy.deepcopy(variance_array))
-    #     # unaltered_meanPref_array = [x[3] for x in index_value_list]
-    #
-    #
-    #     #TODO try THIS for tech 2. The sqrt is taken so gain is not such a dominating factor. Variance is important, more important. The gain is just to bias it
-    #     # norm_gain_array = np.sqrt(norm_gain_array)
-    #     #---- TECHNIQUE 2---- norm_var * norm_gain, max_norm
-    #     print("Using TECHNIQUE 2 ")
-    #     #todo UNCOMMENT THE PROB AND FEATURE TERMS FURTHER BELOW
-    #     if use_gain_function:
-    #         gain_array = np.array([x[1] for x in index_value_list])
-    #     else:
-    #         gain_array = np.array([1.0 for x in index_value_list])
-    #
-    #     # gain_normalizing_denom =  np.max(gain_array)
-    #     gain_normalizing_denom =  np.var(gain_array)
-    #
-    #     if gain_normalizing_denom == 0.0:
-    #         gain_normalizing_denom = 1.0  # avoids "nan" problem
-    #     norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-    #
-    #     #TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
-    #     variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
-    #     # variance_array = np.array([x[2] for x in index_value_list])
-    #     # var_normalizing_denom = np.var(variance_array)
-    #     # var_normalizing_denom = 1.0 #Let variance be the defining factor
-    #
-    #     var_normalizing_denom = np.max(variance_array)
-    #     # var_normalizing_denom = np.var(variance_array)
-    #
-    #     # OFCOURSE the difference will be small when you have mostly irrelevant features. The number of plans with high weight
-    #     # is smaller, and the overall plan value is smaller in general. So the weighted loss will not be as large as when all
-    #     # the features are relevant
-    #     # gain is var norm, std is max norm
-    #     # currently SMALLER BETA = 1.0 FOR LARGER WEIGHTS AND SEE THE PERFORMANCE, THE NOISE 0.2
-    #     # more FEATURES PER PLAN. the scores should be higher. compare to previous graphs
-    #     #     100 features, ~80 relevant . and 8
-    #     # FEATURES PER PLAN. WHY IS 20 FEATURES NOT WORKING ? GETTING A CONSISTENT ERROR
-    #
-    #
-    #     #todo need to generate a new DISTRIBUTION Of plans AND SEE if the results persist. Or is this a quaint correlation.
-    #     # NEED TO SAVE THE OLD One, for comparison in case that is true
-    #     # TODO note: SAVE THE STYLE OF NORMALIZATION THAT WORKS BEST !! I think gain/var * std_dev/max seemed to be it. But for simplicity, divide by VAR for both
-    #
-    #
-    #     exponent = 1
-    #     if var_normalizing_denom == 0.0:
-    #         var_normalizing_denom = 1.0  # avoids "nan" problem
-    #     norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-    #     norm_variance_array = np.power(norm_variance_array, exponent)
-    #     base_score = [norm_gain_array[x]*norm_variance_array[x] for x in range(len(norm_gain_array))]
-    #     unaltered_gain_array = list(copy.deepcopy(gain_array))
-    #     unaltered_variance_array = list(copy.deepcopy(variance_array))
-    #     unaltered_basescore_array = list(copy.deepcopy(variance_array))
-    #     unaltered_meanPref_array = [x[3] for x in index_value_list]
-    #
-    #     # ---- TECHNIQUE 2_v2---- norm_var * norm_gain, max_norm
-    #     # print("Using TECHNIQUE 2 v2 ")
-    #     # if use_gain_function:
-    #     #     gain_array = np.array([x[1] for x in index_value_list])
-    #     # else:
-    #     #     gain_array = np.array([1.0 for x in index_value_list])
-    #     # if include_feature_distinguishing:
-    #     #     # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
-    #     #     for x in range(len(index_value_list)):
-    #     #         if len(index_value_list[x][-1]) > 0: #there are features in this plan, some plans have no discovered relevant features. This check avoids div by 0
-    #     #             gain_array[x] = gain_array[x] / (len(index_value_list[x][-1]))
-    #     # if include_probability_term:
-    #     #     # += score* (probabilityOF CONFIRMED FEATURES only)
-    #     #     gain_array = [gain_array[x] *  self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
-    #     # gain_normalizing_denom = np.max(gain_array)
-    #     # if gain_normalizing_denom == 0.0:
-    #     #     gain_normalizing_denom = 1.0  # avoids "nan" problem
-    #     # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-    #     #
-    #     # variance_array = np.array([x[2] for x in index_value_list])
-    #     # var_normalizing_denom = np.max(variance_array)
-    #     # # var_normalizing_denom = 1.0 #Let variance be the defining factor
-    #     # if var_normalizing_denom == 0.0:
-    #     #     var_normalizing_denom = 1.0  # avoids "nan" problem
-    #     # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-    #     # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
-    #     # unaltered_gain_array = list(copy.deepcopy(gain_array))
-    #     # unaltered_variance_array = list(copy.deepcopy(variance_array))
-    #     # unaltered_basescore_array = list(copy.deepcopy(variance_array))
-    #     # unaltered_meanPref_array = [x[3] for x in index_value_list]
-    #
-    #
-    #     # # ---- TECHNIQUE 3---- CUTOFF in the extreme regions and then use variance
-    #     # variance_array = np.array([x[2] for x in index_value_list])
-    #     # base_score =  variance_array
-    #     #-----------------------------
-    #
-    #     # now store (idx,norm_gain*norm_variance)
-    #     addendum = [0.0]*len(index_value_list)
-    #     if include_feature_distinguishing:
-    #         # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
-    #         for x in range(len(index_value_list)):
-    #             if len(index_value_list[x][-1]) > 0: #there are features in this plan, some plans have no discovered relevant features. This check avoids div by 0
-    #                 addendum[x] = addendum[x] + base_score[x] / (len(index_value_list[x][-1]))
-    #     if include_probability_term:
-    #         # += score* (probabilityOF CONFIRMED FEATURES only)
-    #         addendum = [addendum[x] + base_score[x] * self.compute_prob_set(index_value_list[x][-1]) for x in range(len(index_value_list))]
-    #     ## if include_feature_distinguishing:
-    #     ## DO NOT USE THIS METHOD, IT PENALIZES A PLAN WITH ONE FEAUTRE AS 2 FEATURES SINCE YOU +1
-    #     ##     # += score/|features| # FEATURES THAT ARE CONFIRMED TO BE RELEVANT TO THE USER'S PREFERENCE !!
-    #     ##     # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral for a function to always above zero
-    #     ##     addendum = [addendum[x] + base_score[x]/(1+len(index_value_list[x][-1])) for x in range(len(index_value_list))] # we div by (1+.) to avoid divide by zero error
-    #
-    #     if include_discovery_term_product:
-    #         # discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
-    #         # it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
-    #         discovery_values = [1 + self.compute_discovery_value(self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
-    #             for x in range(len(index_value_list))]
-    #     index_value_list = [(index_value_list[x][0], base_score[x]+addendum[x]) for x in range(len(index_value_list))]
-    #
-    #     UNSCALED_index_value_list = copy.deepcopy(index_value_list)
-    #     # NOTE the order of ENTRIES in index value list will now be fixed
-    #     # see the use of indices list a little further down in code.
-    #     chosen_indices = []
-    #     chosen_scores = []
-    #
-    #     # if use_gain_function: #BY TECHNIQUE 3, just sample in this extreme regions only
-    #     #     UNSCALED_index_value_list = []#copy.deepcopy(index_value_list)
-    #     #     temp = []
-    #     #     range_pref_values = max_mean_pref-min_mean_pref
-    #     #     cutoffs = [0.2*range_pref_values+min_mean_pref,0.8*range_pref_values+min_mean_pref]
-    #     #     for i in range(len(index_value_list)):
-    #     #         curr_pref = index_value_list[i][2]
-    #     #         if not (cutoffs[0] < curr_pref and curr_pref < cutoffs[1]):
-    #     #             temp.append(index_value_list[i])
-    #     #             UNSCALED_index_value_list.append(index_value_list[i])
-    #     #     #end for
-    #     #     index_value_list = temp
-    #     # #end if use_gain_function
-    #     chosen_plan_stats = []
-    #     while len(chosen_indices) < num_plans:
-    #         if include_discovery_term_product:
-    #             index_value_list = [
-    #                 (index_value_list[x][0], index_value_list[x][1] * discovery_values[x]) for x in
-    #                 range(len(index_value_list))]
-    #         a = max(index_value_list,key=lambda x:x[1])
-    #         a_idx = index_value_list.index(a)
-    #         chosen_indices.append(a[0])
-    #         chosen_scores.append(a[1])
-    #         feat_value = []
-    #         sum_score = 0.0
-    #         for feat in self.plan_dataset[a[0]]:
-    #             try:
-    #                 feat_value.append((feat,self.sim_human.feature_preferences_dict[feat]))
-    #                 sum_score += self.sim_human.feature_preferences_dict[feat][0]
-    #             except:
-    #                 pass #feature not relevant
-    #         chosen_plan_stats.append((feat_value,sum_score,unaltered_meanPref_array[a_idx], a[1], UNSCALED_index_value_list[a_idx][1],unaltered_gain_array[a_idx],\
-    #                                   unaltered_variance_array[a_idx],unaltered_basescore_array[a_idx] ))
-    #         del index_value_list[a_idx]
-    #         del UNSCALED_index_value_list[a_idx]
-    #         del unaltered_gain_array[a_idx]
-    #         del unaltered_meanPref_array[a_idx]
-    #         del unaltered_variance_array[a_idx]
-    #         del unaltered_basescore_array[a_idx]
-    #         self.seen_features.update(self.plan_dataset[a[0]])
-    #         if include_discovery_term_product:
-    #             del discovery_values[a_idx]
-    #             #discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
-    #             #it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
-    #             discovery_values = [
-    #                 1 + self.compute_discovery_value(self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
-    #                 for x in range(len(index_value_list))]
-    #         #now update the scores with the new discovery score.
-    #     #end while
-    #
-    #     #todo NOTE now we add one plan that is JUST about the discovery value of it
-    #     if include_discovery_term_product:
-    #         max_discov_value = max(discovery_values)
-    #         if not max_discov_value == 1.0: #i.e. there are still features to explore
-    #             max_discov_value_idx = discovery_values.index(max_discov_value)
-    #             plan_idx_and_value = index_value_list[max_discov_value_idx]
-    #             print("ADDING ONE PLAN PURELY for discovery")
-    #             print("Discov plan", self.plan_dataset[plan_idx_and_value[0]])
-    #             print("Discovery plan score is =", max_discov_value-1) #we used to add 1 because we multiply the BASE score by this value. So 1+x would scale it more
-    #             chosen_indices.append(plan_idx_and_value[0])
-    #             chosen_scores.append(plan_idx_and_value[1])
-    #             self.seen_features.update(self.plan_dataset[plan_idx_and_value[0]])
-    #         else: #DO NOTHING, DO NOT ADD ANOTHER RANDOM PLAN. throws off the comparison
-    #             print("NO MORE FEATURES TO DISCOVER, NOT ADDING DISCOVERY PLANS")
-    #             pass
-    #
-    #     print("update_min max",self.min_rating,self.max_rating)
-    #     print("TEMP PRINT chosen norm_E[gain]*norm_var values (with diversity) = ",chosen_scores)
-    #     print("Overall statistics for CHOSEN norm_E[gain]*norm_var are ", summ_stats_fnc(chosen_scores))
-    #     print("Overall statistics for ALL norm_E[gain]*norm_var are ", summ_stats_fnc(base_score+addendum))
-    #     print("ROUND chosen plan stats =",chosen_plan_stats)
-    #     self.indices_used.update(chosen_indices)
-    #     return [self.plan_dataset[x] for x in chosen_indices]
-    #
-    #
-    # # ================================================================================================
+    #====================================================================================
 
     def IMPORTANT_get_plans_for_round(self, num_plans=30, use_gain_function=True, include_feature_distinguishing=True,
                                       include_probability_term=True,
@@ -773,14 +480,14 @@ class Manager:
                                          self.plan_dataset[single_plan_idx].intersection(self.CONFIRMED_features)))
             # now for those plans that did not have any known relevant features
         #===================================================
-        #train the model with all but the last plans discovery dataset. The discovery plans are the latter half of the last round
-        # confidence_measure_error = LARGE_NUMBER
-        # if len(self.annotated_plans_by_round) > 1:
-        #     all_but_last_plans = []
-        #     for plan_set in self.annotated_plans_by_round[:-1]:
-        #         all_but_last_plans += plan_set
-        #     tester_model = self.get_Ridge_model(all_but_last_plans)
-        #     confidence_measure_error = self.evaluate_on_subset(tester_model,self.annotated_plans_by_round[-1])
+        # train the model with all but the last plans discovery dataset. The discovery plans are the latter half of the last round
+        confidence_measure_error = LARGE_NUMBER
+        if len(self.annotated_plans_by_round) > 1:
+            all_but_last_plans = []
+            for plan_set in self.annotated_plans_by_round[:-1]:
+                all_but_last_plans += plan_set
+            tester_model = self.get_Ridge_model(all_but_last_plans)
+            confidence_measure_error = self.evaluate_on_subset(tester_model,self.annotated_plans_by_round[-1])
 
         #===================================================
         # now for computing the informativeness score
@@ -793,8 +500,8 @@ class Manager:
         #     gain_array = np.array([1.0 for x in index_value_list])
         #
         # # TODO NOTE MUST BE MAX, else gain would dominate
-        # gain_normalizing_denom = np.max(gain_array)
-        # # gain_normalizing_denom = np.var(gain_array)
+        # # gain_normalizing_denom = np.max(gain_array)
+        # gain_normalizing_denom = np.var(gain_array)
         # # gain_normalizing_denom = 1.0
         #
         # if gain_normalizing_denom == 0.0:
@@ -802,14 +509,13 @@ class Manager:
         # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
         #
         # variance_array = np.array([x[2] for x in index_value_list])
-        # norm_variance_array = variance_array
         #
         # # var_normalizing_denom = np.max(variance_array)
         # # if var_normalizing_denom == 0.0:
         # #     var_normalizing_denom = 1.0  # avoids "nan" problem
         # # norm_variance_array = variance_array/var_normalizing_denom
         #
-        # base_score = [variance_array[x] + norm_gain_array[x] * norm_variance_array[x] for x in range(len(variance_array))]
+        # base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
         # unaltered_gain_array = list(copy.deepcopy(gain_array))
         # unaltered_variance_array = list(copy.deepcopy(variance_array))
         # unaltered_basescore_array = list(copy.deepcopy(variance_array))
@@ -838,6 +544,8 @@ class Manager:
         # unaltered_variance_array = list(copy.deepcopy(variance_array))
         # unaltered_basescore_array = list(copy.deepcopy(variance_array))
         # unaltered_meanPref_array = [x[3] for x in index_value_list]
+
+
 
         # --------TECHNIQUE 2 ----  + gain*VAR
         # print("Using TECHNIQUE gain*var ")
@@ -881,7 +589,6 @@ class Manager:
         else:
             gain_array = np.array([1.0 for x in index_value_list])
 
-
         # gain_normalizing_denom = np.var(gain_array) #does only slightly better, but max does much better
         gain_normalizing_denom = np.max(gain_array)
 
@@ -895,15 +602,13 @@ class Manager:
         #IMPORTANT TO use THIS
         var_normalizing_denom = 1.0
 
-
-
         exponent = 1
         if var_normalizing_denom == 0.0:
             var_normalizing_denom = 1.0  # avoids "nan" problem
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
         norm_variance_array = np.power(norm_variance_array, exponent)
         # base_score = [ math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
-        base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))] #UNSURE
+        base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]/confidence_measure_error) for x in range(len(norm_gain_array))] #UNSURE
         unaltered_gain_array = list(copy.deepcopy(gain_array))
         unaltered_variance_array = list(copy.deepcopy(variance_array))
         unaltered_basescore_array = list(copy.deepcopy(variance_array))
@@ -1506,7 +1211,7 @@ class Manager:
         :param plans_to_train_on:
         :return:
         """
-        reg_lambda = 1.0
+        reg_lambda = 0.001
         plans_to_train_on += [[{}, [], [], 0.0]] #to handle the case of the first round and no plans
         encoded_plans_list = []
         for single_plan in plans_to_train_on:
