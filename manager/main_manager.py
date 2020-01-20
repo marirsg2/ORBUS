@@ -25,6 +25,7 @@ from itertools import combinations
 from pyclustering.cluster.kmedoids import kmedoids
 from pyclustering.utils import timedcall, metric
 from scipy import integrate
+from scipy import stats
 from scipy.stats import describe as summ_stats_fnc
 #---------------------------------------------------------
 from plan_generator.journey_world import Journey_World
@@ -784,10 +785,6 @@ class Manager:
         # now for computing the informativeness score
 
         # --------TECHNIQUE 1 ---- VAR + gain_norm*VAR
-        # WHEN USING RIDGE REGRESSION, this wont make a difference since plans with large features will cooccur, and those will have the most variance.
-        # so gain and variance MEAN THE SAME THING for ridge regression. THEY ARE HEAVILY CORRELATED WHEN THE DATASET.
-        # WEIRDLY IT WAS THE SAME EVEN FOR THE SEPARATED DATASET WHEN smaller weight features added up to make large output, and larger weight features cooccurred less often
-
         # print("Using TECHNIQUE VAR + gain_norm*VAR ")
         # if use_gain_function:
         #     gain_array = np.array([x[1] for x in index_value_list])
@@ -795,8 +792,8 @@ class Manager:
         #     gain_array = np.array([1.0 for x in index_value_list])
         #
         # # TODO NOTE MUST BE MAX, else gain would dominate
-        # # gain_normalizing_denom = np.max(gain_array)
-        # gain_normalizing_denom = np.var(gain_array)
+        # gain_normalizing_denom = np.max(gain_array)
+        # # gain_normalizing_denom = np.var(gain_array)
         # # gain_normalizing_denom = 1.0
         #
         # if gain_normalizing_denom == 0.0:
@@ -817,65 +814,62 @@ class Manager:
         # unaltered_basescore_array = list(copy.deepcopy(variance_array))
         # unaltered_meanPref_array = [x[3] for x in index_value_list]
 
-        # --------TECHNIQUE 1 ---- VAR + gain_norm*VAR
-        # WHEN USING RIDGE REGRESSION, this wont make a difference since plans with large features will cooccur, and those will have the most variance.
-        # so gain and variance MEAN THE SAME THING for ridge regression. THEY ARE HEAVILY CORRELATED WHEN THE DATASET.
-        # WEIRDLY IT WAS THE SAME EVEN FOR THE SEPARATED DATASET WHEN smaller weight features added up to make large output, and larger weight features cooccurred less often
+        # --------TECHNIQUE 1.5 ----------
 
-        print("Using TECHNIQUE VAR*gain_norm^(1+error_confidence) ")
-        if use_gain_function:
-            gain_array = np.array([x[1] for x in index_value_list])
-        else:
-            gain_array = np.array([1.0 for x in index_value_list])
-
-        # TODO NOTE I think using gain/gain_var AND then using the test error for confidence might help
-        gain_normalizing_denom = np.max(gain_array)
-
-        if gain_normalizing_denom == 0.0:
-            gain_normalizing_denom = 1.0  # avoids "nan" problem
-        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-
-        variance_array = np.array([x[2] for x in index_value_list])
-        norm_variance_array = variance_array
-
-        base_score = [variance_array[x]*math.pow(norm_gain_array[x],1+confidence_measure_error) for x in range(len(variance_array))]
-        unaltered_gain_array = list(copy.deepcopy(gain_array))
-        unaltered_variance_array = list(copy.deepcopy(variance_array))
-        unaltered_basescore_array = list(copy.deepcopy(variance_array))
-        unaltered_meanPref_array = [x[3] for x in index_value_list]
-
-        # --------TECHNIQUE 2 ----  + gain*VAR
-        # print("Using TECHNIQUE gain*var ")
-        # # todo UNCOMMENT THE PROB AND FEATURE TERMS FURTHER BELOW
+        # print("Using TECHNIQUE VAR*gain_norm^(1+error_confidence) ")
         # if use_gain_function:
         #     gain_array = np.array([x[1] for x in index_value_list])
         # else:
         #     gain_array = np.array([1.0 for x in index_value_list])
         #
-        # # gain_normalizing_denom = np.var(gain_array)
+        # # TODO NOTE I think using gain/gain_var AND then using the test error for confidence might help
         # gain_normalizing_denom = np.max(gain_array)
         #
         # if gain_normalizing_denom == 0.0:
         #     gain_normalizing_denom = 1.0  # avoids "nan" problem
         # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
         #
-        # # TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
-        # variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
+        # variance_array = np.array([x[2] for x in index_value_list])
+        # norm_variance_array = variance_array
         #
-        # # var_normalizing_denom = np.max(variance_array)
-        # # var_normalizing_denom = np.var(variance_array)
-        # var_normalizing_denom = 1.0 #np.var(variance_array)
-        #
-        # exponent = 1
-        # if var_normalizing_denom == 0.0:
-        #     var_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        # norm_variance_array = np.power(norm_variance_array, exponent)
-        # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        # base_score = [variance_array[x]*math.pow(norm_gain_array[x],1+confidence_measure_error) for x in range(len(variance_array))]
         # unaltered_gain_array = list(copy.deepcopy(gain_array))
         # unaltered_variance_array = list(copy.deepcopy(variance_array))
         # unaltered_basescore_array = list(copy.deepcopy(variance_array))
         # unaltered_meanPref_array = [x[3] for x in index_value_list]
+
+        # --------TECHNIQUE 2 ----  + gain*VAR
+        print("Using TECHNIQUE gain*var ")
+        # todo UNCOMMENT THE PROB AND FEATURE TERMS FURTHER BELOW
+        if use_gain_function:
+            gain_array = np.array([x[1] for x in index_value_list])
+        else:
+            gain_array = np.array([1.0 for x in index_value_list])
+
+        # gain_normalizing_denom = np.var(gain_array)
+        gain_normalizing_denom = np.max(gain_array)
+
+        if gain_normalizing_denom == 0.0:
+            gain_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+
+        # TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
+        variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
+
+        # var_normalizing_denom = np.max(variance_array)
+        # var_normalizing_denom = np.var(variance_array)
+        var_normalizing_denom = 1.0 #np.var(variance_array)
+
+        exponent = 1
+        if var_normalizing_denom == 0.0:
+            var_normalizing_denom = 1.0  # avoids "nan" problem
+        norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        norm_variance_array = np.power(norm_variance_array, exponent)
+        base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
+        unaltered_gain_array = list(copy.deepcopy(gain_array))
+        unaltered_variance_array = list(copy.deepcopy(variance_array))
+        unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        unaltered_meanPref_array = [x[3] for x in index_value_list]
 
 
         # --------TECHNIQUE 3 ----  + VAR^ norm_gain
@@ -1563,40 +1557,79 @@ class Manager:
         scores = []
         for plan in self.annotated_plans:
             scores.append(plan[-1])
+        #end for
         encoded_plans_list = []
+        # count how many times each feature appeared in the queried data responses. needed to estimate confidence interval
+        count_feature_occurrence = [0]*self.CONFIRMED_features_dimension
         for single_plan in rescaled_plans:
             encoded_plan = [np.zeros(self.CONFIRMED_features_dimension), single_plan[3]]
-
             for single_feature in single_plan[1] + single_plan[2]: #the liked and disliked features
                 encoded_plan[0][self.RBUS_indexing.index(single_feature)] = 1
+                count_feature_occurrence[self.RBUS_indexing.index(single_feature)] += 1
             encoded_plans_list.append(encoded_plan)
+        # end outer for
+        self.model_MLE_list = []
+        #Estimate the confidence interval of the parameters
+        reg_lambda = 0.001 #small positive value to avoid errors in numerical computation
+        MLE_reg_model = linear_model.Ridge(alpha=reg_lambda, fit_intercept=False) #normalize wont help here either, the input is binary, already normalized
+        input_dataset = np.array([x[0] for x in encoded_plans_list])
+        output_dataset = np.array([x[1] for x in encoded_plans_list])
 
-        MLE_reg_model = None
-        # if learn_LSfit:
-        if True:
-            self.model_MLE_list = []
-            for reg_lambda in np.linspace(0.1,1,10):
-                # MLE_reg_model = linear_model.LinearRegression(fit_intercept=True) #NORMALIZE wont help, the input is binary. Already normalized
-                # MLE_reg_model = linear_model.LinearRegression(fit_intercept=False) #NORMALIZE wont help, the input is binary. Already normalized
-                MLE_reg_model = linear_model.Ridge(alpha=reg_lambda, fit_intercept=False) #normalize wont help here either, the input is binary, already normalized
-                input_dataset = np.array([x[0] for x in encoded_plans_list])
-                output_dataset = np.array([x[1] for x in encoded_plans_list])
+        #todo PLEASE test the weighted fit more on toy problems. When you normalized the weights, it failed miserably
+        # which was unexpected
+        # WEIGHTS ARE CURRENTLY TURNED OFF, VERY ERRATIC PERFORMANCE
+        # weight_func = RBUS_selection.get_gain_function(self.min_rating,self.max_rating)
+        # weights = [weight_func(x) for x in output_dataset]
+        # weights = [1.0 for x in output_dataset]
 
-                #todo PLEASE test the weighted fit more on toy problems. When you normalized the weights, it failed miserably
-                # which was unexpected
-                # WEIGHTS ARE CURRENTLY TURNED OFF, VERY ERRATIC PERFORMANCE
-                # weight_func = RBUS_selection.get_gain_function(self.min_rating,self.max_rating)
-                # weights = [weight_func(x) for x in output_dataset]
-                # weights = [1.0 for x in output_dataset]
+        MLE_reg_model.fit(input_dataset, output_dataset)
+        print(" For reg lambda = ",reg_lambda)
+        print("Coefficients's values ", list(zip(self.RBUS_indexing,MLE_reg_model.coef_)))
+        print("Intercept: %.4f" % MLE_reg_model.intercept_)
+        self.model_MLE_list.append(MLE_reg_model)
+        self.model_MLE = MLE_reg_model
+        self.model_MLE_list.append(MLE_reg_model)
 
-                MLE_reg_model.fit(input_dataset, output_dataset)
-                print(" For reg lambda = ",reg_lambda)
-                print("Coefficients's values ", list(zip(self.RBUS_indexing,MLE_reg_model.coef_)))
-                print("Intercept: %.4f" % MLE_reg_model.intercept_)
-                self.model_MLE_list.append(MLE_reg_model)
-                if reg_lambda == 1:
-                    self.model_MLE = MLE_reg_model
-        #end if learn_LSfit
+        #now for each of the parameters estimate an upper and lower bound, then make two models
+        if len(self.annotated_plans) > 2:
+            count_samples = 0
+            MLE_total_squared_error = 0
+            for single_annot_plan_struct in self.annotated_plans:
+                current_plan_features = single_annot_plan_struct[1] + single_annot_plan_struct[2]
+                encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
+                count_samples +=1
+                for single_feature in current_plan_features:
+                    if single_feature in self.CONFIRMED_features:
+                        encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
+
+                true_value = float(single_annot_plan_struct[-1])
+                #end for loop
+                mle_predict = self.model_MLE.predict([encoded_plan])[0]
+                current_abs_error = abs(true_value - mle_predict)
+                MLE_total_squared_error += current_abs_error
+            #end for loop
+            noise_variance_estimator = MLE_total_squared_error/(count_samples-2)
+
+            MLE_reg_model_upper = copy.deepcopy(MLE_reg_model)
+            MLE_reg_model_lower = copy.deepcopy(MLE_reg_model)
+            coeff_count = list(zip(self.model_MLE.coef_,count_feature_occurrence))
+            CONFIDENCE_TAIL = 0.05
+            t_value = stats.t.ppf(1-CONFIDENCE_TAIL, count_samples-2)
+            for single_feat_n_count_idx in range(len(coeff_count)):
+                single_feat_n_count = coeff_count[single_feat_n_count_idx]
+                feat_value = single_feat_n_count[0]
+                feat_count = single_feat_n_count[1]
+                #s_xx is supposed to be sum(x-avg_x)^2, our variable x is binary feature. can be broken into two cases, when it is true and when it is not
+                s_xx = feat_count*(1-feat_count/count_samples)**2 + (count_samples-feat_count)*(1-feat_count/count_samples)**2 + INFINITESIMAL_VALUE
+                feat_standard_error = math.sqrt(noise_variance_estimator/s_xx)
+                MLE_reg_model_upper.coef_[single_feat_n_count_idx] = MLE_reg_model_upper.coef_[single_feat_n_count_idx] + t_value*feat_standard_error
+                MLE_reg_model_lower.coef_[single_feat_n_count_idx] = MLE_reg_model_lower.coef_[single_feat_n_count_idx] - t_value*feat_standard_error
+            #end for loop
+            self.model_MLE_list += [MLE_reg_model_lower,MLE_reg_model_upper]
+        #end if len(self.annotated_plans) > 2:
+
+
+
 
         # print("RELEARINING BAYESIAN MODEL")
         # prior_dict = {}

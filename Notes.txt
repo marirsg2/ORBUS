@@ -1,3 +1,7 @@
 
-1. make the high value features RARE. and do not cooccur with each other. If rare , then auto so.
-THEN the difficulty is getting plans that have them together to collect data.
+
+PLOT the slopes with the standard error of the features.
+
+When computing the variance of the output, use all possible combinations of upper middle and lower bound of the features.
+OR maybe have 3 models, HIGHEST value of weights (also means least negative!! yes, not just magnitude). normal, and
+lowest magnitude of weights (smallest positive). THIS GIVES THE OUTPUT BOUNDS
