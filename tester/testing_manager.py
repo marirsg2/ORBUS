@@ -340,7 +340,7 @@ if __name__ == "__main__":
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 5
     noise_value = 4.0 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.1
+    prob_feat_select = 0.2
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
@@ -363,7 +363,7 @@ if __name__ == "__main__":
     # print("The parameter cases are ",cases)
 
 
-    for i in range(13):
+    for i in range(6):
         all_data = []
         try:
             os.remove(manager_pickle_file)
