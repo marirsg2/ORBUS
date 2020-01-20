@@ -70,6 +70,7 @@ NUM_SAMPLES_XAXIS_SAMPLES = 100
 
 INFINITESIMAL_VALUE = 1e-15
 LARGE_NUMBER = 1000
+NUM_SAMPLED_MODELS = 5
 #===============================================================
 
 # --------------
@@ -773,13 +774,13 @@ class Manager:
             # now for those plans that did not have any known relevant features
         #===================================================
         #train the model with all but the last plans discovery dataset. The discovery plans are the latter half of the last round
-        confidence_measure_error = LARGE_NUMBER
-        if len(self.annotated_plans_by_round) > 1:
-            all_but_last_plans = []
-            for plan_set in self.annotated_plans_by_round[:-1]:
-                all_but_last_plans += plan_set
-            tester_model = self.get_Ridge_model(all_but_last_plans)
-            confidence_measure_error = self.evaluate_on_subset(tester_model,self.annotated_plans_by_round[-1])
+        # confidence_measure_error = LARGE_NUMBER
+        # if len(self.annotated_plans_by_round) > 1:
+        #     all_but_last_plans = []
+        #     for plan_set in self.annotated_plans_by_round[:-1]:
+        #         all_but_last_plans += plan_set
+        #     tester_model = self.get_Ridge_model(all_but_last_plans)
+        #     confidence_measure_error = self.evaluate_on_subset(tester_model,self.annotated_plans_by_round[-1])
 
         #===================================================
         # now for computing the informativeness score
@@ -891,9 +892,6 @@ class Manager:
         # TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
         variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
 
-        # var_normalizing_denom = np.max(variance_array)# this was ABOUT THE SAME, as variance only
-        # var_normalizing_denom = np.var(variance_array) # this was ABOUT THE SAME, as variance only
-
         #IMPORTANT TO use THIS
         var_normalizing_denom = 1.0
 
@@ -904,8 +902,8 @@ class Manager:
             var_normalizing_denom = 1.0  # avoids "nan" problem
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
         norm_variance_array = np.power(norm_variance_array, exponent)
-        base_score = [ math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
-        # base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))] #UNSURE
+        # base_score = [ math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
+        base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))] #UNSURE
         unaltered_gain_array = list(copy.deepcopy(gain_array))
         unaltered_variance_array = list(copy.deepcopy(variance_array))
         unaltered_basescore_array = list(copy.deepcopy(variance_array))
@@ -1619,6 +1617,7 @@ class Manager:
             coeff_count = list(zip(self.model_MLE.coef_,count_feature_occurrence))
             CONFIDENCE_TAIL = 0.05
             t_value = stats.t.ppf(1-CONFIDENCE_TAIL, count_samples-2)
+            feat_error_margin_list = []
             for single_feat_n_count_idx in range(len(coeff_count)):
                 single_feat_n_count = coeff_count[single_feat_n_count_idx]
                 feat_value = single_feat_n_count[0]
@@ -1626,8 +1625,11 @@ class Manager:
                 #s_xx is supposed to be sum(x-avg_x)^2, our variable x is binary feature. can be broken into two cases, when it is true and when it is not
                 s_xx = feat_count*(1-feat_count/count_samples)**2 + (count_samples-feat_count)*(1-feat_count/count_samples)**2 + INFINITESIMAL_VALUE
                 feat_standard_error = math.sqrt(noise_variance_estimator/s_xx)
-                MLE_reg_model_upper.coef_[single_feat_n_count_idx] = MLE_reg_model_upper.coef_[single_feat_n_count_idx] + t_value*feat_standard_error
-                MLE_reg_model_lower.coef_[single_feat_n_count_idx] = MLE_reg_model_lower.coef_[single_feat_n_count_idx] - t_value*feat_standard_error
+                error_margin = t_value*feat_standard_error
+                MLE_reg_model_upper.coef_[single_feat_n_count_idx] = MLE_reg_model_upper.coef_[single_feat_n_count_idx] + error_margin
+                MLE_reg_model_lower.coef_[single_feat_n_count_idx] = MLE_reg_model_lower.coef_[single_feat_n_count_idx] - error_margin
+                #remember the error margin for sampling more models
+                feat_error_margin_list.append(error_margin)
             #end for loop
             self.model_MLE_list += [MLE_reg_model_lower,MLE_reg_model_upper]
             print("LOWER model")
@@ -1635,6 +1637,19 @@ class Manager:
             print("UPPER model")
             print("Coefficients's values ", list(zip(self.RBUS_indexing, MLE_reg_model_upper.coef_)))
 
+            #todo NOTE add a lot of models to the list. Randomly sample
+            for i in range(NUM_SAMPLED_MODELS):
+                sampled_model = copy.deepcopy(MLE_reg_model)
+                for single_feat_idx in range(len(coeff_count)):
+                    error_margin = feat_error_margin_list[single_feat_idx]
+                    if random.random() > 0.5:
+                        sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] + error_margin
+                    else:
+                        sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] - error_margin
+                #end for loop
+                print("One SAMPLED model")
+                print("Coefficients's values ", list(zip(self.RBUS_indexing, sampled_model.coef_)))
+            #end for loop through sampling models
         #end if len(self.annotated_plans) > 2:
 
 
