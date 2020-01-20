@@ -332,11 +332,11 @@ if __name__ == "__main__":
     parameter_indexed_values = [parameter_values] * num_parameters
     cases = itertools.product(*parameter_indexed_values)
 
-    preference_distribution_string = "uniform"
     # preference_distribution_string = "power_law"
     # preference_distribution_string = "gaussian"
+    preference_distribution_string = "uniform"
     # preference_distribution_string = "gumbel"
-    total_num_plans = 40
+    total_num_plans = 100
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 5
     noise_value = 4.0 #the range of actual preference values is based on the noise as well
@@ -363,7 +363,7 @@ if __name__ == "__main__":
     # print("The parameter cases are ",cases)
 
 
-    for i in range(10):
+    for i in range(13):
         all_data = []
         try:
             os.remove(manager_pickle_file)

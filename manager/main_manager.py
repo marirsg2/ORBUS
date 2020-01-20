@@ -881,7 +881,7 @@ class Manager:
             gain_array = np.array([1.0 for x in index_value_list])
 
 
-        # gain_normalizing_denom = np.var(gain_array)
+        # gain_normalizing_denom = np.var(gain_array) #does only slightly better, but max does much better
         gain_normalizing_denom = np.max(gain_array)
 
         if gain_normalizing_denom == 0.0:
@@ -891,9 +891,12 @@ class Manager:
         # TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
         variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
 
-        # var_normalizing_denom = np.max(variance_array)
-        # var_normalizing_denom = np.var(variance_array)
-        var_normalizing_denom = 1.0 #np.var(variance_array)
+        # var_normalizing_denom = np.max(variance_array)# this was ABOUT THE SAME, as variance only
+        # var_normalizing_denom = np.var(variance_array) # this was ABOUT THE SAME, as variance only
+
+        #IMPORTANT TO use THIS
+        var_normalizing_denom = 1.0
+
 
 
         exponent = 1
@@ -902,6 +905,7 @@ class Manager:
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
         norm_variance_array = np.power(norm_variance_array, exponent)
         base_score = [ math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
+        # base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))] #UNSURE
         unaltered_gain_array = list(copy.deepcopy(gain_array))
         unaltered_variance_array = list(copy.deepcopy(variance_array))
         unaltered_basescore_array = list(copy.deepcopy(variance_array))
@@ -1626,7 +1630,13 @@ class Manager:
                 MLE_reg_model_lower.coef_[single_feat_n_count_idx] = MLE_reg_model_lower.coef_[single_feat_n_count_idx] - t_value*feat_standard_error
             #end for loop
             self.model_MLE_list += [MLE_reg_model_lower,MLE_reg_model_upper]
+            print("LOWER model")
+            print("Coefficients's values ", list(zip(self.RBUS_indexing, MLE_reg_model_lower.coef_)))
+            print("UPPER model")
+            print("Coefficients's values ", list(zip(self.RBUS_indexing, MLE_reg_model_upper.coef_)))
+
         #end if len(self.annotated_plans) > 2:
+
 
 
 
