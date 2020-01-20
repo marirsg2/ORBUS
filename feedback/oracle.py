@@ -113,22 +113,24 @@ class oracle:
                 #     local_like_probability = 0.0
 
                 scaler = 1.0
-                if single_feature.startswith("g2"):
-                    scaler = 5.0
+                # if single_feature.startswith("g2"):
+                #     scaler = 1.0
 
                 if r1 <= select_prob:
                     # so this feature is relevant
+                    magnitude = 0
+                    if single_feature.startswith("g2"):
+                        magnitude = 3.5
+                    else:
+                        magnitude = scaler * rating_distribution(self, "like", biased)
                     r2 = random.random()
                     if r2 <= local_like_probability:
                         # so the user likes the feature
-                        self.feature_preferences_dict[single_feature] = ["like",
-                                                                        scaler*rating_distribution(self, "like",biased)]
+                        self.feature_preferences_dict[single_feature] = ["like",magnitude]
                     else:
-                        self.feature_preferences_dict[single_feature] = ["dislike",
-                                                         scaler*rating_distribution(self, "dislike",biased)]
+                        self.feature_preferences_dict[single_feature] = ["dislike",-1*magnitude]
         else: #we rate according to the freq dict passed in
             for single_feature in freq_dict.keys():
-
                 r1 = random.random()
                 if r1 <= probability_of_feat_selec:
                     # so this feature is relevant

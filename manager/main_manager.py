@@ -1466,7 +1466,7 @@ class Manager:
         # if learn_LSfit:
         if True:
             self.model_MLE_list = []
-            for reg_lambda in np.linspace(0,1,10):
+            for reg_lambda in np.linspace(0.1,1,10):
                 # MLE_reg_model = linear_model.LinearRegression(fit_intercept=True) #NORMALIZE wont help, the input is binary. Already normalized
                 # MLE_reg_model = linear_model.LinearRegression(fit_intercept=False) #NORMALIZE wont help, the input is binary. Already normalized
                 MLE_reg_model = linear_model.Ridge(alpha=reg_lambda, fit_intercept=False) #normalize wont help here either, the input is binary, already normalized
