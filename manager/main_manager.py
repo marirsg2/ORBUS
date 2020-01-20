@@ -1001,6 +1001,8 @@ class Manager:
             # now update the scores with the new discovery score.
         # end while
 
+
+
         # todo NOTE now we add one plan that is JUST about the discovery value of it
         if include_discovery_term_product:
             max_discov_value = max(discovery_values)
@@ -1016,6 +1018,8 @@ class Manager:
             else:  # DO NOTHING, DO NOT ADD ANOTHER RANDOM PLAN. throws off the comparison
                 print("NO MORE FEATURES TO DISCOVER, NOT ADDING DISCOVERY PLANS")
                 pass
+        #end if
+
 
 
         print("update_min max", self.min_rating, self.max_rating)

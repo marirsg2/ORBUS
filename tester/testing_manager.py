@@ -340,7 +340,7 @@ if __name__ == "__main__":
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 5
     noise_value = 4.0 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.2
+    prob_feat_select = 0.1
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     # date_time_str = date_time_str.replace(" ", "_")
@@ -363,7 +363,7 @@ if __name__ == "__main__":
     # print("The parameter cases are ",cases)
 
 
-    for i in range(2):
+    for i in range(10):
         all_data = []
         try:
             os.remove(manager_pickle_file)
@@ -426,7 +426,7 @@ if __name__ == "__main__":
             single_data_set = all_data[-1]
             case_parameters = single_data_set[0]
             print("============================================================")
-            print("CASE DESCRIPTIONS")
+            print("PER round DESCRIPTIONS")
             print("|| feature feedback = True \n || random_sampling_enabled =", case_parameters[0],
                   " || include_discovery =", case_parameters[1],
                   " || include_gain =", case_parameters[2],

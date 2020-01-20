@@ -6,6 +6,7 @@ import copy
 import glob
 # define all the global variables here
 # feature feedback, random_sampling_enabled, include_discovery, include_gain, include_feature_distinguishing, include_prob_term
+
 required_graph_settings = [
     # [1, 0, 1, 1, 1, 1],
     # [1, 0, 1, 0, 1, 1],
@@ -101,6 +102,7 @@ class create_graphs:
             # legends.append(k)
             graph_data.append(np.average(v, axis=0))
         legends = ["OBUS", "uncertainty", "Random"]
+        # legends = ["OBUS", "no discovery", "no prob term" , "neither" ]
         x = np.arange(len(graph_data[0]))
         fig = plt.figure()
         plt.xlabel("round number")
