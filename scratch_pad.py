@@ -8,8 +8,8 @@ print ( stats.t.ppf(1-0.025, 999))
 
 #Studnt, n=999, p<0.05%, Single tail
 #equivalent to Excel TINV(2*0.05,999)
-print( stats.t.ppf(1-0.05, 999))
-print( stats.t.ppf(1-0.0025, 22))
+print( stats.t.ppf(1-0.0015, 999))
+print( stats.t.ppf(1-0.0015, 22))
 #
 # SCALER = 1
 # source  = np.concatenate((np.random.uniform(0.8,0.99,50),np.random.uniform(1.3,1.5,10)))
