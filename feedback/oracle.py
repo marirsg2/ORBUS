@@ -52,6 +52,7 @@ class oracle:
             # self.distribution_sampled_points = np.random.gumbel(2*gaussian_noise_sd,tailedness_beta,1000)
             print("NOTE THAT YOU ARE NOT USING THE TRUE GUMBEL DISTRIBUTION, RATHER A PATCHED HEAVY TAIL DISTRIBUTION")
             temp = np.concatenate((np.random.uniform(0.8,0.99,750),np.random.uniform(1.3,1.5,250)))
+            temp = temp + 0.25
             temp = np.power(temp, 5)
             self.distribution_sampled_points = temp
         elif preference_distribution_string == "power_law":
@@ -66,7 +67,7 @@ class oracle:
         elif preference_distribution_string == "gaussian":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
             # self.distribution_sampled_points = np.random.normal(3*gaussian_noise_sd,2*gaussian_noise_sd,1000) #0.2 is the noise
-            self.distribution_sampled_points = np.random.normal(3*gaussian_noise_sd,2*gaussian_noise_sd,1000) #0.2 is the noise
+            self.distribution_sampled_points = np.random.normal(5,2,1000) #0.2 is the noise
             self.distribution_sampled_points = np.sort(self.distribution_sampled_points)
         elif preference_distribution_string == "root_law":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
@@ -113,16 +114,16 @@ class oracle:
                 #     local_like_probability = 0.0
 
                 scaler = 1.0
-                # if single_feature.startswith("g2"):
-                #     scaler = 1.0
+                if single_feature.startswith("g2"):
+                    scaler = 2.5
 
                 if r1 <= select_prob:
                     # so this feature is relevant
                     magnitude = 0
-                    if single_feature.startswith("g2"):
-                        magnitude = 3.5
-                    else:
-                        magnitude = scaler * rating_distribution(self, "like", biased)
+                    # if single_feature.startswith("g2"):
+                    #     magnitude = 3.5
+                    # else:
+                    magnitude = scaler * rating_distribution(self, "like", biased)
                     r2 = random.random()
                     if r2 <= local_like_probability:
                         # so the user likes the feature

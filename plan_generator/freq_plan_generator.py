@@ -46,8 +46,8 @@ while len(all_plans) < NUM_PLANS_NEEDED:
     plan_feature_num = random.randint(MIN_FEATURES, MAX_FEATURES) #includes max length
     curr_plan = set()
     plan_group_num = random.randint(1, NUM_GROUPS)
-    if plan_group_num == 2:
-        plan_feature_num *=2 # we double the number of features
+    # if plan_group_num == 2:
+    #     plan_feature_num *=2 # we double the number of features
     while len(curr_plan) < plan_feature_num:
         choice = random.choices(s1_features)#
         curr_plan.add("g"+str(plan_group_num)+"_"+ choice[0])

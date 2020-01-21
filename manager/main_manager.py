@@ -582,8 +582,42 @@ class Manager:
 
 
         # --------TECHNIQUE 3 ----  + VAR^ norm_gain
-        print("Using TECHNIQUE VAR^ norm_gain ")
+        # print("Using TECHNIQUE VAR^ norm_gain ")
+        #
+        # if use_gain_function:
+        #     gain_array = np.array([x[1] for x in index_value_list])
+        # else:
+        #     gain_array = np.array([1.0 for x in index_value_list])
+        #
+        # # gain_normalizing_denom = np.var(gain_array) #does only slightly better, but max does much better
+        # gain_normalizing_denom = np.max(gain_array)
+        #
+        # if gain_normalizing_denom == 0.0:
+        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+        #
+        # # TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
+        # variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
+        #
+        # #IMPORTANT TO use THIS
+        # var_normalizing_denom = 1.0
+        # exponent = 1
+        # if var_normalizing_denom == 0.0:
+        #     var_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        # norm_variance_array = np.power(norm_variance_array, exponent)
+        #
+        # # base_score = [ math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
+        # # base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))] #UNSURE
+        # base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]/confidence_measure_error) for x in range(len(norm_gain_array))] #UNSURE
+        # unaltered_gain_array = list(copy.deepcopy(gain_array))
+        # unaltered_variance_array = list(copy.deepcopy(variance_array))
+        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        # unaltered_meanPref_array = [x[3] for x in index_value_list]
 
+        #-----------TECHNIQUE 4
+        print("Using TECHNIQUE var + var^gain_norm")
+        # norm by std dev.
         if use_gain_function:
             gain_array = np.array([x[1] for x in index_value_list])
         else:
@@ -599,7 +633,7 @@ class Manager:
         # TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
         variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
 
-        #IMPORTANT TO use THIS
+        # IMPORTANT TO use THIS
         var_normalizing_denom = 1.0
         exponent = 1
         if var_normalizing_denom == 0.0:
@@ -607,9 +641,7 @@ class Manager:
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
         norm_variance_array = np.power(norm_variance_array, exponent)
 
-        # base_score = [ math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
-        base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))] #UNSURE
-        # base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]/confidence_measure_error) for x in range(len(norm_gain_array))] #UNSURE
+        base_score = [ norm_variance_array[x] + math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
         unaltered_gain_array = list(copy.deepcopy(gain_array))
         unaltered_variance_array = list(copy.deepcopy(variance_array))
         unaltered_basescore_array = list(copy.deepcopy(variance_array))

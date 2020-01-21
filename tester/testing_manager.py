@@ -188,6 +188,7 @@ def test_full_cycle_and_accuracy(test_size, num_rounds, num_plans_per_round, ran
         bayes_error, MLE_error = manager.evaluate(annotated_test_plans)
         bayes_error_list.append(bayes_error)
         MLE_error_list.append(MLE_error)
+        print("TESTING RANGE IS [0.2,0.8]")
         inRegion_bayes_error,UNALTERED_inRegion_bayes_error, inRegion_MLE_error,inRegion_true_values_and_diff = manager.region_based_evaluation(annotated_test_plans, [0.2,0.8],
                                         inside_region=True)  # the second parameter is percentile regions to evaluate in
         inRegion_bayes_error_list.append(inRegion_bayes_error)
@@ -333,13 +334,17 @@ if __name__ == "__main__":
     cases = itertools.product(*parameter_indexed_values)
 
     # preference_distribution_string = "power_law"
-    # preference_distribution_string = "gaussian"
-    preference_distribution_string = "uniform"
+    preference_distribution_string = "gaussian"
+    # preference_distribution_string = "uniform"
+
+
+    # currently TECHNIQUE 1+ gain, gumbel, 30% feats
+
     # preference_distribution_string = "gumbel"
     total_num_plans = 80
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 5
-    noise_value = 4.0 #the range of actual preference values is based on the noise as well
+    noise_value = 6.0 #the range of actual preference values is based on the noise as well
     prob_feat_select = 0.2
 
     # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
