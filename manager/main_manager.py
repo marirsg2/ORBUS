@@ -70,7 +70,7 @@ NUM_SAMPLES_XAXIS_SAMPLES = 100
 
 INFINITESIMAL_VALUE = 1e-15
 LARGE_NUMBER = 1000
-NUM_SAMPLED_MODELS = 16
+NUM_SAMPLED_MODELS = 10
 #===============================================================
 
 # --------------
@@ -601,14 +601,14 @@ class Manager:
 
         #IMPORTANT TO use THIS
         var_normalizing_denom = 1.0
-
         exponent = 1
         if var_normalizing_denom == 0.0:
             var_normalizing_denom = 1.0  # avoids "nan" problem
         norm_variance_array = variance_array / var_normalizing_denom  # normalize it
         norm_variance_array = np.power(norm_variance_array, exponent)
-        base_score = [ math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
-        # base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))] #UNSURE
+
+        # base_score = [ math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
+        base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))] #UNSURE
         # base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]/confidence_measure_error) for x in range(len(norm_gain_array))] #UNSURE
         unaltered_gain_array = list(copy.deepcopy(gain_array))
         unaltered_variance_array = list(copy.deepcopy(variance_array))
@@ -649,19 +649,7 @@ class Manager:
         chosen_indices = []
         chosen_scores = []
 
-        # if use_gain_function: #BY TECHNIQUE 3, just sample in this extreme regions only
-        #     UNSCALED_index_value_list = []#copy.deepcopy(index_value_list)
-        #     temp = []
-        #     range_pref_values = max_mean_pref-min_mean_pref
-        #     cutoffs = [0.2*range_pref_values+min_mean_pref,0.8*range_pref_values+min_mean_pref]
-        #     for i in range(len(index_value_list)):
-        #         curr_pref = index_value_list[i][2]
-        #         if not (cutoffs[0] < curr_pref and curr_pref < cutoffs[1]):
-        #             temp.append(index_value_list[i])
-        #             UNSCALED_index_value_list.append(index_value_list[i])
-        #     #end for
-        #     index_value_list = temp
-        # #end if use_gain_function
+
         chosen_plan_stats = []
         chosen_plan_list = []
         while len(chosen_indices) < num_plans:
@@ -704,7 +692,6 @@ class Manager:
         # end while
 
 
-
         # todo NOTE now we add one plan that is JUST about the discovery value of it
         if include_discovery_term_product:
             max_discov_value = max(discovery_values)
@@ -721,7 +708,6 @@ class Manager:
                 print("NO MORE FEATURES TO DISCOVER, NOT ADDING DISCOVERY PLANS")
                 pass
         #end if
-
 
 
         print("update_min max", self.min_rating, self.max_rating)
@@ -1317,10 +1303,6 @@ class Manager:
             #end for loop
             noise_variance_estimator = MLE_total_squared_error/(count_samples-2)
 
-            MLE_reg_model_upper_magnitude = copy.deepcopy(MLE_reg_model)
-            MLE_reg_model_lower_magnitude = copy.deepcopy(MLE_reg_model)
-            MLE_reg_model_neg_bias = copy.deepcopy(MLE_reg_model)
-            MLE_reg_model_pos_bias = copy.deepcopy(MLE_reg_model)
 
             coeff_count = list(zip(self.model_MLE.coef_,count_feature_occurrence))
             CONFIDENCE_TAIL = 0.05
@@ -1333,29 +1315,8 @@ class Manager:
                 #s_xx is supposed to be sum(x-avg_x)^2, our variable x is binary feature. can be broken into two cases, when it is true and when it is not
                 s_xx = feat_count*(1-feat_count/count_samples)**2 + (count_samples-feat_count)*(1-feat_count/count_samples)**2 + INFINITESIMAL_VALUE
                 feat_standard_error = math.sqrt(noise_variance_estimator/s_xx)
-                error_margin = t_value*feat_standard_error
-
-                # MLE_reg_model_pos_bias.coef_[single_feat_n_count_idx] = MLE_reg_model_upper_magnitude.coef_[single_feat_n_count_idx] + error_margin
-                # MLE_reg_model_neg_bias.coef_[single_feat_n_count_idx] = MLE_reg_model_lower_magnitude.coef_[
-                #                                                             single_feat_n_count_idx] - error_margin
-                # feat_sign = int(MLE_reg_model_lower_magnitude.coef_[single_feat_n_count_idx]>0)
-                # MLE_reg_model_lower_magnitude.coef_[single_feat_n_count_idx] = MLE_reg_model_upper_magnitude.coef_[single_feat_n_count_idx] \
-                #                                                                + -1*feat_sign*error_margin #so if negative we add
-                # MLE_reg_model_upper_magnitude.coef_[single_feat_n_count_idx] = MLE_reg_model_lower_magnitude.coef_[single_feat_n_count_idx] \
-                #                                                                + feat_sign*error_margin # so if negative we subtract and make more negative
-
-                #remember the error margin for sampling more models
                 feat_std_err_margin_list.append(feat_standard_error)
             #end for loop
-            # self.model_MLE_list += [MLE_reg_model_lower_magnitude,MLE_reg_model_upper_magnitude,MLE_reg_model_pos_bias,MLE_reg_model_neg_bias]
-            # print("LOWER magnitude model")
-            # print("Coefficients's values ", list(zip(self.RBUS_indexing, MLE_reg_model_lower_magnitude.coef_)))
-            # print("UPPER magnitude model")
-            # print("Coefficients's values ", list(zip(self.RBUS_indexing, MLE_reg_model_upper_magnitude.coef_)))
-            # print("Pos bias  model")
-            # print("Coefficients's values ", list(zip(self.RBUS_indexing, MLE_reg_model_pos_bias.coef_)))
-            # print("Neg bias model")
-            # print("Coefficients's values ", list(zip(self.RBUS_indexing, MLE_reg_model_neg_bias.coef_)))
 
             #todo NOTE add a lot of models to the list. Randomly sample
             for i in range(NUM_SAMPLED_MODELS):
@@ -1363,19 +1324,20 @@ class Manager:
                 for single_feat_idx in range(len(coeff_count)):
                     std_err = feat_std_err_margin_list[single_feat_idx]
                     # sampling by t -distr. tail/Alpha(confidence) values sampled uniforms, but t-value is gaussian
-                    tail_value_for_t = random.random()/2
-                    t_value = stats.t.ppf(1 - tail_value_for_t, count_samples - 2)
-                    error_margin = t_value * std_err
-                    if random.random() < 0.5:
-                        sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] - error_margin
-                    else:
-                        sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] + error_margin
-                    #sampling uniform - I think is wrong
-                    # t_value = stats.t.ppf(1-CONFIDENCE_TAIL, count_samples-2)
-                    # error_margin = t_value*std_err
-                    # current_sampled_offset = 2*error_margin*random.random() # the range of possible values is uniformly sampled and added
-                    #                                                         # to the lower bound
-                    # sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] - error_margin + current_sampled_offset
+                    # tail_value_for_t = random.random()/2
+                    # t_value = stats.t.ppf(1 - tail_value_for_t, count_samples - 2)
+                    # error_margin = t_value * std_err
+                    # if random.random() < 0.5:
+                    #     sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] - error_margin
+                    # else:
+                    #     sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] + error_margin
+
+                    # sampling uniform - I think is wrong , but better for informativeness
+                    t_value = stats.t.ppf(1-CONFIDENCE_TAIL, count_samples-2)
+                    error_margin = t_value*std_err
+                    current_sampled_offset = 2*error_margin*random.random() # the range of possible values is uniformly sampled and added
+                                                                            # to the lower bound
+                    sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] - error_margin + current_sampled_offset
                     self.model_MLE_list.append(sampled_model)
                 #end for loop
                 print("One SAMPLED model")
