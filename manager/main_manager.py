@@ -647,8 +647,51 @@ class Manager:
         unaltered_basescore_array = list(copy.deepcopy(variance_array))
         unaltered_meanPref_array = [x[3] for x in index_value_list]
 
-        #=============================================================================
 
+        # -----------TECHNIQUE 5
+        # print("Using TECHNIQUE F_beta SCORE")
+        # """
+        # precision_variance = 10  # norm by variance of the dataset. THIS way the value is not small and hurts the behavior of F beta function
+        # recall_gain = 1
+        # # when gain == variance, then they transition. to gain not mattering much. So norm by variance may help.
+        # # higher the variance, more the effect of gain. GREAT PROPERTY
+        # # less variance, less effect of gain.
+        # # BETA tells you how much you want gain to matter. Could get a lot of early gains, but much slower later
+        # beta = 0.5  # Beta penalizes precision, is chosen such that recall is considered β times as important as precision
+        # F_beta = (1 + beta ** 2) * precision_variance * recall_gain / (beta ** 2 * precision_variance + recall_gain)
+        # print(F_beta)
+        # """
+        # if use_gain_function:
+        #     gain_array = np.array([x[1] for x in index_value_list])
+        # else:
+        #     gain_array = np.array([1.0 for x in index_value_list])
+        #
+        # gain_normalizing_denom = np.var(gain_array)
+        #
+        # if gain_normalizing_denom == 0.0:
+        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
+        #
+        # # TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
+        # variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
+        #
+        # # IMPORTANT TO use THIS
+        # # var_normalizing_denom = 1.0
+        # var_normalizing_denom = np.var(variance_array)
+        # if var_normalizing_denom == 0.0:
+        #     var_normalizing_denom = 1.0  # avoids "nan" problem
+        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
+        #
+        # beta = 0.5  # Beta penalizes precision, is chosen such that recall is considered β times as important as precision
+        # # F_beta = (1 + beta ** 2) * precision_variance * recall_gain / (beta ** 2 * precision_variance + recall_gain)
+        # base_score = [ (1 + beta ** 2) * norm_variance_array[x] * norm_gain_array[x] / (beta ** 2 * norm_variance_array + norm_gain_array[x])
+        #                         for x in range(len(norm_gain_array))]
+        # unaltered_gain_array = list(copy.deepcopy(gain_array))
+        # unaltered_variance_array = list(copy.deepcopy(variance_array))
+        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
+        # unaltered_meanPref_array = [x[3] for x in index_value_list]
+
+        #----------------------------------------------------------------
         # now store (idx,norm_gain*norm_variance)
         addendum = [0.0] * len(index_value_list)
         if include_feature_distinguishing:
