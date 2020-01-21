@@ -106,9 +106,9 @@ def test_full_cycle_and_accuracy(test_size, num_rounds , num_plans_per_round , e
         bayes_error_list.append(bayes_error)
         MLE_error_list.append(MLE_error)
         in_region_error.append(manager.region_based_evaluation(annotated_test_plans, [(0.0, 0.2), (0.8, 1.0)],
-                                        inside_region=True) ) # the second parameter is percentile regions to evaluate in
+                                                               ONLY_inside_region=True)) # the second parameter is percentile regions to evaluate in
         out_region_error.append(manager.region_based_evaluation(annotated_test_plans, [(0.0, 0.2), (0.8, 1.0)],
-                                        inside_region=False) ) # the second parameter is percentile regions to evaluate in
+                                                                ONLY_inside_region=False)) # the second parameter is percentile regions to evaluate in
         #TODO VERY IMPORTANT TO UPDATE INDICES AFTER THE EVALUATION, else all the weights are not correctly learned
         # todo analyse the learnt model to see if all the MCMC chains are agreeing with each other
     #end for loop through

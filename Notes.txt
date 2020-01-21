@@ -1,5 +1,31 @@
 
-Title: Let me first learn what you really want : AL of preferences based on expected output value
+Title: Let me learn what you really want : AL of preferences based on expected output value
 
 ----------------------
-ALSO play with the number of features term !! now it's FAST
+
+BECAUSE of the interconnected nature of the data.
+TWO GROUPS you may see a difference
+Then add an intersection variable, and vary the frequency of it. Bottle neck of the info flow.
+Then have 3 groups of variables, with
+
+v1) F_beta should have beta between 1 and 2 ? or problem specific. If uniform distribution, then lower ?? if gaussian or gumbel
+then weight it higher. TEST theory that gain based sampling provides support for high weight features more than low weight features.
+
+v2) var + var^g should be compared with F_beta
+USE TWO GROUPS. Use gaussian
+
+----------------------
+
+@ Groups of smaller features that add up make us better ? shows the benefit of non-blind variance search.
+
+@ try the other gain function
+
+@ larger features
+
+----------------------
+========FUTURE WORK
+1) ERROR/value loss can be used in NN too !! selective training for accuracy. Ignore features that occur in weaker regions.
+        FOCUS ON FEATURES THAT CONTRIBUTE MORE !! NN-regression.
+2) Add in F_beta score for sampling the data points.
+
+-----------------

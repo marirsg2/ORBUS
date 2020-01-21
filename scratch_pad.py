@@ -4,15 +4,15 @@ import numpy as np
 from scipy import stats
 
 
-precision_variance = 10 #norm by variance of the dataset. THIS way the value is not small and hurts the behavior of F beta function
-recall_gain = 100
+precision_variance = 0.2 #norm by variance of the dataset. THIS way the value is not small and hurts the behavior of F beta function
+recall_gain = 0.6
 
 #when gain == variance, then they transition. to gain not mattering much. So norm by variance may help.
 #higher the variance, more the effect of gain. GREAT PROPERTY
 #less variance, less effect of gain.
 #BETA tells you how much you want gain to matter. Could get a lot of early gains, but much slower later
 
-beta = 0.0 # Beta penalizes precision, is chosen such that recall is considered β times as important as precision
+beta = 2.0 # Beta penalizes precision, is chosen such that recall is considered β times as important as precision
 F_beta = (1+beta**2) * precision_variance * recall_gain / (beta ** 2 * precision_variance + recall_gain)
 print(F_beta)
 
