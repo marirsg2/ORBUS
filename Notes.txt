@@ -3,10 +3,15 @@ Title: Let me learn what you really want : AL of preferences based on expected o
 
 ----------------------
 
+The
+
+!! v2 works with gaussian !! ?? more tail, more effect ? test with gumbel
+
 BECAUSE of the interconnected nature of the data.
 TWO GROUPS you may see a difference
 Then add an intersection variable, and vary the frequency of it. Bottle neck of the info flow.
 Then have 3 groups of variables, with
+
 
 v1) F_beta should have beta between 1 and 2 ? or problem specific. If uniform distribution, then lower ?? if gaussian or gumbel
 then weight it higher. TEST theory that gain based sampling provides support for high weight features more than low weight features.

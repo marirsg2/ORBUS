@@ -335,8 +335,8 @@ if __name__ == "__main__":
     cases = itertools.product(*parameter_indexed_values)
 
     # preference_distribution_string = "power_law"
-    preference_distribution_string = "gaussian"
-    # preference_distribution_string = "uniform"
+    # preference_distribution_string = "gaussian"
+    preference_distribution_string = "uniform"
     # preference_distribution_string = "gumbel"
 
 
