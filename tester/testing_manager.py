@@ -368,7 +368,7 @@ if __name__ == "__main__":
     # print("The parameter cases are ",cases)
 
 
-    for i in range(7):
+    for i in range(15):
         all_data = []
         try:
             os.remove(manager_pickle_file)
