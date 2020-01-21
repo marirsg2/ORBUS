@@ -692,7 +692,7 @@ class Manager:
                 var_normalizing_denom = 1.0  # avoids "nan" problem
             norm_variance_array = variance_array / var_normalizing_denom  # normalize it
 
-            beta = 0.75  # Beta penalizes precision(var), is chosen such that recall is considered β times as important as precision
+            beta = 0.5  # Beta penalizes precision(var), is chosen such that recall is considered β times as important as precision
                          # beta less than 1 has the opposite effect
             # F_beta = (1 + beta ** 2) * precision_variance * recall_gain / (beta ** 2 * precision_variance + recall_gain)
             base_score = [ (1 + beta ** 2) * norm_variance_array[x] * norm_gain_array[x] / (beta ** 2 * norm_variance_array[x] + norm_gain_array[x])
@@ -1843,6 +1843,9 @@ class Manager:
         :param eval_output_regions:
         :return:
         """
+
+        print("============ NOTE USING ERROR/VALUE ; NOT MULTIPLIED")
+
         test_plan_max = 0
         test_plan_min = 0
         for single_annot_plan_struct in annotated_test_plans:
@@ -1903,7 +1906,7 @@ class Manager:
             if self.model_MLE != None:
                 mle_predict = self.model_MLE.predict([encoded_plan])[0]
                 current_abs_error = abs(true_value - mle_predict)
-                current_abs_error = current_abs_error*abs(true_value)
+                current_abs_error = current_abs_error/abs(true_value)
                 MLE_total_error += current_abs_error
                 MLE_error_list.append(current_abs_error)
                 MLE_target_prediction_list.append((true_value,mle_predict))
