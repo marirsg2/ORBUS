@@ -7,20 +7,20 @@ import glob
 # define all the global variables here
 # feature feedback, random_sampling_enabled, include_discovery, include_gain, include_feature_distinguishing, include_prob_term
 
-required_graph_settings = [
-    # [1, 0, 1, 1, 1, 1],
-    # [1, 0, 1, 0, 1, 1],
-    [1, 0, 1, 1, 0, 1],
-    [1, 0, 1, 0, 0, 1],
-    [1, 1, 1, 1, 0, 1]
-]
-
 # required_graph_settings = [
-# [1, 0, 1 ,1, 0 ,1] ,
-# [1, 0, 0 ,1, 0 ,1],
-# [1, 0, 1 ,1, 0 ,0],
-# [1, 0, 0 ,1, 0 ,0]
+#     # [1, 0, 1, 1, 1, 1],
+#     # [1, 0, 1, 0, 1, 1],
+#     [1, 0, 1, 1, 0, 1],
+#     [1, 0, 1, 0, 0, 1],
+#     [1, 1, 1, 1, 0, 1]
 # ]
+
+required_graph_settings = [
+[1, 0, 1 ,1, 0 ,1] ,
+[1, 0, 0 ,1, 0 ,1],
+[1, 0, 1 ,1, 0 ,0],
+[1, 0, 0 ,1, 0 ,0]
+]
 
 legends = copy.deepcopy(required_graph_settings)
 
@@ -101,8 +101,8 @@ class create_graphs:
         for k, v in self.settings_to_data.items():
             # legends.append(k)
             graph_data.append(np.average(v, axis=0))
-        legends = ["OBUS", "uncertainty", "Random"]
-        # legends = ["OBUS", "no discovery", "no prob term" , "neither" ]
+        # legends = ["OBUS", "uncertainty", "Random"]
+        legends = ["OBUS", "no discovery", "no prob term" , "neither" ]
         x = np.arange(len(graph_data[0]))
         fig = plt.figure()
         plt.xlabel("round number")
