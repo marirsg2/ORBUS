@@ -634,18 +634,27 @@ class Manager:
                 std_dev_normalizing_denom = 1.0  # avoids "nan" problem
             std_dev_variance_array = std_dev_array / std_dev_normalizing_denom  # normalize it
 
-            # To try NORM(gain+2 * var), thompson sampling esque.THE following line should be uncommented
-            # gain_array = gain_array + 2*std_dev_array # like in thompson sampling
-            # gain_normalizing_denom = np.var(gain_array[np.nonzero(gain_array)])
+
+            # Todo try NORM(gain+2 * var), thompson sampling esque.THE following line should be uncommented
+            #  WORKS REALLY REALLY WELL
+            gain_array_A = gain_array + 2*std_dev_array # like in thompson sampling
+            gain_array_B = gain_array - 2*std_dev_array # like in thompson sampling
+            updated_data_list = []
+            for idx in range(gain_array.shape[0]):
+                chosen_data = gain_array_A[idx]
+                if abs(gain_array_A[idx]) < abs(gain_array_B[idx]):
+                    chosen_data = gain_array_B[idx]
+                #end if
+                updated_data_list.append(chosen_data)
+            #end for
+            gain_array = np.array(updated_data_list)
+
             gain_normalizing_denom = np.max(gain_array)
             if gain_normalizing_denom == 0.0:
                 gain_normalizing_denom = 1.0  # avoids "nan" problem
             norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
 
             base_score = [ std_dev_variance_array[x] + math.pow(std_dev_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
-            #todo try NORM(gain+2*var), thompson sampling esque. THE WAY TO GO
-            # base_score = [ norm_variance_array[x] + math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
-
             #the below one is dangerous. You can square the variance if it is the max expected value. TOO much emphasis on gain
             # base_score = [ norm_variance_array[x] + math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))]
             unaltered_gain_array = list(copy.deepcopy(gain_array))

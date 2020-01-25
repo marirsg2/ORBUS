@@ -368,7 +368,11 @@ if __name__ == "__main__":
     # cases = [list(x) for x in cases]
     # print("The parameter cases are ",cases)
 
-    currently trying with max normed variance and range 0109
+    # currently trying with max normed variance and range 0109
+    #
+    # NEXT TRY THOMPSON SAMPLING
+    #
+    # THEN TRY GAUSSIAN FEATURE DISTR, AND GAUSSIAN WEIGHTS
 
 
     for i in range(15):
