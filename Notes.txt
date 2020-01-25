@@ -16,6 +16,10 @@ Title: Let me learn what you really want : AL of preferences based on expected o
      alg that used OBUS. MAYBE ORDER SHOULD MATTER. So give weight 1 to the top position, weight 0.5 the second and so forth
      reducing weight by factor of 1/2
 
+     Compare with the simple expected gain version. That seems to do well earlier a little more, BUT i dont think it will be
+     as accurate in the higher regions. The UCB version will. AND FOR THIS, the test about ranking the top 5 (or 10) is better.
+     The ranking is computed at each round. I imagine for variance it will fluctuate more.  
+
      BUT note that in the overall error, it is faster until about the point where the error and noise match,
      then it spikes and then drops back down. I think that spike has to do with reconciling the weights of high feature
      weights with the lower weight features that it is now working on. This spike is NOT there in the high extreme regions [0.1,0.9]
