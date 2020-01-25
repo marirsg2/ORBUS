@@ -601,22 +601,22 @@ class Manager:
             norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
 
             # TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
-            variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
+            std_dev_array = np.array([math.sqrt(x[2]) for x in index_value_list])
 
             #IMPORTANT TO use THIS
-            var_normalizing_denom = 1.0
+            std_dev_normalizing_denom = 1.0
             exponent = 1
-            if var_normalizing_denom == 0.0:
-                var_normalizing_denom = 1.0  # avoids "nan" problem
-            norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-            norm_variance_array = np.power(norm_variance_array, exponent)
+            if std_dev_normalizing_denom == 0.0:
+                std_dev_normalizing_denom = 1.0  # avoids "nan" problem
+            std_dev_variance_array = std_dev_array / std_dev_normalizing_denom  # normalize it
+            std_dev_variance_array = np.power(std_dev_variance_array, exponent)
 
-            base_score = [ math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
+            base_score = [ math.pow(std_dev_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
             # base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))] #UNSURE
             # base_score = [ math.pow(norm_variance_array[x],1+norm_gain_array[x]/confidence_measure_error) for x in range(len(norm_gain_array))] #UNSURE
             unaltered_gain_array = list(copy.deepcopy(gain_array))
-            unaltered_variance_array = list(copy.deepcopy(variance_array))
-            unaltered_basescore_array = list(copy.deepcopy(variance_array))
+            unaltered_variance_array = list(copy.deepcopy(std_dev_array))
+            unaltered_basescore_array = list(copy.deepcopy(std_dev_array))
             unaltered_meanPref_array = [x[3] for x in index_value_list]
 
         #-----------TECHNIQUE 4
@@ -628,30 +628,29 @@ class Manager:
             else:
                 gain_array = np.array([1.0 for x in index_value_list])
 
+            std_dev_array = np.array([math.sqrt(x[2]) for x in index_value_list])
+            std_dev_normalizing_denom = np.max(std_dev_array)
+            if std_dev_normalizing_denom == 0.0:
+                std_dev_normalizing_denom = 1.0  # avoids "nan" problem
+            std_dev_variance_array = std_dev_array / std_dev_normalizing_denom  # normalize it
+
+            # To try NORM(gain+2 * var), thompson sampling esque.THE following line should be uncommented
+            # gain_array = gain_array + 2*std_dev_array # like in thompson sampling
             # gain_normalizing_denom = np.var(gain_array[np.nonzero(gain_array)])
             gain_normalizing_denom = np.max(gain_array)
-
             if gain_normalizing_denom == 0.0:
                 gain_normalizing_denom = 1.0  # avoids "nan" problem
             norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
 
-            # TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
-            variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
+            base_score = [ std_dev_variance_array[x] + math.pow(std_dev_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
+            #todo try NORM(gain+2*var), thompson sampling esque. THE WAY TO GO
+            # base_score = [ norm_variance_array[x] + math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
 
-            # IMPORTANT TO use THIS
-            var_normalizing_denom = 1.0
-            exponent = 1
-            if var_normalizing_denom == 0.0:
-                var_normalizing_denom = 1.0  # avoids "nan" problem
-            norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-            norm_variance_array = np.power(norm_variance_array, exponent)
-
-            base_score = [ norm_variance_array[x] + math.pow(norm_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
             #the below one is dangerous. You can square the variance if it is the max expected value. TOO much emphasis on gain
             # base_score = [ norm_variance_array[x] + math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))]
             unaltered_gain_array = list(copy.deepcopy(gain_array))
-            unaltered_variance_array = list(copy.deepcopy(variance_array))
-            unaltered_basescore_array = list(copy.deepcopy(variance_array))
+            unaltered_variance_array = list(copy.deepcopy(std_dev_array))
+            unaltered_basescore_array = list(copy.deepcopy(std_dev_array))
             unaltered_meanPref_array = [x[3] for x in index_value_list]
 
 
@@ -1890,12 +1889,13 @@ class Manager:
         print("TEST PLAN MIN MAX ",test_plan_min, test_plan_max)
 
         filtered_plans = [x for x in annotated_test_plans if not(cutoff_regions[0] < x[-1] and x[-1] < cutoff_regions[1])]
-
+        count_weight = 0.0 #this is set to the value of each sample. So we take a weighted average
         for single_annot_plan_struct in filtered_plans:
             true_value = float(single_annot_plan_struct[-1])
             # if cutoff_regions[0] < true_value and true_value < cutoff_regions[1] : # we are inside the range, then not an extreme point
             #     continue
             count_samples += 1
+
             current_plan = single_annot_plan_struct[0]
             encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
             for single_feature in current_plan:
@@ -1906,9 +1906,10 @@ class Manager:
             if self.model_MLE != None:
                 mle_predict = self.model_MLE.predict([encoded_plan])[0]
                 current_abs_error = abs(true_value - mle_predict)
-                current_abs_error = current_abs_error*abs(true_value)
-                MLE_total_error += current_abs_error
                 MLE_error_list.append(current_abs_error)
+                current_abs_error = current_abs_error*abs(true_value) # weighted
+                count_weight += abs(true_value)
+                MLE_total_error += current_abs_error
                 MLE_target_prediction_list.append((true_value,mle_predict))
             else:
                 MLE_total_error += 0.0
@@ -1947,7 +1948,7 @@ class Manager:
 
         print("NUM SAMPLES = ", count_samples, " for when INTERESTING REGION IS", ONLY_inside_region)
         if self.model_MLE != None:
-            MLE_final_error = MLE_total_error / count_samples
+            MLE_final_error = MLE_total_error / count_weight
             print("LINEAR MODEL The average REGION error is = ", MLE_final_error, "for percentile regions ",
                   eval_output_regions)
             print("LINEAR MODEL Error Statistics of CHOSEN regions , ", summ_stats_fnc(MLE_error_list))

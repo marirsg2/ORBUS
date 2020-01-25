@@ -3,7 +3,12 @@ Title: Let me learn what you really want : AL of preferences based on expected o
 
 ----------------------
 
-The
+Try SCALING the function with weights and shift the weight purely towards variance as the number of rounds increase.
+USE gain+2*var to decide which to sample. NOT JUST GAIN.
+
+ALL WE ARE DOING is changing the order of weights to improve accuracy on. We do NOT get any miraculous gains in overall speed.
+just in terms of what we sample first.
+THE OPPOSITE of what we are doing is if we use 1/gain
 
 !! v2 works with gaussian !! ?? more tail, more effect ? test with gumbel
 

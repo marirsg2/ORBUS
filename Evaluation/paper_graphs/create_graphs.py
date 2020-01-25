@@ -12,7 +12,7 @@ required_graph_settings = [
     # [1, 0, 1, 0, 1, 1],
     [1, 0, 1, 1, 0, 1],
     [1, 0, 1, 0, 0, 1],
-    [1, 1, 1, 1, 0, 1]
+    # [1, 1, 1, 1, 0, 1]
 ]
 
 # required_graph_settings = [
@@ -105,8 +105,11 @@ class create_graphs:
         # legends = ["OBUS", "no discovery", "no prob term" , "neither" ]
         x = np.arange(len(graph_data[0]))
         fig = plt.figure()
-        plt.xlabel("round number")
-        plt.ylabel("error")
+        plt.xlabel("round number", fontsize=16)
+        plt.ylabel("error", fontsize=16)
+        plt.xticks(fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.rcParams.update({'font.size': 14})
         for idx, data in enumerate(graph_data):
             plt.plot(x, data, color=color_array[idx])
             plt.legend(legends, loc='upper right')

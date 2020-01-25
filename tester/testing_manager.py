@@ -335,8 +335,8 @@ if __name__ == "__main__":
     cases = itertools.product(*parameter_indexed_values)
 
     # preference_distribution_string = "power_law"
-    # preference_distribution_string = "gaussian"
-    preference_distribution_string = "uniform"
+    preference_distribution_string = "gaussian"
+    # preference_distribution_string = "uniform"
     # preference_distribution_string = "gumbel"
 
 
@@ -367,6 +367,8 @@ if __name__ == "__main__":
 
     # cases = [list(x) for x in cases]
     # print("The parameter cases are ",cases)
+
+    currently trying with max normed variance and range 0109
 
 
     for i in range(15):
@@ -400,21 +402,21 @@ if __name__ == "__main__":
         print(" What technique , priors, distribution, dataset")
 
         # --------------------------------------------------------------
-        random_sampling_state = True
-        for i in range(1):
-            all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
-                                    random_sampling_enabled =  random_sampling_state,
-                                    include_feature_feedback= True,
-                                    include_discovery_term = False,
-                                    include_gain= False,
-                                    include_feature_distinguishing= False,
-                                    include_prob_term = False,
-                                    manager_pickle_file = manager_pickle_file,
-                                    repetitions=num_repetitions,
-                                    prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
+        # random_sampling_state = True
+        # for i in range(1):
+        #     all_data.append(([random_sampling_state]+cases[0], Active_Learning_Testing(total_num_plans = total_num_plans, plans_per_round = plans_per_round, random_seed = random_seed, noise_value = noise_value ,
+        #                             random_sampling_enabled =  random_sampling_state,
+        #                             include_feature_feedback= True,
+        #                             include_discovery_term = False,
+        #                             include_gain= False,
+        #                             include_feature_distinguishing= False,
+        #                             include_prob_term = False,
+        #                             manager_pickle_file = manager_pickle_file,
+        #                             repetitions=num_repetitions,
+        #                             prob_feat_select= prob_feat_select, preference_distribution_string=preference_distribution_string)))
+        #
 
-
-        #--------------------------------------------------------------
+        # --------------------------------------------------------------
 
         random_sampling_state = False
         for case_parameters in cases:
