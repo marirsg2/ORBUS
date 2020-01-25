@@ -3,10 +3,33 @@ Title: Let me learn what you really want : AL of preferences based on expected o
 
 ----------------------
 
-Try SCALING the function with weights and shift the weight purely towards variance as the number of rounds increase.
-USE gain+2*var to decide which to sample. NOT JUST GAIN.
+1) UCB/thompson approach WORKS REALLY REALLY WELL !!.
 
-ALL WE ARE DOING is changing the order of weights to improve accuracy on. We do NOT get any miraculous gains in overall speed.
+    tHE REAL THOMPSON sampling approach actually samples from the distribution to determine the gain value. yours is more
+    of UCB. Where you assume gaussian and 2 std dev = 95% confidence. It is only related DO NOT EQUATE.
+    I THINK IF YOU HAVE A SCHEDULE OF REDUCING THE NUM OF STD DEV TO USE, then it might improve accuracy at the very top,
+    ? but this may not be a good thing ? you want SOME knowledge of all regions. BUT the latter comes auto as the main
+    focus IS variance, not gain. NEED some testing. Maybe future work. Along with some theoretical analysis like regret
+
+     MAYBE an interesting metric is amount of reward accrued !! at each point, you get to choose the top 5 samples.
+     The value in the top 5 (order does not matter within top 5) that you got correct, is the money made by the ad-choosing
+     alg that used OBUS. MAYBE ORDER SHOULD MATTER. So give weight 1 to the top position, weight 0.5 the second and so forth
+     reducing weight by factor of 1/2
+
+     BUT note that in the overall error, it is faster until about the point where the error and noise match,
+     then it spikes and then drops back down. I think that spike has to do with reconciling the weights of high feature
+     weights with the lower weight features that it is now working on. This spike is NOT there in the high extreme regions [0.1,0.9]
+     and only in the overall error.
+
+2) The argument for sampling based on output value rather than features of high value and which ones cooccur, is because we ALREADY consider
+the FREQUENCY of the features, and their cooccurrence in the feature frequency term !!
+3) Multi-arm bandits for online ad selection is worse !? You are limited to the arms or EVEN factored arm definitions that
+are available to you. Ours is a more natural model for the online ad scenario. There is no ONE best arm or arms.
+Ads may change in nature, but features would persist, and more useful. Multiple models maybe trained at different times,
+and we sample using the model that has been the most accurate in the recent past (we present top 5, and the model that
+was right more often, is chosen).
+
+3) ALL WE ARE DOING is changing the order of weights to improve accuracy on. We do NOT get any miraculous gains in overall speed.
 just in terms of what we sample first.
 THE OPPOSITE of what we are doing is if we use 1/gain
 
