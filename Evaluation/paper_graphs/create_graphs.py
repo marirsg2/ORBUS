@@ -144,9 +144,9 @@ class create_graphs:
                     # post = "MLE"
                     all_cases = re.findall(r'\[(.*?)\]', single_case)
                     if given_case_settings == [1, 1, 1, 1, 0, 1]:
-                        required_case = 3
+                        required_case = 1
                     else:
-                        required_case = 3
+                        required_case = 1
                     case_data = (all_cases[required_case].split(', '))
                     case_data = [float(i) for i in case_data]
                     if given_case_settings in temp_req_settings:

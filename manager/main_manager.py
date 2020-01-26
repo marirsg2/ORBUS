@@ -634,8 +634,7 @@ class Manager:
                 std_dev_normalizing_denom = 1.0  # avoids "nan" problem
             std_dev_variance_array = std_dev_array / std_dev_normalizing_denom  # normalize it
 
-
-            # Todo try NORM(gain+2 * var), thompson sampling esque.THE following line should be uncommented
+            # Todo NORM(gain+2 * var), UCB sampling esque.THE following lines should be uncommented
             #  WORKS REALLY REALLY WELL
             gain_array_A = gain_array + 2*std_dev_array # like in thompson sampling
             gain_array_B = gain_array - 2*std_dev_array # like in thompson sampling
@@ -648,7 +647,7 @@ class Manager:
                 updated_data_list.append(chosen_data)
             #end for
             gain_array = np.array(updated_data_list)
-
+            #----
             gain_normalizing_denom = np.max(gain_array)
             if gain_normalizing_denom == 0.0:
                 gain_normalizing_denom = 1.0  # avoids "nan" problem

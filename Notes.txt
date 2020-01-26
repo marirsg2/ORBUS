@@ -3,6 +3,13 @@ Title: Let me learn what you really want : AL of preferences based on expected o
 
 ----------------------
 
+0) NEXT: SCORE based on the ordering of the top scorers. i.e. do one of these
+1) For top 5, plans If the order is inverted or wrong increase error. The top plan error is the highest weight 1.0
+second plan is weighted half as much , and so forth.
+2) Score the plans based on how far off their position is to their true position. NO this penalizes small differences arbitarirly
+ SO INSTEAD: COMPUTE THE DIFFERENCE IN VALUE BETWEEN the true plan for that position, and your chosen plan.
+ Then WEIGHT the difference based on the position, or value.
+
 1) UCB/thompson approach WORKS REALLY REALLY WELL !!.
 
     tHE REAL THOMPSON sampling approach actually samples from the distribution to determine the gain value. yours is more
@@ -18,7 +25,7 @@ Title: Let me learn what you really want : AL of preferences based on expected o
 
      Compare with the simple expected gain version. That seems to do well earlier a little more, BUT i dont think it will be
      as accurate in the higher regions. The UCB version will. AND FOR THIS, the test about ranking the top 5 (or 10) is better.
-     The ranking is computed at each round. I imagine for variance it will fluctuate more.  
+     The ranking is computed at each round. I imagine for variance it will fluctuate more.
 
      BUT note that in the overall error, it is faster until about the point where the error and noise match,
      then it spikes and then drops back down. I think that spike has to do with reconciling the weights of high feature
