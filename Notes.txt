@@ -10,6 +10,9 @@ second plan is weighted half as much , and so forth.
  SO INSTEAD: COMPUTE THE DIFFERENCE IN VALUE BETWEEN the true plan for that position, and your chosen plan.
  Then WEIGHT the difference based on the position, or value.
 
+
+SEE survey paper on RANKING preferences research !!
+
 1) UCB/thompson approach WORKS REALLY REALLY WELL !!.
 
     tHE REAL THOMPSON sampling approach actually samples from the distribution to determine the gain value. yours is more
