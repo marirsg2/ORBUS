@@ -335,8 +335,8 @@ if __name__ == "__main__":
     cases = itertools.product(*parameter_indexed_values)
 
     # preference_distribution_string = "power_law"
-    # preference_distribution_string = "gaussian"
-    preference_distribution_string = "uniform"
+    preference_distribution_string = "gaussian"
+    # preference_distribution_string = "uniform"
     # preference_distribution_string = "gumbel"
 
     # currently TECHNIQUE 1+ gain, gumbel, 30% feats
@@ -374,13 +374,14 @@ if __name__ == "__main__":
     # THEN TRY GAUSSIAN FEATURE DISTR, AND GAUSSIAN WEIGHTS
 
 
-    for i in range(15):
+    for i in range(10):
         all_data = []
         try:
             os.remove(manager_pickle_file)
             print("Manager File Removed at start , to recreate manager!")
         except FileNotFoundError:
             pass  # file was already deleted
+
 
         random_seed = int(random.randint(1,1000))
         date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")

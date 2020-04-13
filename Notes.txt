@@ -1,5 +1,7 @@
 
-Title: Let me learn what you really want : AL of preferences based on expected output value
+NOTICE: that after the 12th or so round (intersection point), OBUS does BETTER !! HIGH noise, obus focusses on value
+more than noise. I imagine it will oscillate, so can't say for certain.
+
 
 ----------------------
 
