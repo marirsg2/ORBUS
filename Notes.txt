@@ -1,8 +1,24 @@
 
 
-Now doing gaussian X gaussian
 
 Expect gaussian X gaussian with MORE features , will show a larger benefit at the start.
+NEXT: gxg with feature prob  =0.2
+
+TRY: (1+norm_sigma)^(1+mu)
+
+
+Do with 3 groups. High , med, and low feature weights. Uniform probability for choosing each group and feat distr for each,
+and uniform (NOT GAUSSIAN) feature weights in each group, with overlapping regions like [10,-3],[3,-3],[3,-10]
+
+feature probability is IMPORTANT. I wonder if you include it , THE PROPER computation, not the hacky one you did
+earlier, then gausXgaus will be much better too ?? It would be another addendum to the correction in the exponent ?
+ideally the form would be (1+sigma)^(1+norm_mu+norm_prob). That would be nice, but expect otherwise , isnt that always
+what happens.
+
+LATER: matrix of cooccurrence POTENTIALS (easier, and then convert to probabilities). Note the self potential, is
+auto occurrence, irrespective of others, same feature will not occur twice.
+MORE ELEGANT AND BETTER, AND SO DO THIS: Build a bayesian tree. The roots may not be feature variables, rather
+conditioning variables. MRF and Bayes graph are different paradigms and information flow maybe different.
 
 
 ----------------------
