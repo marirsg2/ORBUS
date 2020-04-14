@@ -1,10 +1,12 @@
 
 
 
-Expect gaussian X gaussian with MORE features , will show a larger benefit at the start.
-NEXT: gxg with feature prob  =0.2
+
 
 TRY: (1+norm_sigma)^(1+mu)
+
+Expect gaussian X gaussian with MORE features , will show a larger benefit at the start.
+NEXT: gxg with feature prob  =0.2
 
 
 Do with 3 groups. High , med, and low feature weights. Uniform probability for choosing each group and feat distr for each,
