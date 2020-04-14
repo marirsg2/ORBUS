@@ -1,6 +1,8 @@
 
-NOTICE: that after the 12th or so round (intersection point), OBUS does BETTER !! HIGH noise, obus focusses on value
-more than noise. I imagine it will oscillate, so can't say for certain.
+
+Now doing gaussian X gaussian
+
+Expect gaussian X gaussian with MORE features , will show a larger benefit at the start.
 
 
 ----------------------
