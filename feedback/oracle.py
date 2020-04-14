@@ -67,7 +67,7 @@ class oracle:
         elif preference_distribution_string == "gaussian":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
             # self.distribution_sampled_points = np.random.normal(3*gaussian_noise_sd,2*gaussian_noise_sd,1000) #0.2 is the noise
-            self.distribution_sampled_points = np.random.normal(8,3,1000) #0.2 is the noise
+            self.distribution_sampled_points = np.random.normal(8,3,1000)
             self.distribution_sampled_points = np.sort(self.distribution_sampled_points)
         elif preference_distribution_string == "root_law":
             rating_distribution = oracle.rating_distribution_law #same approach as power law function, sample from list
@@ -101,7 +101,9 @@ class oracle:
                     continue
                 select_prob = relevance_probability
                 local_like_probability = like_probability
+
                 biased = False
+                print("biased = False")
 
                 #this was for having some groups of features always liked or disliked
                 # if single_feature.startswith("g1"):

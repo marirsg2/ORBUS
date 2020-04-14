@@ -1,5 +1,13 @@
 
 
+COMPARE WITH RANDOM SAMPLING. important
+
+print TOP K ORDER.
+
+Redo with std dev noise = 0.3
+Do uniformXgaussian with 0.4 features
+The bump up maybe due to the rarity  of strong or weak features, , and so it accounts for less ?
+WHAT happens with gumbel distribution vs gaussian. more big features, and 0.4 and thompson sampling
 
 
 

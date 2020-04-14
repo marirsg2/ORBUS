@@ -21,7 +21,7 @@ required_graph_settings = [
 # [1, 0, 1 ,1, 0 ,0],
 # [1, 0, 0 ,1, 0 ,0]
 # ]
-PRINT_DATA_FROM_IDX = 3 #3 OR 1 to get the interesting region, or all regions.
+PRINT_DATA_FROM_IDX = 1 #3 OR 1 to get the interesting region, or all regions.
 
 legends = copy.deepcopy(required_graph_settings)
 

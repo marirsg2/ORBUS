@@ -653,8 +653,9 @@ class Manager:
                 gain_normalizing_denom = 1.0  # avoids "nan" problem
             norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
 
-            base_score = [ std_dev_variance_array[x] + math.pow(std_dev_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
-            # base_score = [ math.pow(std_dev_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))]
+            # base_score = [ std_dev_variance_array[x] + math.pow(std_dev_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
+            base_score = [ math.pow(1+std_dev_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))]
+
             #the below one is dangerous. You can square the variance if it is the max expected value. TOO much emphasis on gain
             # base_score = [ norm_variance_array[x] + math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))]
 

@@ -339,42 +339,18 @@ if __name__ == "__main__":
     # preference_distribution_string = "uniform"
     # preference_distribution_string = "gumbel"
 
-    # currently TECHNIQUE 1+ gain, gumbel, 30% feats
+
+    manager_pickle_file = "man_02_n06.p"
 
     total_num_plans = 80
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 5
     noise_value = 6.0 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.2
+    prob_feat_select = 0.1
 
-    # date_time_str = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
-    # date_time_str = date_time_str.replace(" ", "_")
-    # date_time_str = date_time_str.replace("/", "_")
-    # date_time_str = date_time_str.replace(",", "_")
-    # date_time_str = date_time_str.replace(":", "_")
-    # print("date and time:", date_time_str)
-    # output_file_name = 'RBUS_output_results' + "_" + date_time_str
-    # sys.stdout = open(output_file_name + '.txt', 'w')
-    # print('test')
+    print("CHECK algorithm, currently doing (1+sigma)^(1+mu) no additional sigmas")
 
-    manager_pickle_file = "man_02_n06.p"
-    # random_seed = 666 #-1 means do not fix randomness. handled in code later
-
-
-    # CHECK THAT THE MAX VARIANCE IS IN QUERIES WHERE THE SUM OF INDIVIDUAL VARIANCE IS MAX.
-
-
-    # cases = [list(x) for x in cases]
-    # print("The parameter cases are ",cases)
-
-    # currently trying with max normed variance and range 0109
-    #
-    # NEXT TRY THOMPSON SAMPLING
-    #
-    # THEN TRY GAUSSIAN FEATURE DISTR, AND GAUSSIAN WEIGHTS
-
-
-    for i in range(6):
+    for i in range(10):
         all_data = []
         try:
             os.remove(manager_pickle_file)
