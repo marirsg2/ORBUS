@@ -1,10 +1,22 @@
 
 
-FUCK ! you currently had probability and discovery terms on. Mistake. That is for later
-NOW only discovery. also SET THE plan generated to be uniform prob
-
+WHY IS THE FIRST ROUND ERROR DIFFERENT ? we should be sampling THE EXACT SAME PLANS ?? test this
+DEBUG SLOW. as of now 20 features, 4 per plan. 10k plans easily
 
 ?? IT IS DOING THE OPPOSITE. overall the error is lower, but in the extreme regions, not so ?
+
+It was ZERO sigma ?? now lets try with 2 sigma. with zero sigma, the average was barely better
+and extremes were about equal ?? how ?
+
+Retry sigma + sigma^mu
+
+Add back probability term TO JUST your method. Does it do better? Then ONLY  have probability terms. Obviously that would do better.
+But if both have probability, does OBUS succeed again ? It could be that the probability term (badly calculated was hurting)
+
+1 Round per plan ? sharper difference than with 5 per round.
+
+FUCK ! you currently had probability and discovery terms on. Mistake. That is for later
+NOW only discovery. also SET THE plan generated to be uniform prob
 
 MAYBE set all terms as relevant. and fewer feature and plans .
 

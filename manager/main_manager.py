@@ -535,8 +535,8 @@ class Manager:
 
             # Todo NORM(gain+2 * var), UCB sampling esque.THE following lines should be uncommented
             #  WORKS REALLY REALLY WELL
-            gain_array_A = gain_array + 0*std_dev_array # like in thompson sampling
-            gain_array_B = gain_array - 0*std_dev_array # like in thompson sampling
+            gain_array_A = gain_array + 2*std_dev_array # like in thompson sampling
+            gain_array_B = gain_array - 2*std_dev_array # like in thompson sampling
             updated_data_list = []
             for idx in range(gain_array.shape[0]):
                 chosen_data = gain_array_A[idx]
