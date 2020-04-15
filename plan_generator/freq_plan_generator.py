@@ -8,13 +8,13 @@ import datetime
 import numpy as np
 
 #--------------------------------
-NUM_PLANS_NEEDED = 5000
-NUM_FEATURES = 30
+NUM_PLANS_NEEDED = 10000
+NUM_FEATURES = 200
 NUM_GROUPS = 1
 NUM_FEATURES = int(NUM_FEATURES/NUM_GROUPS)
 distribution_samples = np.random.normal(150,50,NUM_FEATURES)
-MIN_FEATURES = 3 #prob that the plan will end with this step
-MAX_FEATURES = 3 #prob that the plan will end with this step
+MIN_FEATURES = 4 #prob that the plan will end with this step
+MAX_FEATURES = 4 #prob that the plan will end with this step
 
 # HIGH_OCCURRENCE_COUNT = 1350 #these counts are used as weights for generating plans
 # MED_OCCURRENCE_COUNT = 450
@@ -41,7 +41,7 @@ s1_features = s1_features[:NUM_FEATURES]
 s1_weights = distribution_samples
 
 #
-# #todo add check to see if the num of all possible permutations can be generated from the num plans
+#uniform distr
 while len(all_plans) < NUM_PLANS_NEEDED:
     plan_feature_num = random.randint(MIN_FEATURES, MAX_FEATURES) #includes max length
     curr_plan = set()

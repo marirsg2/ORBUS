@@ -3,6 +3,9 @@
 FUCK ! you currently had probability and discovery terms on. Mistake. That is for later
 NOW only discovery. also SET THE plan generated to be uniform prob
 
+
+?? IT IS DOING THE OPPOSITE. overall the error is lower, but in the extreme regions, not so ?
+
 MAYBE set all terms as relevant. and fewer feature and plans .
 
 COMPARE WITH RANDOM SAMPLING. important

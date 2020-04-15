@@ -15,7 +15,9 @@ required_graph_settings = [
     # [1, 1, 1, 1, 0, 1]
 
 
+    [1, 0, 1, 1, 0, 0],
     [1, 0, 1, 0, 0, 0],
+
 ]
 
 # required_graph_settings = [
