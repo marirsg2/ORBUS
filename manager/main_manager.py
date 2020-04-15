@@ -523,7 +523,7 @@ class Manager:
             print("Using TECHNIQUE var + var^gain_norm")
             # norm by std dev.
             if use_gain_function:
-                gain_array = np.array([x[1] for x in index_value_list])
+                gain_array = np.array([x[3] for x in index_value_list])
             else:
                 gain_array = np.array([1.0 for x in index_value_list])
 
@@ -535,8 +535,8 @@ class Manager:
 
             # Todo NORM(gain+2 * var), UCB sampling esque.THE following lines should be uncommented
             #  WORKS REALLY REALLY WELL
-            gain_array_A = gain_array + 2*std_dev_array # like in thompson sampling
-            gain_array_B = gain_array - 2*std_dev_array # like in thompson sampling
+            gain_array_A = gain_array + 0*std_dev_array # like in thompson sampling
+            gain_array_B = gain_array - 0*std_dev_array # like in thompson sampling
             updated_data_list = []
             for idx in range(gain_array.shape[0]):
                 chosen_data = gain_array_A[idx]
@@ -554,11 +554,13 @@ class Manager:
 
             # base_score = [ std_dev_variance_array[x] + math.pow(std_dev_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
             # base_score = [ 1.0 for x in range(len(norm_gain_array))]
-            # base_score = [ math.pow(1+std_dev_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))]
+
+            base_score = [ math.pow(1+std_dev_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))]
+
             # base_score = [ math.pow(1+norm_gain_array[x],std_dev_variance_array[x]) for x in range(len(norm_gain_array))]
             # base_score = [ norm_gain_array[x] for x in range(len(norm_gain_array))]
 
-            base_score = [ random.random() for x in range(len(norm_gain_array))]
+            # base_score = [ random.random() for x in range(len(norm_gain_array))]
 
 
             #the below one is dangerous. You can square the variance if it is the max expected value. TOO much emphasis on gain
@@ -648,12 +650,12 @@ class Manager:
         ##     # todo NOTE this version below does score+score/numFeatures. do NOT need abs because it is always a +ve value. score is an integral for a function to always above zero
         ##     addendum = [addendum[x] + base_score[x]/(1+len(index_value_list[x][-1])) for x in range(len(index_value_list))] # we div by (1+.) to avoid divide by zero error
 
-        if include_discovery_term_product:
+        # if include_discovery_term_product: # we will always add one plan for discovery. We just wont add to every plan's score if this is off.
             # discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
             # it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
-            discovery_values = [1 + self.compute_discovery_value(
-                self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
-                                for x in range(len(index_value_list))]
+        discovery_values = [1 + self.compute_discovery_value(
+            self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
+                            for x in range(len(index_value_list))]
         index_value_list = [(index_value_list[x][0], base_score[x] + addendum[x]) for x in range(len(index_value_list))]
 
         UNSCALED_index_value_list = copy.deepcopy(index_value_list)
@@ -694,33 +696,33 @@ class Manager:
             del unaltered_variance_array[a_idx]
             del unaltered_basescore_array[a_idx]
             self.seen_features.update(self.plan_dataset[a[0]])
-            if include_discovery_term_product:
-                del discovery_values[a_idx]
-                # discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
-                # it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
-                discovery_values = [
-                    1 + self.compute_discovery_value(
-                        self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
-                    for x in range(len(index_value_list))]
-            # now update the scores with the new discovery score.
+            # if include_discovery_term_product:# we will always add one plan for discovery. We just wont add to every plan's score if this is off.
+            del discovery_values[a_idx]
+            # discovery value is thought of as follows. IF there are two features of marginal probability 0.1, 0.15, then value of discov = 0.25
+            # it is the upper bound of coverage of plans in which a feature might appear in. BIAS TO MORE DISCOVERY. could also use expected value, but not done
+            discovery_values = [
+                1 + self.compute_discovery_value(
+                    self.plan_dataset[index_value_list[x][0]].difference(self.seen_features))
+                for x in range(len(index_value_list))]
+
         # end while
 
 
         # todo NOTE now we add one plan that is JUST about the discovery value of it
-        if include_discovery_term_product:
-            max_discov_value = max(discovery_values)
-            if not max_discov_value == 1.0:  # i.e. there are still features to explore
-                max_discov_value_idx = discovery_values.index(max_discov_value)
-                plan_idx_and_value = index_value_list[max_discov_value_idx]
-                print("ADDING ONE PLAN PURELY for discovery")
-                print("Discov plan", self.plan_dataset[plan_idx_and_value[0]])
-                print("Discovery plan score is =",
-                      max_discov_value - 1)  # we used to add 1 because we multiply the BASE score by this value. So 1+x would scale it more
-                chosen_indices.append(plan_idx_and_value[0])
-                self.seen_features.update(self.plan_dataset[plan_idx_and_value[0]])
-            else:  # DO NOTHING, DO NOT ADD ANOTHER RANDOM PLAN. throws off the comparison
-                print("NO MORE FEATURES TO DISCOVER, NOT ADDING DISCOVERY PLANS")
-                pass
+        # if include_discovery_term_product: # we will always add one plan for discovery. We just wont add to every plan's score if this is off.
+        max_discov_value = max(discovery_values)
+        if not max_discov_value == 1.0:  # i.e. there are still features to explore
+            max_discov_value_idx = discovery_values.index(max_discov_value)
+            plan_idx_and_value = index_value_list[max_discov_value_idx]
+            print("ADDING ONE PLAN PURELY for discovery")
+            print("Discov plan", self.plan_dataset[plan_idx_and_value[0]])
+            print("Discovery plan score is =",
+                  max_discov_value - 1)  # we used to add 1 because we multiply the BASE score by this value. So 1+x would scale it more
+            chosen_indices.append(plan_idx_and_value[0])
+            self.seen_features.update(self.plan_dataset[plan_idx_and_value[0]])
+        else:  # DO NOTHING, DO NOT ADD ANOTHER RANDOM PLAN. throws off the comparison
+            print("NO MORE FEATURES TO DISCOVER, NOT ADDING DISCOVERY PLANS")
+            pass
         #end if
 
 

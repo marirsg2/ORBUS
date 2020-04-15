@@ -346,7 +346,7 @@ if __name__ == "__main__":
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 5
     noise_value = 6.0 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.5
+    prob_feat_select = 0.1
 
     print("CHECK algorithm, currently doing (1+sigma)^(1+mu) no additional sigmas")
 
@@ -377,8 +377,8 @@ if __name__ == "__main__":
 
         # special_order_cases = [[True, True, False, True], [True, False, False, True]]# All vs All-gain
 
-        special_order_cases = [ [True, True, False, False],[True, False, False, False]]# gain and discovery
-        # special_order_cases = [[False, False, False, False], [False, True, False, False]]# Only gain
+        # special_order_cases = [ [True, True, False, False],[True, False, False, False]]# gain and discovery
+        special_order_cases = [[False, True, False, False],[False, False, False, False]]# Only gain
 
         # special_order_cases = [[True, True, False, True], [True, False, False, True]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases
