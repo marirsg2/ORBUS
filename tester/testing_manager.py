@@ -346,11 +346,11 @@ if __name__ == "__main__":
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 5
     noise_value = 6.0 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.1
+    prob_feat_select = 1.0
 
     print("CHECK algorithm, currently doing (1+sigma)^(1+mu) no additional sigmas")
 
-    for i in range(10):
+    for i in range(5):
         all_data = []
         try:
             os.remove(manager_pickle_file)
@@ -374,7 +374,14 @@ if __name__ == "__main__":
         # special_order_cases = [[True, True, False, True], [True, False, False, True], [True, True, True, True], [True, False, True, True]]#
         # special_order_cases = [[True, True, False, True], [False, True, False, True], [True, True, False, False], [False, True, False, False]]# ABLATION study only the gain term is kept, all else is changed. The feature distinguishing is kept to False
         # special_order_cases = [[True, True, False, True], [False, True, False, False]]# All vs Base
-        special_order_cases = [[True, True, False, True], [True, False, False, True]]# All vs All-gain
+
+        # special_order_cases = [[True, True, False, True], [True, False, False, True]]# All vs All-gain
+        # special_order_cases = [[True, False, False, True], [True, False, False, True]]# All vs All-gain
+
+        special_order_cases = [ [True, True, False, False]]# gain and discovery
+        special_order_cases = [ [True, False, False, False]]# no gain and discovery
+
+
         # special_order_cases = [[True, True, False, True], [True, False, False, True]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases
 

@@ -1,5 +1,10 @@
 
 
+FUCK ! you currently had probability and discovery terms on. Mistake. That is for later
+NOW only discovery.
+
+MAYBE set all terms as relevant. and fewer feature and plans .
+
 COMPARE WITH RANDOM SAMPLING. important
 
 print TOP K ORDER.

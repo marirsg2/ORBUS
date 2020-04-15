@@ -487,108 +487,7 @@ class Manager:
             for plan_set in self.annotated_plans_by_round[:-1]:
                 all_but_last_plans += plan_set
             tester_model = self.get_Ridge_model(all_but_last_plans)
-            confidence_measure_error = self.evaluate_on_subset(tester_model,self.annotated_plans_by_round[-1])
 
-        #===================================================
-        # now for computing the informativeness score
-
-        #TODO NOTE, THE VARIANCE BASED NORM, should be done based on the non-zero ENTRIES. not zero based
-
-        # --------TECHNIQUE 1 ---- VAR + gain_norm*VAR
-        # print("Using TECHNIQUE VAR + gain_norm*VAR ")
-        # if use_gain_function:
-        #     gain_array = np.array([x[1] for x in index_value_list])
-        # else:
-        #     gain_array = np.array([1.0 for x in index_value_list])
-        #
-        # # TODO NOTE MUST BE MAX, else gain would dominate
-        # # gain_normalizing_denom = np.max(gain_array)
-        # gain_normalizing_denom = np.var(gain_array)
-        # # gain_normalizing_denom = 1.0
-        #
-        # if gain_normalizing_denom == 0.0:
-        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-        #
-        # variance_array = np.array([x[2] for x in index_value_list])
-        #
-        # # var_normalizing_denom = np.max(variance_array)
-        # # if var_normalizing_denom == 0.0:
-        # #     var_normalizing_denom = 1.0  # avoids "nan" problem
-        # # norm_variance_array = variance_array/var_normalizing_denom
-        #
-        # base_score = [variance_array[x] + norm_gain_array[x] * variance_array[x] for x in range(len(variance_array))]
-        # unaltered_gain_array = list(copy.deepcopy(gain_array))
-        # unaltered_variance_array = list(copy.deepcopy(variance_array))
-        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
-        # unaltered_meanPref_array = [x[3] for x in index_value_list]
-
-        # --------TECHNIQUE 1.5 ----------
-
-        # print("Using TECHNIQUE VAR*gain_norm^(1+error_confidence) ")
-        # if use_gain_function:
-        #     gain_array = np.array([x[1] for x in index_value_list])
-        # else:
-        #     gain_array = np.array([1.0 for x in index_value_list])
-        #
-        # # TODO NOTE I think using gain/gain_var AND then using the test error for confidence might help
-        # gain_normalizing_denom = np.max(gain_array)
-        #
-        # if gain_normalizing_denom == 0.0:
-        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-        #
-        # variance_array = np.array([x[2] for x in index_value_list])
-        # norm_variance_array = variance_array
-        #
-        # base_score = [variance_array[x]*math.pow(norm_gain_array[x],1+confidence_measure_error) for x in range(len(variance_array))]
-        # unaltered_gain_array = list(copy.deepcopy(gain_array))
-        # unaltered_variance_array = list(copy.deepcopy(variance_array))
-        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
-        # unaltered_meanPref_array = [x[3] for x in index_value_list]
-
-
-
-        # --------TECHNIQUE 2 ----  + gain*VAR
-        # print("Using TECHNIQUE gain*var ")
-        # # todo UNCOMMENT THE PROB AND FEATURE TERMS FURTHER BELOW
-        # if use_gain_function:
-        #     gain_array = np.array([x[1] for x in index_value_list])
-        # else:
-        #     gain_array = np.array([1.0 for x in index_value_list])
-        #
-        # gain_normalizing_denom = np.var(gain_array[np.nonzero(gain_array)])
-        # gain_normalizing_denom = np.max(gain_array)
-        #
-        # if gain_normalizing_denom == 0.0:
-        #     gain_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
-        #
-        # # TODO I changed this to sqrt to make it about std dev. and set the exponent to 1
-        # variance_array = np.array([math.sqrt(x[2]) for x in index_value_list])
-        #
-        # # var_normalizing_denom = np.max(variance_array)
-        # var_normalizing_denom = np.var(variance_array[np.nonzero(variance_array)])
-        # var_normalizing_denom = 1.0 #np.var(variance_array)
-        #
-        # exponent = 1
-        # if var_normalizing_denom == 0.0:
-        #     var_normalizing_denom = 1.0  # avoids "nan" problem
-        # norm_variance_array = variance_array / var_normalizing_denom  # normalize it
-        # norm_variance_array = np.power(norm_variance_array, exponent)
-        # base_score = [norm_gain_array[x] * norm_variance_array[x] for x in range(len(norm_gain_array))]
-        # unaltered_gain_array = list(copy.deepcopy(gain_array))
-        # unaltered_variance_array = list(copy.deepcopy(variance_array))
-        # unaltered_basescore_array = list(copy.deepcopy(variance_array))
-        # unaltered_meanPref_array = [x[3] for x in index_value_list]
-
-
-        # --------TECHNIQUE 3 ----  + VAR^ norm_gain
-        # print("Using TECHNIQUE VAR^ norm_gain ")
-        # if use_gain_function:
-        #     gain_array = np.array([x[1] for x in index_value_list])
-        # else:
-        #     gain_array = np.array([1.0 for x in index_value_list])
 
         if not use_gain_function: #just the variance calc
             gain_array = np.array([1.0 for x in index_value_list])
@@ -762,6 +661,7 @@ class Manager:
         chosen_plan_list = []
         while len(chosen_indices) < num_plans:
             if include_discovery_term_product:
+                #we MULTIPLY discovery value. IT IS 1+norm_discov value
                 index_value_list = [
                     (index_value_list[x][0], index_value_list[x][1] * discovery_values[x]) for x in
                     range(len(index_value_list))]
