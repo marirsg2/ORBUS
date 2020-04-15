@@ -378,9 +378,7 @@ if __name__ == "__main__":
         # special_order_cases = [[True, True, False, True], [True, False, False, True]]# All vs All-gain
         # special_order_cases = [[True, False, False, True], [True, False, False, True]]# All vs All-gain
 
-        special_order_cases = [ [True, True, False, False]]# gain and discovery
-        special_order_cases = [ [True, False, False, False]]# no gain and discovery
-
+        special_order_cases = [ [True, True, False, False],[True, False, False, False]]# gain and discovery
 
         # special_order_cases = [[True, True, False, True], [True, False, False, True]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases

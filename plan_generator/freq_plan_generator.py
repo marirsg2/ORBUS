@@ -42,29 +42,29 @@ s1_weights = distribution_samples
 
 #
 # #todo add check to see if the num of all possible permutations can be generated from the num plans
-# while len(all_plans) < NUM_PLANS_NEEDED:
-#     plan_feature_num = random.randint(MIN_FEATURES, MAX_FEATURES) #includes max length
-#     curr_plan = set()
-#     plan_group_num = random.randint(1, NUM_GROUPS)
-#     # if plan_group_num == 2:
-#     #     plan_feature_num *=2 # we double the number of features
-#     while len(curr_plan) < plan_feature_num:
-#         choice = random.choices(s1_features)#
-#         curr_plan.add("g"+str(plan_group_num)+"_"+ choice[0])
-#     # curr_plan = {x:1 for x in curr_plan}
-#     all_plans.add(tuple(curr_plan))
-# #end while
-
-
 while len(all_plans) < NUM_PLANS_NEEDED:
     plan_feature_num = random.randint(MIN_FEATURES, MAX_FEATURES) #includes max length
     curr_plan = set()
     plan_group_num = random.randint(1, NUM_GROUPS)
+    # if plan_group_num == 2:
+    #     plan_feature_num *=2 # we double the number of features
     while len(curr_plan) < plan_feature_num:
-        choice = random.choices(s1_features, weights = s1_weights, k=1)
+        choice = random.choices(s1_features)#
         curr_plan.add("g"+str(plan_group_num)+"_"+ choice[0])
     # curr_plan = {x:1 for x in curr_plan}
     all_plans.add(tuple(curr_plan))
+# #end while
+
+
+# while len(all_plans) < NUM_PLANS_NEEDED:
+#     plan_feature_num = random.randint(MIN_FEATURES, MAX_FEATURES) #includes max length
+#     curr_plan = set()
+#     plan_group_num = random.randint(1, NUM_GROUPS)
+#     while len(curr_plan) < plan_feature_num:
+#         choice = random.choices(s1_features, weights = s1_weights, k=1)
+#         curr_plan.add("g"+str(plan_group_num)+"_"+ choice[0])
+#     # curr_plan = {x:1 for x in curr_plan}
+#     all_plans.add(tuple(curr_plan))
 #end while
 
 temp_all_plans = [set(x) for x in all_plans]
