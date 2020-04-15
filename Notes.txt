@@ -3,6 +3,9 @@
 WHY IS THE FIRST ROUND ERROR DIFFERENT ? we should be sampling THE EXACT SAME PLANS ?? test this
 DEBUG SLOW. as of now 20 features, 4 per plan. 10k plans easily
 
+The update is exactly the SAME !!?? debug !!
+
+
 ?? IT IS DOING THE OPPOSITE. overall the error is lower, but in the extreme regions, not so ?
 
 It was ZERO sigma ?? now lets try with 2 sigma. with zero sigma, the average was barely better
