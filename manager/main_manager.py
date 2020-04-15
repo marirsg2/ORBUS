@@ -535,8 +535,8 @@ class Manager:
 
             # Todo NORM(gain+2 * var), UCB sampling esque.THE following lines should be uncommented
             #  WORKS REALLY REALLY WELL
-            gain_array_A = gain_array + 0*std_dev_array # like in thompson sampling
-            gain_array_B = gain_array - 0*std_dev_array # like in thompson sampling
+            gain_array_A = gain_array + 2*std_dev_array # like in thompson sampling
+            gain_array_B = gain_array - 2*std_dev_array # like in thompson sampling
             updated_data_list = []
             for idx in range(gain_array.shape[0]):
                 chosen_data = gain_array_A[idx]
@@ -553,7 +553,13 @@ class Manager:
             norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
 
             # base_score = [ std_dev_variance_array[x] + math.pow(std_dev_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]
-            base_score = [ math.pow(1+std_dev_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))]
+            # base_score = [ 1.0 for x in range(len(norm_gain_array))]
+            # base_score = [ math.pow(1+std_dev_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))]
+            # base_score = [ math.pow(1+norm_gain_array[x],std_dev_variance_array[x]) for x in range(len(norm_gain_array))]
+            # base_score = [ norm_gain_array[x] for x in range(len(norm_gain_array))]
+
+            base_score = [ random.random() for x in range(len(norm_gain_array))]
+
 
             #the below one is dangerous. You can square the variance if it is the max expected value. TOO much emphasis on gain
             # base_score = [ norm_variance_array[x] + math.pow(norm_variance_array[x],1+norm_gain_array[x]) for x in range(len(norm_gain_array))]

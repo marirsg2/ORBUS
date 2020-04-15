@@ -342,15 +342,15 @@ if __name__ == "__main__":
 
     manager_pickle_file = "man_02_n06.p"
 
-    total_num_plans = 80
+    total_num_plans = 60
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 5
     noise_value = 6.0 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 1.0
+    prob_feat_select = 0.5
 
     print("CHECK algorithm, currently doing (1+sigma)^(1+mu) no additional sigmas")
 
-    for i in range(15):
+    for i in range(10):
         all_data = []
         try:
             os.remove(manager_pickle_file)
@@ -377,8 +377,8 @@ if __name__ == "__main__":
 
         # special_order_cases = [[True, True, False, True], [True, False, False, True]]# All vs All-gain
 
-        # special_order_cases = [ [True, True, False, False],[True, False, False, False]]# gain and discovery
-        special_order_cases = [ [False, True, False, False],[False, False, False, False]]# gain and discovery
+        special_order_cases = [ [True, True, False, False],[True, False, False, False]]# gain and discovery
+        # special_order_cases = [[False, False, False, False], [False, True, False, False]]# Only gain
 
         # special_order_cases = [[True, True, False, True], [True, False, False, True]]#, [True, True, True, True], [True, False, True, True]]#,[True, True, True, True],[True, False, True, True],[True, True, False, False]]
         cases = special_order_cases

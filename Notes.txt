@@ -1,5 +1,8 @@
 
 
+rANDOM does so much better when all features are known and relevant ? it's early discovery and
+subsequent gains.
+
 WHY IS THE FIRST ROUND ERROR DIFFERENT ? we should be sampling THE EXACT SAME PLANS ?? test this
 DEBUG SLOW. as of now 20 features, 4 per plan. 10k plans easily
 
@@ -12,6 +15,12 @@ It was ZERO sigma ?? now lets try with 2 sigma. with zero sigma, the average was
 and extremes were about equal ?? how ?
 
 Retry sigma + sigma^mu
+Also (1+mu)^(sigma)
+MAKE SURE to test with RANDOM as well. Easy to implement, set base score to random.
+NOTE that random works really well, it discovers features and if your variance estimate is bad. Random is
+better.
+
+Reduce plans per round to 3
 
 Add back probability term TO JUST your method. Does it do better? Then ONLY  have probability terms. Obviously that would do better.
 But if both have probability, does OBUS succeed again ? It could be that the probability term (badly calculated was hurting)
