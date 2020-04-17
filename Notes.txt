@@ -2,6 +2,12 @@
 
 
 
+Do with OLS first. Assume you can sample enough data to get a starting estimate. Maybe change code to sample for first round
+n equations for n unknowns and assume the relevant features are known.
+
+Then if needed, hack SE for Ridge with https://gist.github.com/grisaitis/cf481034bb413a14d3ea851dab201d31
+
+
 DEBUG VARIANCE COMPUTATION. USE VERY HIGH NOISE, AND SEE WHAT THE VARIANCE RETURNED IS.
 
 USE STATSMODEL instead of scikit and get Standard Error SE for free !!

@@ -2,57 +2,44 @@
 import numpy as np
 
 from scipy import stats
+import statsmodels.api as sm
 
+import numpy as np
 
-precision_variance = 0.2 #norm by variance of the dataset. THIS way the value is not small and hurts the behavior of F beta function
-recall_gain = 0.6
-
-#when gain == variance, then they transition. to gain not mattering much. So norm by variance may help.
-#higher the variance, more the effect of gain. GREAT PROPERTY
-#less variance, less effect of gain.
-#BETA tells you how much you want gain to matter. Could get a lot of early gains, but much slower later
-
-beta = 2.0 # Beta penalizes precision, is chosen such that recall is considered β times as important as precision
-F_beta = (1+beta**2) * precision_variance * recall_gain / (beta ** 2 * precision_variance + recall_gain)
-print(F_beta)
-
-"""
-When beta is small, near 0. Then variance is king. as beta increases, we are giving gain more value
-"""
-
-
+# sp_d = sm.datasets.spector.load(as_pandas=False)
 #
-# #Studnt, n=999, p<0.05, 2-tail
-# #equivalent to Excel TINV(0.05,999)
-# print ( stats.t.ppf(1-0.025, 999))
+# sp_d.exog = sm.add_constant(sp_d.exog,prepend=False)
 #
-# #Studnt, n=999, p<0.05%, Single tail
-# #equivalent to Excel TINV(2*0.05,999)
-# print( stats.t.ppf(1-0.0015, 999))
-# print( stats.t.ppf(1-0.0015, 22))
-# #
-# # SCALER = 1
-# # source  = np.concatenate((np.random.uniform(0.8,0.99,50),np.random.uniform(1.3,1.5,10)))
-# # #==============================
-# #
-# # a = SCALER*np.power(source,1)
-# # # print(a)
-# # print(np.mean(a))
-# # print(np.var(a))
-# # print(len([x for x in a if x<1.0]))
-# # #==============================
-# #
-# # a = SCALER*np.power(source,2)
-# # # print(a)
-# # print(np.mean(a))
-# # print(np.var(a))
-# # print(len([x for x in a if x<1.0]))
-# # #==============================
-# #
-# # a = SCALER*np.power(source,5)
-# # # print(a)
-# # print(np.mean(a))
-# # print(np.var(a))
-# # print(len([x for x in a if x<1.0]))
-# # print(sorted([x for x in a if x>1.0],reverse=True))
-# # print(sorted([x for x in a if x<1.0],reverse=True))
+# mod = sm.OLS(sp_d.endog,sp_d.exog)
+# res = mod.fit()
+# print(res.summary())
+#
+# print(res.bse)
+# print(res.params)
+# print(mod.predict([1,0,0,0]))
+
+
+import numpy as np
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+from statsmodels.sandbox.regression.predstd import wls_prediction_std
+
+np.random.seed(9876789)
+
+nsample = 100
+x = np.linspace(0, 10, 100)
+X = np.column_stack((x, x**2))
+beta = np.array([1, 0.1, 10])
+e = np.random.normal(size=nsample)
+
+X = sm.add_constant(X)
+y = np.dot(X, beta) + e
+
+
+model = sm.OLS(y, X)
+# results = model.fit_regularized(method='elastic_net',alpha=0.005,L1_wt=0)
+results = model._fit_ridge(alpha=0.005)
+print(results)
+
+
+print(results.predict([1,1,0]))

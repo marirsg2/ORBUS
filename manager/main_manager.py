@@ -21,15 +21,12 @@ ALWAYS START WITH SIMPLE CASE OF ALL RELEVANT AND KNOWN FEATURES.
 HARD CODE ALL S1 FEATUERS AS CONFIRMED, AND SET PROB OF RELEVANCE AS 1.0
 
 """
-from itertools import combinations
+
 from pyclustering.cluster.kmedoids import kmedoids
 from pyclustering.utils import timedcall, metric
 from scipy import integrate
-from scipy import stats
 from scipy.stats import describe as summ_stats_fnc
 #---------------------------------------------------------
-from plan_generator.journey_world import Journey_World
-from plan_generator.journey_world_planner import Journey_World_Planner
 from feedback.oracle import oracle
 from multiprocessing import Pool
 import numpy as np
@@ -39,11 +36,9 @@ import copy
 import math
 from scipy.stats import norm
 from linetimer import CodeTimer
-# from common.system_logger.general_logger import logger
 from learning_engine.bayesian_linear_model import bayesian_linear_model
-from selection_engine import RBUS_selection
-import re
-from sklearn import linear_model
+import statsmodels.api as sm
+
 
 """
 IMPORTANT NOTES:
@@ -239,7 +234,6 @@ class Manager:
         self.max_feature_size = max_feature_size
         self.learning_model_bayes = bayesian_linear_model()
         self.model_MLE = None # will be set later
-        self.model_MLE_list = [] #list of Ridge regression models with different alpha terms to estimate the variance, and Expected value
         self.use_feature_feedback = use_feature_feedback
         self.like_dislike_prior_mean = relevant_features_prior_mean
         self.like_dislike_prior_var = relevant_features_prior_var
@@ -458,8 +452,9 @@ class Manager:
                 if self.min_rating == 0 and self.max_rating == 0:
                     self.min_rating = -1.0
                     self.max_rating = 1.0
+
                 all_parallel_params.append(
-                    [self.model_MLE_list, encoded_plan, self.min_rating, self.max_rating, use_gain_function])
+                    [self.model_MLE, encoded_plan, self.min_rating, self.max_rating, use_gain_function])
             # end for loop through the available indices
             # Note the last parameter below is a LIST, each entry is for a new process
 
@@ -486,7 +481,7 @@ class Manager:
             all_but_last_plans = []
             for plan_set in self.annotated_plans_by_round[:-1]:
                 all_but_last_plans += plan_set
-            tester_model = self.get_Ridge_model(all_but_last_plans)
+            tester_model = self.get_OLS_model(all_but_last_plans)
 
 
         if not use_gain_function: #just the variance calc
@@ -1059,14 +1054,8 @@ class Manager:
         :return:
         """
         predictions = []
-        learning_model_MLE_list, encoded_plan, min_rating, max_rating, include_gain = input_list
-        try:
-            for single_model_MLE in learning_model_MLE_list:
-                predictions.append(single_model_MLE.predict([encoded_plan])[0])
-        except:
-            return 1.0, 1.0, 1.0  # when no features have been discovered yet
-        predictions =  np.array(predictions)
-        mean_preference = np.mean(predictions)
+        model_MLE, encoded_plan, min_rating, max_rating, include_gain = input_list
+        mean_preference = model_MLE.predict(encoded_plan)
         preference_variance = np.sum(np.square(predictions - mean_preference)) / (len(predictions) - 1)
         return preference_variance, mean_preference
 
@@ -1214,7 +1203,7 @@ class Manager:
 
 
     # ================================================================================================
-    def get_Ridge_model(self, plans_to_train_on):
+    def get_OLS_model(self, plans_to_train_on):
         """
 
         :param plans_to_train_on:
@@ -1229,19 +1218,12 @@ class Manager:
             for single_feature in single_plan[1] + single_plan[2]: #the liked and disliked features
                 encoded_plan[0][self.RBUS_indexing.index(single_feature)] = 1
             encoded_plans_list.append(encoded_plan)
-        MLE_reg_model = linear_model.Ridge(alpha=reg_lambda, fit_intercept=False) #normalize wont help here either, the input is binary, already normalized
+        #----
         input_dataset = np.array([x[0] for x in encoded_plans_list])
         output_dataset = np.array([x[1] for x in encoded_plans_list])
-
-        #todo PLEASE test the weighted fit more on toy problems. When you normalized the weights, it failed miserably
-        # which was unexpected
-        # WEIGHTS ARE CURRENTLY TURNED OFF, VERY ERRATIC PERFORMANCE
-        # weight_func = RBUS_selection.get_gain_function(self.min_rating,self.max_rating)
-        # weights = [weight_func(x) for x in output_dataset]
-        # weights = [1.0 for x in output_dataset]
-
-        MLE_reg_model.fit(input_dataset, output_dataset)
-        return MLE_reg_model
+        model_object = sm.OLS(output_dataset,input_dataset)
+        MLE_OLS_model = model_object.fit()
+        return MLE_OLS_model
     # ================================================================================================
     def relearn_model(self, learn_LSfit = False, num_chains=1):
         """
@@ -1284,179 +1266,16 @@ class Manager:
                 count_feature_occurrence[self.RBUS_indexing.index(single_feature)] += 1
             encoded_plans_list.append(encoded_plan)
         # end outer for
-        self.model_MLE_list = []
-        #Estimate the confidence interval of the parameters
-        reg_lambda = 0.001 #small positive value to avoid errors in numerical computation
-        MLE_reg_model = linear_model.Ridge(alpha=reg_lambda, fit_intercept=False) #normalize wont help here either, the input is binary, already normalized
         input_dataset = np.array([x[0] for x in encoded_plans_list])
         output_dataset = np.array([x[1] for x in encoded_plans_list])
+        model_object = sm.OLS(output_dataset, input_dataset)
+        MLE_OLS_model = model_object.fit()
 
-        #todo PLEASE test the weighted fit more on toy problems. When you normalized the weights, it failed miserably
-        # which was unexpected
-        # WEIGHTS ARE CURRENTLY TURNED OFF, VERY ERRATIC PERFORMANCE
-        # weight_func = RBUS_selection.get_gain_function(self.min_rating,self.max_rating)
-        # weights = [weight_func(x) for x in output_dataset]
-        # weights = [1.0 for x in output_dataset]
+        print("OLS stats")
+        print(MLE_OLS_model.summary())
+        #NOTE with statsmodel OLS unless you explicitly add a constant, it assumes no intercept
 
-        MLE_reg_model.fit(input_dataset, output_dataset)
-        print(" For reg lambda = ",reg_lambda)
-        print("Coefficients's values ", list(zip(self.RBUS_indexing,MLE_reg_model.coef_)))
-        print("Intercept: %.4f" % MLE_reg_model.intercept_)
-        self.model_MLE_list.append(MLE_reg_model)
-        self.model_MLE = MLE_reg_model
-
-        #now for each of the parameters estimate an upper and lower bound, then make two models
-        if len(self.annotated_plans) > 2:
-            count_samples = 0
-            MLE_total_squared_error = 0
-            for single_annot_plan_struct in self.annotated_plans:
-                current_plan_features = single_annot_plan_struct[1] + single_annot_plan_struct[2]
-                encoded_plan = np.zeros(self.CONFIRMED_features_dimension)
-                count_samples +=1
-                for single_feature in current_plan_features:
-                    if single_feature in self.CONFIRMED_features:
-                        encoded_plan[self.RBUS_indexing.index(single_feature)] = 1
-
-                true_value = float(single_annot_plan_struct[-1])
-                #end for loop
-                mle_predict = self.model_MLE.predict([encoded_plan])[0]
-                current_abs_error = abs(true_value - mle_predict)
-                MLE_total_squared_error += current_abs_error
-            #end for loop
-            noise_variance_estimator = MLE_total_squared_error/(count_samples-2)
-
-
-            coeff_count = list(zip(self.model_MLE.coef_,count_feature_occurrence))
-            CONFIDENCE_TAIL = 0.05
-            t_value = stats.t.ppf(1-CONFIDENCE_TAIL, count_samples-2)
-            feat_std_err_margin_list = []
-            for single_feat_n_count_idx in range(len(coeff_count)):
-                single_feat_n_count = coeff_count[single_feat_n_count_idx]
-                feat_value = single_feat_n_count[0]
-                feat_count = single_feat_n_count[1]
-                #s_xx is supposed to be sum(x-avg_x)^2, our variable x is binary feature. can be broken into two cases, when it is true and when it is not
-                s_xx = feat_count*(1-feat_count/count_samples)**2 + (count_samples-feat_count)*(1-feat_count/count_samples)**2 + INFINITESIMAL_VALUE
-                feat_standard_error = math.sqrt(noise_variance_estimator/s_xx)
-                feat_std_err_margin_list.append(feat_standard_error)
-            #end for loop
-
-            #todo NOTE add a lot of models to the list. Randomly sample
-            for i in range(NUM_SAMPLED_MODELS):
-                sampled_model = copy.deepcopy(MLE_reg_model)
-                for single_feat_idx in range(len(coeff_count)):
-                    std_err = feat_std_err_margin_list[single_feat_idx]
-                    # sampling by t -distr. tail/Alpha(confidence) values sampled uniforms, but t-value is gaussian
-                    # tail_value_for_t = random.random()/2
-                    # t_value = stats.t.ppf(1 - tail_value_for_t, count_samples - 2)
-                    # error_margin = t_value * std_err
-                    # if random.random() < 0.5:
-                    #     sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] - error_margin
-                    # else:
-                    #     sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] + error_margin
-
-                    # sampling uniform - I think is wrong , but better for informativeness
-                    t_value = stats.t.ppf(1-CONFIDENCE_TAIL, count_samples-2)
-                    error_margin = t_value*std_err
-                    current_sampled_offset = 2*error_margin*random.random() # the range of possible values is uniformly sampled and added
-                                                                            # to the lower bound
-                    sampled_model.coef_[single_feat_idx] = sampled_model.coef_[single_feat_idx] - error_margin + current_sampled_offset
-                    self.model_MLE_list.append(sampled_model)
-                #end for loop
-                print("One SAMPLED model")
-                print("Coefficients's values ", list(zip(self.RBUS_indexing, sampled_model.coef_)))
-            #end for loop through sampling models
-        #end if len(self.annotated_plans) > 2:
-
-
-
-
-
-        # print("RELEARINING BAYESIAN MODEL")
-        # prior_dict = {}
-        # for single_feature in self.CONFIRMED_features:
-        #     prior_dict[single_feature] = (self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)],self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] )
-        # print("priors are = ", prior_dict)
-        # # noise_sd = self.estimate_noise_sd() #learning the noise is terrible, unless it is truly variable. If we know the range of values. Just set a noise value
-        # noise_sd = EXPECTED_NOISE_STD_DEV
-        # print("noise_estimate sd is =",noise_sd)
-        # self.learning_model_bayes.learn_bayesian_linear_model(encoded_plans_list,
-        #                                                       np.array(self.RBUS_prior_mean),
-        #                                                       self.CONFIRMED_features_dimension,
-        #                                                       sd= noise_sd,
-        #                                                       sampling_count=2000,
-        #                                                       num_chains=num_chains,
-        #                                                       feature_prior_var_matx= np.diag(self.RBUS_prior_var))
-        #                                                       # num_chains=num_chains)
-        #
-        # # ALSO UPDATE THE PRIORS FOR THE NEXT ROUND. WE START OPTIMISITC AND UPDATE THEM TOWARDS THEIR TRUE VALUES
-        # param_stats = [self.learning_model_bayes.linear_params_values["betas"][0:2000, x] for x in
-        #                range(self.CONFIRMED_features_dimension)]
-        # param_means = np.array([np.mean(x) for x in param_stats])
-        # param_var = [np.var(x) for x in param_stats]
-        # self.RBUS_prior_mean = np.zeros(len(self.CONFIRMED_features))
-        # self.RBUS_prior_var = np.zeros(len(self.CONFIRMED_features))
-        #
-        # for single_feature in self.CONFIRMED_features:
-        #     if single_feature in self.liked_features:
-        #         # code to FORCE liked as positive feature
-        #         # if param_means[self.RBUS_indexing.index(single_feature)] < 0: #it was a liked feature so should have been > 0
-        #         #     #then the BLM model failed to converge or we did not have enough information. Since we know it is liked we will default to the prior
-        #         #     param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[0]
-        #         #     param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[0]
-        #
-        #         self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
-        #             param_means[self.RBUS_indexing.index(single_feature)]
-        #         self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \
-        #             param_var[self.RBUS_indexing.index(single_feature)]
-        #         # todo note, this was the other option, to agressively update the prior towards zero by mean-std_dev
-        #         # instead we assume just the mean, as it is a more conservative update. Aggressive update maybe good too. never tested
-        #         # param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
-        #         #     param_vars[self.RBUS_indexing.index(single_feature)])
-        #     else:
-        #         #CODE to force negative mean for disliked feature over rounds
-        #         # if param_means[self.RBUS_indexing.index(single_feature)] > 0: #it was a disliked feature so should have been < 0
-        #         #     #then the BLM model failed to converge or we did not have enough information. Since we know it is dliked we will default to the prior
-        #         #     param_means[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_mean[1]
-        #         #     param_var[self.RBUS_indexing.index(single_feature)] = self.like_dislike_prior_var[0]
-        #         self.RBUS_prior_mean[self.RBUS_indexing.index(single_feature)] = \
-        #             param_means[self.RBUS_indexing.index(single_feature)]
-        #         self.RBUS_prior_var[self.RBUS_indexing.index(single_feature)] = \
-        #             param_var[self.RBUS_indexing.index(single_feature)]
-        #         # todo note, this was the other option, to agressively update the prior towards zero by mean-std_dev
-        #         # -1*param_abs[self.RBUS_indexing.index(single_feature)] - math.sqrt(
-        #         #     param_vars[self.RBUS_indexing.index(single_feature)])
-        #     # end else
-        # #end for loop through confirmed features
-        #
-        # #TODO Update the noise estimate.
-        # # take the variance of the error as the noise.  YES ! we just assume that we are right. Initially, this would be large, and then
-        # # as we get better parameter estimates, we (in tandem) get a better estimate of the noise
-        #
-        # if self.sim_human != None:  #i.e. we are in simulated testing
-        #     # continue from here to update params
-        #     #end for updating confirmed features.
-        #     param_summ_stats = [summ_stats_fnc(x) for x in param_stats]
-        #     bayes_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
-        #     for single_feature in bayes_feature_dict:
-        #         try:
-        #             bayes_feature_dict[single_feature].append(param_summ_stats[self.RBUS_indexing.index(single_feature)])
-        #         except ValueError: # for the feature not being in the list
-        #             pass
-        #
-        #     if MLE_reg_model != None:
-        #         MLE_feature_dict = copy.deepcopy(self.sim_human.feature_preferences_dict)
-        #         for single_feature in MLE_feature_dict:
-        #             try:
-        #                 MLE_feature_dict[single_feature].append(MLE_reg_model.coef_[self.RBUS_indexing.index(single_feature)])
-        #             except ValueError:  # for the feature not being in the list
-        #                 pass
-        #
-        #
-        #     #todo not just mean, do MODE of features
-        #     print("RATINGS seen are = ", summ_stats_fnc(ratings))
-        #     print("Bayes params ","  ||  ".join([str(x) for x in bayes_feature_dict.items()]))
-        #     print("Bayes intercept summ stats")
-        #     print(summ_stats_fnc(self.learning_model_bayes.linear_params_values["alpha"][0:2000]))
+        self.model_MLE = MLE_OLS_model
 
 
 
