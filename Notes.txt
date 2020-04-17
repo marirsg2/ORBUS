@@ -2,19 +2,13 @@
 
 
 
-rANDOM does so much better when all features are known and relevant ? it's early discovery and
-subsequent gains.
+DEBUG VARIANCE COMPUTATION. USE VERY HIGH NOISE, AND SEE WHAT THE VARIANCE RETURNED IS.
 
-WHY IS THE FIRST ROUND ERROR DIFFERENT ? we should be sampling THE EXACT SAME PLANS ?? test this
-DEBUG SLOW. as of now 20 features, 4 per plan. 10k plans easily
+USE STATSMODEL instead of scikit and get Standard Error SE for free !!
 
-The update is exactly the SAME !!?? debug !!
+CHECK if the variance computation is sensible ??
+std dev seems low for noise of 6.0
 
-
-?? IT IS DOING THE OPPOSITE. overall the error is lower, but in the extreme regions, not so ?
-
-It was ZERO sigma ?? now lets try with 2 sigma. with zero sigma, the average was barely better
-and extremes were about equal ?? how ?
 
 Retry sigma + sigma^mu
 Also (1+mu)^(sigma)

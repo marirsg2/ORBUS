@@ -531,6 +531,9 @@ class Manager:
             std_dev_normalizing_denom = np.max(std_dev_array)
             if std_dev_normalizing_denom == 0.0:
                 std_dev_normalizing_denom = 1.0  # avoids "nan" problem
+            if math.isnan(std_dev_normalizing_denom):
+                std_dev_array = np.ones(std_dev_array.shape[0])
+                std_dev_normalizing_denom = 1.0
             std_dev_variance_array = std_dev_array / std_dev_normalizing_denom  # normalize it
 
             # Todo NORM(gain+2 * var), UCB sampling esque.THE following lines should be uncommented
@@ -539,9 +542,9 @@ class Manager:
             gain_array_B = gain_array - 0*std_dev_array # like in thompson sampling
             updated_data_list = []
             for idx in range(gain_array.shape[0]):
-                chosen_data = gain_array_A[idx]
+                chosen_data = abs(gain_array_A[idx])
                 if abs(gain_array_A[idx]) < abs(gain_array_B[idx]):
-                    chosen_data = gain_array_B[idx]
+                    chosen_data = abs(gain_array_B[idx])
                 #end if
                 updated_data_list.append(chosen_data)
             #end for
@@ -550,6 +553,9 @@ class Manager:
             gain_normalizing_denom = np.max(gain_array)
             if gain_normalizing_denom == 0.0:
                 gain_normalizing_denom = 1.0  # avoids "nan" problem
+            if math.isnan(gain_normalizing_denom):
+                gain_array = np.ones(gain_array.shape[0])
+                gain_normalizing_denom = 1.0
             norm_gain_array = gain_array / gain_normalizing_denom  # normalize it
 
             # base_score = [ std_dev_variance_array[x] + math.pow(std_dev_variance_array[x],norm_gain_array[x]) for x in range(len(norm_gain_array))]

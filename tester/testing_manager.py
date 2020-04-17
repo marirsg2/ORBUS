@@ -346,11 +346,11 @@ if __name__ == "__main__":
     #TODO FEWER PLANS PER ROUND IS BETTER
     plans_per_round = 5
     noise_value = 6.0 #the range of actual preference values is based on the noise as well
-    prob_feat_select = 0.1
+    prob_feat_select = 1.0
 
     print("CHECK algorithm, currently doing (1+sigma)^(1+mu) no additional sigmas")
 
-    for i in range(10):
+    for i in range(4):
         all_data = []
         try:
             os.remove(manager_pickle_file)
