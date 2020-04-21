@@ -1,5 +1,7 @@
 
 
+Do OLS (not ridge) for which variance in parameters is well defined
+use (Max - min)^2 as a stand in for variance. Max and min are easily computed based on std dev of params. For example, Max always adds +2 std dev , and min subtracts.
 
 
 Do with OLS first. Assume you can sample enough data to get a starting estimate. Maybe change code to sample for first round
