@@ -1,5 +1,14 @@
 
 
+FOR BOOTSTRAP varaince, redo from scratch. DO IT SIMPLER !!
+
+POST a note on arxiv pointing to the new paper, so the old one is not used. ALSO ask for it to be redacted. 
+
+data gen. choose feature set. Each data point has a subset of features.
+Each feature has a prior mean and variance. Each data point y value is between 0 and 100.
+
+=============================
+
 Do OLS (not ridge) for which variance in parameters is well defined
 use (Max - min)^2 as a stand in for variance. Max and min are easily computed based on std dev of params. For example, Max always adds +2 std dev , and min subtracts.
 
